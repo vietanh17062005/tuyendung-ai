@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đợt tuyển dụng</title>
+    <link rel="stylesheet" href="dot-tuyen.css">
+</head>
+<body>
+
+    <div class="khung">
+
+        <div class="dau-trang">
+            <div>
+                <h1>Đợt tuyển dụng</h1>
+                <p>Quản lý các đợt tuyển dụng của hệ thống</p>
+            </div>
+
+            <button id="btnThem" class="btn-them">
+                + Thêm đợt tuyển dụng
+            </button>
+        </div>
+
+        <p id="thongBao"></p>
+
+        <div class="bang-khung">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên đợt tuyển</th>
+                        <th>Mô tả</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày bắt đầu</th>
+                        <th>Ngày kết thúc</th>
+                        <th>Người tạo</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+
+                <tbody id="danhSach"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+
+    <div id="formKhung" class="an">
+
+        <div class="form">
+
+            <div class="form-dau">
+                <h2 id="tieuDeForm">Thêm đợt tuyển dụng</h2>
+                <button id="btnHuy" class="btn-dong">×</button>
+            </div>
+
+            <input type="hidden" id="id">
+
+            <label>Tên đợt tuyển dụng</label>
+            <input
+                type="text"
+                id="ten"
+                placeholder="Nhập tên đợt tuyển dụng"
+            >
+
+            <label>Mô tả</label>
+            <textarea
+                id="moTa"
+                placeholder="Nhập mô tả đợt tuyển dụng"
+            ></textarea>
+
+            <div class="hai-cot">
+
+                <div>
+                    <label>Ngày bắt đầu</label>
+                    <input type="date" id="ngayBatDau">
+                </div>
+
+                <div>
+                    <label>Ngày kết thúc</label>
+                    <input type="date" id="ngayKetThuc">
+                </div>
+
+            </div>
+
+            <label>Trạng thái</label>
+
+            <select id="trangThai">
+                <option value="nhap">Nháp</option>
+                <option value="dang_tuyen">Đang tuyển</option>
+                <option value="dong">Đã đóng</option>
+            </select>
+
+            <div class="form-cuoi">
+                <button id="btnHuy2" class="btn-huy">
+                    Hủy
+                </button>
+
+                <button id="btnLuu" class="btn-luu">
+                    Lưu
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="dot-tuyen.js"></script>
+
+</body>
+</html>

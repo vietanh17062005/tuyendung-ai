@@ -1,0 +1,80 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f5f6fa;
+}
+
+.khung {
+    display: flex;
+    min-height: 100vh;
+}
+
+.menu {
+    width: 230px;
+    background: #1f2937;
+    padding: 20px;
+}
+
+.menu h2 {
+    color: white;
+    margin-top: 0;
+}
+
+.menu a {
+    display: block;
+    color: white;
+    text-decoration: none;
+    padding: 12px 5px;
+}
+
+.menu a:hover {
+    background: #374151;
+}
+
+#btnDangXuat {
+    width: 100%;
+    margin-top: 30px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.noi-dung {
+    flex: 1;
+    padding: 30px;
+}
+
+.thong-tin {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.thong-tin h3 {
+    margin-top: 0;
+}
+
+.the {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+.the-item {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.the-item h3 {
+    margin-top: 0;
+}
+
+.the-item p {
+    font-size: 30px;
+    font-weight: bold;
+}
