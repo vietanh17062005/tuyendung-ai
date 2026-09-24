@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Quản lý ứng viên</title>
+
+    <link rel="stylesheet" href="/ung-vien/ung-vien.css">
+</head>
+
+<body>
+
+    <div class="sidebar">
+
+        <h2>AI Recruitment</h2>
+
+        <a href="/dashboard/dashboard.html">Dashboard</a>
+        <a href="/dot-tuyen/dot-tuyen.html">Đợt tuyển dụng</a>
+        <a href="/jd/jd.html">JD</a>
+        <a href="/ung-vien/ung-vien.html" class="active">Ứng viên</a>
+
+    </div>
+
+    <div class="main">
+
+        <div class="top">
+
+            <div>
+                <h1>Quản lý ứng viên</h1>
+                <p>Quản lý ứng viên và CV theo đợt tuyển dụng</p>
+            </div>
+
+            <button id="btnThem">+ Thêm ứng viên</button>
+
+        </div>
+
+        <div id="thongBao"></div>
+
+        <div class="filter-box">
+
+            <label>Đợt tuyển dụng</label>
+
+            <select id="locDotTuyen">
+
+                <option value="">Tất cả đợt tuyển dụng</option>
+
+            </select>
+
+        </div>
+
+        <div class="table-box">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>ID</th>
+                        <th>Ứng viên</th>
+                        <th>Email</th>
+                        <th>Số điện thoại</th>
+                        <th>Đợt tuyển dụng</th>
+                        <th>CV</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+
+                </thead>
+
+                <tbody id="danhSachUngVien"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- Modal ứng viên -->
+
+    <div id="modal" class="modal">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h2 id="tieuDeModal">
+                    Thêm ứng viên
+                </h2>
+
+                <button id="btnDong">&times;</button>
+
+            </div>
+
+            <form id="formUngVien">
+
+                <input type="hidden" id="ungVienId">
+
+                <label>Đợt tuyển dụng</label>
+
+                <select id="dotTuyenId" required>
+
+                    <option value="">-- Chọn đợt tuyển dụng --</option>
+
+                </select>
+
+
+                <label>Họ tên</label>
+
+                <input type="text" id="hoTen" required placeholder="Nguyễn Văn A">
+
+
+                <label>Email</label>
+
+                <input type="email" id="email" placeholder="email@gmail.com">
+
+
+                <label>Số điện thoại</label>
+
+                <input type="text" id="sdt" placeholder="0987654321">
+
+
+                <label>Nguồn ứng viên</label>
+
+                <select id="nguon">
+
+                    <option value="">-- Chọn nguồn --</option>
+                    <option value="website">Website</option>
+                    <option value="email">Email</option>
+                    <option value="gioi_thieu">Giới thiệu</option>
+                    <option value="khac">Khác</option>
+
+                </select>
+
+
+                <label>Ghi chú</label>
+
+                <textarea id="ghiChu" rows="4" placeholder="Ghi chú về ứng viên..."></textarea>
+
+
+                <div class="form-buttons">
+
+                    <button type="button" id="btnHuy">Hủy</button>
+
+                    <button type="submit">Lưu ứng viên</button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- Modal CV -->
+
+    <div id="modalCV" class="modal">
+
+        <div class="modal-content small">
+
+            <div class="modal-header">
+
+                <h2>
+                    Upload CV
+                </h2>
+
+                <button id="btnDongCV">
+                    <button id="btnDongCV">&times;</button>
+                </button>
+
+            </div>
+
+            <p id="tenUngVienCV"></p>
+
+            <form id="formCV">
+
+                <input type="file" id="fileCV" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+
+                <p class="file-note">
+                    PDF, DOC, DOCX, JPG, JPEG, PNG.
+                    Tối đa 10MB.
+                </p>
+
+                <div class="form-buttons">
+
+                    <button type="button" id="btnHuyCV">
+                        <button type="button" id="btnHuyCV">Hủy</button>
+                    </button>
+
+                    <button type="submit">
+                        <button type="submit">Upload CV</button>
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <script src="/ung-vien/ung-vien.js"></script>
+
+</body>
+
+</html>

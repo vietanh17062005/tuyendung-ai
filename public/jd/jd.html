@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý JD</title>
+    <link rel="stylesheet" href="/jd/jd.css">
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <h2>AI Recruitment</h2>
+
+        <a href="/dashboard/dashboard.html">Dashboard</a>
+        <a href="/dot-tuyen/dot-tuyen.html">Đợt tuyển dụng</a>
+        <a href="/jd/jd.html" class="active">JD</a>
+    </div>
+
+    <div class="main">
+
+        <div class="top">
+            <div>
+                <h1>Quản lý JD</h1>
+                <p>Quản lý mô tả công việc và yêu cầu tuyển dụng</p>
+            </div>
+
+            <button id="btnThem">+ Tạo JD</button>
+        </div>
+
+        <div id="thongBao"></div>
+
+        <div class="table-box">
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tiêu đề</th>
+                        <th>Đợt tuyển dụng</th>
+                        <th>Trạng thái</th>
+                        <th>Người duyệt</th>
+                        <th>Ngày tạo</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+
+                <tbody id="danhSachJD"></tbody>
+            </table>
+
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h2 id="tieuDeModal">Tạo JD</h2>
+
+                <button id="btnDong">&times;</button>
+            </div>
+
+            <form id="formJD">
+
+                <input type="hidden" id="jdId">
+
+                <label>Đợt tuyển dụng</label>
+
+                <select id="dotTuyenId" required>
+                    <option value="">
+                        -- Chọn đợt tuyển dụng --
+                    </option>
+                </select>
+
+                <label>Tiêu đề JD</label>
+
+                <input type="text" id="tieuDe" placeholder="Ví dụ: Lập trình viên Backend" required>
+
+                <label>Mô tả công việc</label>
+
+                <textarea id="moTa" rows="5" placeholder="Nhập mô tả công việc..."></textarea>
+
+                <label>Yêu cầu</label>
+
+                <textarea id="yeuCau" rows="5" placeholder="Nhập yêu cầu ứng viên..."></textarea>
+
+                <label>Quyền lợi</label>
+
+                <textarea id="quyenLoi" rows="5" placeholder="Nhập quyền lợi..."></textarea>
+
+                <label>Tiêu chí tuyển dụng</label>
+
+                <textarea id="tieuChi" rows="5" placeholder="Nhập tiêu chí tuyển dụng..."></textarea>
+
+                <div class="form-buttons">
+                    <button type="button" id="btnHuy">Hủy</button>
+                    <button type="submit">Lưu JD</button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <div id="modalXacNhan" class="modal">
+
+        <div class="confirm-box">
+
+            <h2 id="tieuDeXacNhan">Xác nhận</h2>
+
+            <p id="noiDungXacNhan"></p>
+
+            <div class="form-buttons">
+
+                <button id="btnHuyXacNhan">Hủy</button>
+                <button id="btnXacNhan">Xác nhận</button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="/jd/jd.js"></script>
+
+</body>
+
+</html>
