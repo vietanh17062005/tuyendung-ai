@@ -7,6 +7,8 @@ const db = mysql.createPool({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
 
+    charset: "utf8mb4",
+
     ssl: {
         minVersion: "TLSv1.2"
     },
