@@ -8,72 +8,86 @@ const {
 
 const router = express.Router();
 
-
-// Lấy danh sách JD
 router.get("/", kiemTraDangNhap, async function (req, res) {
     try {
         const [rows] = await db.query(`
             SELECT
-                jd.*,
-                dt.ten AS ten_dot_tuyen,
+                jd.id,
+                jd.dot_tuyen_id,
+                jd.tieu_de,
+                jd.mo_ta,
+                jd.yeu_cau,
+                jd.quyen_loi,
+                jd.trang_thai,
+                jd.nguoi_duyet_id,
+                jd.ngay_duyet,
+                jd.tieu_chi,
+                jd.ngay_tao,
+                jd.ngay_cap_nhat,
+                dt.ten_dot AS ten_dot_tuyen,
                 nd.ho_ten AS ten_nguoi_duyet
             FROM jd
             INNER JOIN dot_tuyen AS dt
                 ON jd.dot_tuyen_id = dt.id
             LEFT JOIN nguoi_dung AS nd
-                ON jd.nguoi_duyet = nd.id
+                ON jd.nguoi_duyet_id = nd.id
             ORDER BY jd.id DESC
         `);
 
         res.json(rows);
-
     } catch (error) {
         console.error("GET /api/jd:", error);
 
         res.status(500).json({
-            message: "Không lấy được danh sách JD",
+            message: "Khong lay duoc danh sach JD",
             error: error.message
         });
     }
 });
 
-
-// Lấy chi tiết JD
 router.get("/:id", kiemTraDangNhap, async function (req, res) {
     try {
         const [rows] = await db.query(`
             SELECT
-                jd.*,
-                dt.ten AS ten_dot_tuyen,
+                jd.id,
+                jd.dot_tuyen_id,
+                jd.tieu_de,
+                jd.mo_ta,
+                jd.yeu_cau,
+                jd.quyen_loi,
+                jd.trang_thai,
+                jd.nguoi_duyet_id,
+                jd.ngay_duyet,
+                jd.tieu_chi,
+                jd.ngay_tao,
+                jd.ngay_cap_nhat,
+                dt.ten_dot AS ten_dot_tuyen,
                 nd.ho_ten AS ten_nguoi_duyet
             FROM jd
             INNER JOIN dot_tuyen AS dt
                 ON jd.dot_tuyen_id = dt.id
             LEFT JOIN nguoi_dung AS nd
-                ON jd.nguoi_duyet = nd.id
+                ON jd.nguoi_duyet_id = nd.id
             WHERE jd.id = ?
         `, [req.params.id]);
 
         if (rows.length === 0) {
             return res.status(404).json({
-                message: "Không tìm thấy JD"
+                message: "Khong tim thay JD"
             });
         }
 
         res.json(rows[0]);
-
     } catch (error) {
         console.error("GET /api/jd/:id:", error);
 
         res.status(500).json({
-            message: "Không lấy được JD",
+            message: "Khong lay duoc JD",
             error: error.message
         });
     }
 });
 
-
-// Tạo JD
 router.post(
     "/",
     kiemTraDangNhap,
@@ -86,23 +100,13 @@ router.post(
                 mo_ta,
                 yeu_cau,
                 quyen_loi,
+                trang_thai,
                 tieu_chi
             } = req.body;
 
-            if (!dot_tuyen_id || !tieu_de || !tieu_de.trim()) {
+            if (!dot_tuyen_id || !tieu_de) {
                 return res.status(400).json({
-                    message: "Vui lòng nhập đợt tuyển dụng và tiêu đề JD"
-                });
-            }
-
-            const [dotTuyen] = await db.query(
-                "SELECT id FROM dot_tuyen WHERE id = ?",
-                [dot_tuyen_id]
-            );
-
-            if (dotTuyen.length === 0) {
-                return res.status(400).json({
-                    message: "Đợt tuyển dụng không tồn tại"
+                    message: "Vui long nhap day du thong tin JD"
                 });
             }
 
@@ -114,39 +118,35 @@ router.post(
                     mo_ta,
                     yeu_cau,
                     quyen_loi,
-                    tieu_chi,
-                    trang_thai
+                    trang_thai,
+                    tieu_chi
                 )
-                VALUES (?, ?, ?, ?, ?, ?, 'nhap')
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             `, [
                 dot_tuyen_id,
-                tieu_de.trim(),
+                tieu_de,
                 mo_ta || null,
                 yeu_cau || null,
                 quyen_loi || null,
-                tieu_chi
-                    ? JSON.stringify(tieu_chi)
-                    : null
+                trang_thai || "nhap",
+                tieu_chi ? JSON.stringify(tieu_chi) : null
             ]);
 
             res.status(201).json({
-                message: "Tạo JD thành công",
+                message: "Tao JD thanh cong",
                 id: result.insertId
             });
-
         } catch (error) {
             console.error("POST /api/jd:", error);
 
             res.status(500).json({
-                message: "Tạo JD thất bại",
+                message: "Khong tao duoc JD",
                 error: error.message
             });
         }
     }
 );
 
-
-// Sửa JD
 router.put(
     "/:id",
     kiemTraDangNhap,
@@ -159,44 +159,17 @@ router.put(
                 mo_ta,
                 yeu_cau,
                 quyen_loi,
+                trang_thai,
                 tieu_chi
             } = req.body;
 
-            if (!dot_tuyen_id || !tieu_de || !tieu_de.trim()) {
+            if (!dot_tuyen_id || !tieu_de) {
                 return res.status(400).json({
-                    message: "Vui lòng nhập đầy đủ thông tin JD"
+                    message: "Vui long nhap day du thong tin JD"
                 });
             }
 
-            const [jd] = await db.query(
-                "SELECT trang_thai FROM jd WHERE id = ?",
-                [req.params.id]
-            );
-
-            if (jd.length === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy JD"
-                });
-            }
-
-            if (jd[0].trang_thai === "da_duyet") {
-                return res.status(400).json({
-                    message: "JD đã được duyệt, không thể chỉnh sửa"
-                });
-            }
-
-            const [dotTuyen] = await db.query(
-                "SELECT id FROM dot_tuyen WHERE id = ?",
-                [dot_tuyen_id]
-            );
-
-            if (dotTuyen.length === 0) {
-                return res.status(400).json({
-                    message: "Đợt tuyển dụng không tồn tại"
-                });
-            }
-
-            await db.query(`
+            const [result] = await db.query(`
                 UPDATE jd
                 SET
                     dot_tuyen_id = ?,
@@ -204,181 +177,107 @@ router.put(
                     mo_ta = ?,
                     yeu_cau = ?,
                     quyen_loi = ?,
-                    tieu_chi = ?,
-                    ngay_sua = CURRENT_TIMESTAMP
+                    trang_thai = ?,
+                    tieu_chi = ?
                 WHERE id = ?
             `, [
                 dot_tuyen_id,
-                tieu_de.trim(),
+                tieu_de,
                 mo_ta || null,
                 yeu_cau || null,
                 quyen_loi || null,
-                tieu_chi
-                    ? JSON.stringify(tieu_chi)
-                    : null,
+                trang_thai || "nhap",
+                tieu_chi ? JSON.stringify(tieu_chi) : null,
                 req.params.id
             ]);
 
-            res.json({
-                message: "Cập nhật JD thành công"
-            });
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "Khong tim thay JD"
+                });
+            }
 
+            res.json({
+                message: "Cap nhat JD thanh cong"
+            });
         } catch (error) {
             console.error("PUT /api/jd/:id:", error);
 
             res.status(500).json({
-                message: "Cập nhật JD thất bại",
+                message: "Khong cap nhat duoc JD",
                 error: error.message
             });
         }
     }
 );
 
-
-// Gửi JD để duyệt
-router.put(
-    "/:id/gui-duyet",
-    kiemTraDangNhap,
-    kiemTraVaiTro("admin", "manager", "hr"),
-    async function (req, res) {
-        try {
-            const [jd] = await db.query(
-                "SELECT trang_thai FROM jd WHERE id = ?",
-                [req.params.id]
-            );
-
-            if (jd.length === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy JD"
-                });
-            }
-
-            if (jd[0].trang_thai === "da_duyet") {
-                return res.status(400).json({
-                    message: "JD đã được duyệt"
-                });
-            }
-
-            await db.query(`
-                UPDATE jd
-                SET
-                    trang_thai = 'cho_duyet',
-                    ngay_sua = CURRENT_TIMESTAMP
-                WHERE id = ?
-            `, [req.params.id]);
-
-            res.json({
-                message: "Đã gửi JD chờ duyệt"
-            });
-
-        } catch (error) {
-            console.error("PUT /api/jd/:id/gui-duyet:", error);
-
-            res.status(500).json({
-                message: "Gửi duyệt JD thất bại",
-                error: error.message
-            });
-        }
-    }
-);
-
-
-// Duyệt JD
 router.put(
     "/:id/duyet",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager"),
     async function (req, res) {
         try {
-            const [jd] = await db.query(
-                "SELECT trang_thai FROM jd WHERE id = ?",
-                [req.params.id]
-            );
-
-            if (jd.length === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy JD"
-                });
-            }
-
-            if (jd[0].trang_thai !== "cho_duyet") {
-                return res.status(400).json({
-                    message: "JD chưa ở trạng thái chờ duyệt"
-                });
-            }
-
-            await db.query(`
+            const [result] = await db.query(`
                 UPDATE jd
                 SET
                     trang_thai = 'da_duyet',
-                    nguoi_duyet = ?,
-                    ngay_duyet = CURRENT_TIMESTAMP,
-                    ngay_sua = CURRENT_TIMESTAMP
+                    nguoi_duyet_id = ?,
+                    ngay_duyet = NOW()
                 WHERE id = ?
             `, [
                 req.nguoiDung.id,
                 req.params.id
             ]);
 
-            res.json({
-                message: "Duyệt JD thành công"
-            });
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "Khong tim thay JD"
+                });
+            }
 
+            res.json({
+                message: "Duyet JD thanh cong"
+            });
         } catch (error) {
             console.error("PUT /api/jd/:id/duyet:", error);
 
             res.status(500).json({
-                message: "Duyệt JD thất bại",
+                message: "Khong duyet duoc JD",
                 error: error.message
             });
         }
     }
 );
 
-
-// Xóa JD
 router.delete(
     "/:id",
     kiemTraDangNhap,
-    kiemTraVaiTro("admin", "manager"),
+    kiemTraVaiTro("admin", "manager", "hr"),
     async function (req, res) {
         try {
-            const [jd] = await db.query(
-                "SELECT trang_thai FROM jd WHERE id = ?",
-                [req.params.id]
-            );
-
-            if (jd.length === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy JD"
-                });
-            }
-
-            if (jd[0].trang_thai === "da_duyet") {
-                return res.status(400).json({
-                    message: "JD đã duyệt không thể xóa"
-                });
-            }
-
-            await db.query(
+            const [result] = await db.query(
                 "DELETE FROM jd WHERE id = ?",
                 [req.params.id]
             );
 
-            res.json({
-                message: "Xóa JD thành công"
-            });
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "Khong tim thay JD"
+                });
+            }
 
+            res.json({
+                message: "Xoa JD thanh cong"
+            });
         } catch (error) {
             console.error("DELETE /api/jd/:id:", error);
 
             res.status(500).json({
-                message: "Xóa JD thất bại",
+                message: "Khong xoa duoc JD",
                 error: error.message
             });
         }
     }
 );
-
 
 module.exports = router;
