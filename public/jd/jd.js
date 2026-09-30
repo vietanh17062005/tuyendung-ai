@@ -16,17 +16,19 @@ const noiDungXacNhan = document.getElementById("noiDungXacNhan");
 const btnXacNhan = document.getElementById("btnXacNhan");
 const btnHuyXacNhan = document.getElementById("btnHuyXacNhan");
 
-let hanhDongXacNhan = null;
-
-// Kiểm tra đăng nhập
-if (!token) {
-    window.location.href = "/login/login.html";
-}
-
-// Lấy thông tin người dùng
 const nguoiDung = JSON.parse(
     localStorage.getItem("nguoiDung") || "{}"
 );
+
+let hanhDongXacNhan = null;
+
+// Kiểm tra quyền duyệt
+function coQuyenDuyet() {
+    return (
+        nguoiDung.vai_tro === "admin" ||
+        nguoiDung.vai_tro === "manager"
+    );
+}
 
 // Lấy danh sách đợt tuyển dụng
 async function layDotTuyen() {
@@ -98,8 +100,10 @@ async function layDanhSachJD() {
         }
 
         data.forEach(function (jd) {
+
             const tr = document.createElement("tr");
 
+            // Nút Sửa
             let nutSua = "";
 
             if (jd.trang_thai !== "da_duyet") {
@@ -113,6 +117,7 @@ async function layDanhSachJD() {
                 `;
             }
 
+            // Nút Gửi duyệt
             let nutGuiDuyet = "";
 
             if (jd.trang_thai === "nhap") {
@@ -126,14 +131,12 @@ async function layDanhSachJD() {
                 `;
             }
 
+            // Nút Duyệt
             let nutDuyet = "";
 
             if (
                 jd.trang_thai === "cho_duyet" &&
-                (
-                    nguoiDung.vai_tro === "admin" ||
-                    nguoiDung.vai_tro === "manager"
-                )
+                coQuyenDuyet()
             ) {
                 nutDuyet = `
                     <button
@@ -145,6 +148,7 @@ async function layDanhSachJD() {
                 `;
             }
 
+            // Nút Xóa
             let nutXoa = "";
 
             if (
@@ -182,10 +186,11 @@ async function layDanhSachJD() {
                 </td>
 
                 <td>
-                    ${jd.ten_nguoi_duyet
-                    ? escapeHTML(jd.ten_nguoi_duyet)
-                    : "-"
-                }
+                    ${
+                        jd.ten_nguoi_duyet
+                            ? escapeHTML(jd.ten_nguoi_duyet)
+                            : "-"
+                    }
                 </td>
 
                 <td>
@@ -271,6 +276,7 @@ formJD.addEventListener("submit", async function (event) {
     };
 
     try {
+
         let url = "/api/jd";
         let method = "POST";
 
@@ -322,7 +328,9 @@ formJD.addEventListener("submit", async function (event) {
 
 // Sửa JD
 async function suaJD(id) {
+
     try {
+
         const response = await fetch(
             "/api/jd/" + id,
             {
@@ -363,6 +371,7 @@ async function suaJD(id) {
         let tieuChi = jd.tieu_chi;
 
         if (typeof tieuChi === "string") {
+
             try {
                 tieuChi = JSON.parse(tieuChi);
             } catch (error) {
@@ -371,9 +380,12 @@ async function suaJD(id) {
         }
 
         if (tieuChi && tieuChi.noi_dung) {
+
             document.getElementById("tieuChi").value =
                 tieuChi.noi_dung;
+
         } else {
+
             document.getElementById("tieuChi").value = "";
         }
 
@@ -384,6 +396,7 @@ async function suaJD(id) {
         modal.classList.add("show");
 
     } catch (error) {
+
         console.error(error);
 
         hienThongBao(
@@ -402,6 +415,7 @@ function guiDuyetJD(id) {
         async function () {
 
             try {
+
                 const response = await fetch(
                     "/api/jd/" + id + "/gui-duyet",
                     {
@@ -417,8 +431,9 @@ function guiDuyetJD(id) {
                 const data = await response.json();
 
                 if (!response.ok) {
+
                     hienThongBao(
-                        data.message,
+                        data.message || "Không gửi duyệt được JD",
                         "loi"
                     );
 
@@ -430,9 +445,10 @@ function guiDuyetJD(id) {
                     "thanh-cong"
                 );
 
-                layDanhSachJD();
+                await layDanhSachJD();
 
             } catch (error) {
+
                 console.error(error);
 
                 hienThongBao(
@@ -447,12 +463,22 @@ function guiDuyetJD(id) {
 // Duyệt JD
 function duyetJD(id) {
 
+    if (!coQuyenDuyet()) {
+        hienThongBao(
+            "Bạn không có quyền duyệt JD",
+            "loi"
+        );
+
+        return;
+    }
+
     moXacNhan(
         "Duyệt JD",
         "Bạn có chắc muốn duyệt JD này?",
         async function () {
 
             try {
+
                 const response = await fetch(
                     "/api/jd/" + id + "/duyet",
                     {
@@ -468,8 +494,9 @@ function duyetJD(id) {
                 const data = await response.json();
 
                 if (!response.ok) {
+
                     hienThongBao(
-                        data.message,
+                        data.message || "Không duyệt được JD",
                         "loi"
                     );
 
@@ -481,9 +508,10 @@ function duyetJD(id) {
                     "thanh-cong"
                 );
 
-                layDanhSachJD();
+                await layDanhSachJD();
 
             } catch (error) {
+
                 console.error(error);
 
                 hienThongBao(
@@ -504,6 +532,7 @@ function xoaJD(id) {
         async function () {
 
             try {
+
                 const response = await fetch(
                     "/api/jd/" + id,
                     {
@@ -519,8 +548,9 @@ function xoaJD(id) {
                 const data = await response.json();
 
                 if (!response.ok) {
+
                     hienThongBao(
-                        data.message,
+                        data.message || "Không xóa được JD",
                         "loi"
                     );
 
@@ -532,9 +562,10 @@ function xoaJD(id) {
                     "thanh-cong"
                 );
 
-                layDanhSachJD();
+                await layDanhSachJD();
 
             } catch (error) {
+
                 console.error(error);
 
                 hienThongBao(
@@ -547,9 +578,14 @@ function xoaJD(id) {
 }
 
 // Modal xác nhận
-function moXacNhan(tieuDe, noiDung, hanhDong) {
+function moXacNhan(
+    tieuDe,
+    noiDung,
+    hanhDong
+) {
 
     tieuDeXacNhan.textContent = tieuDe;
+
     noiDungXacNhan.textContent = noiDung;
 
     hanhDongXacNhan = hanhDong;
@@ -562,6 +598,7 @@ btnXacNhan.addEventListener(
     async function () {
 
         if (hanhDongXacNhan) {
+
             const hanhDong = hanhDongXacNhan;
 
             dongXacNhan();
@@ -577,7 +614,9 @@ btnHuyXacNhan.addEventListener(
 );
 
 function dongXacNhan() {
+
     modalXacNhan.classList.remove("show");
+
     hanhDongXacNhan = null;
 }
 
@@ -596,6 +635,10 @@ function layTenTrangThai(trangThai) {
         return "Đã duyệt";
     }
 
+    if (trangThai === "tu_choi") {
+        return "Từ chối";
+    }
+
     return trangThai;
 }
 
@@ -612,7 +655,10 @@ function formatNgay(ngay) {
 }
 
 // Thông báo
-function hienThongBao(noiDung, loai) {
+function hienThongBao(
+    noiDung,
+    loai
+) {
 
     thongBao.innerHTML = `
         <div class="thong-bao ${loai}">
@@ -625,10 +671,13 @@ function hienThongBao(noiDung, loai) {
     }, 3000);
 }
 
-// Chống chèn HTML từ dữ liệu
+// Chống chèn HTML
 function escapeHTML(text) {
 
-    if (text === null || text === undefined) {
+    if (
+        text === null ||
+        text === undefined
+    ) {
         return "";
     }
 

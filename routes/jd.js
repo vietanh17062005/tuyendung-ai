@@ -31,7 +31,7 @@ router.get("/", kiemTraDangNhap, async function (req, res) {
                 ON jd.dot_tuyen_id = dt.id
             LEFT JOIN nguoi_dung AS nd
                 ON jd.nguoi_duyet_id = nd.id
-            ORDER BY jd.id DESC
+            ORDER BY jd.id ASC
         `);
 
         res.json(rows);
