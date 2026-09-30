@@ -1,5 +1,4 @@
 const express = require("express");
-
 const db = require("../database/db");
 
 const {
@@ -9,17 +8,13 @@ const {
 const router = express.Router();
 
 
-/* Lấy thông tin tài khoản */
-
+// Lấy thông tin tài khoản
 router.get(
     "/",
     kiemTraDangNhap,
     async function (req, res) {
-
         try {
-
-            const [rows] = await db.query(
-                `
+            const [rows] = await db.query(`
                 SELECT
                     id,
                     ho_ten,
@@ -29,227 +24,170 @@ router.get(
                     ngay_tao
                 FROM nguoi_dung
                 WHERE id = ?
-                `,
-                [req.nguoiDung.id]
-            );
-
+            `, [
+                req.nguoiDung.id
+            ]);
 
             if (rows.length === 0) {
-
                 return res.status(404).json({
-                    message: "Khong tim thay tai khoan"
+                    message: "Không tìm thấy tài khoản"
                 });
-
             }
-
 
             res.json(rows[0]);
 
         } catch (error) {
-
-            console.error(error);
+            console.error("GET /api/tai-khoan:", error);
 
             res.status(500).json({
-                message:
-                    "Khong lay duoc thong tin tai khoan"
+                message: "Không lấy được thông tin tài khoản",
+                error: error.message
             });
-
         }
-
     }
 );
 
 
-/* Cập nhật thông tin tài khoản */
-
+// Cập nhật thông tin tài khoản
 router.put(
     "/",
     kiemTraDangNhap,
     async function (req, res) {
-
         try {
-
             const {
                 ho_ten,
                 email
             } = req.body;
 
-
-            if (!ho_ten || !email) {
-
+            if (
+                !ho_ten ||
+                !ho_ten.trim() ||
+                !email ||
+                !email.trim()
+            ) {
                 return res.status(400).json({
-                    message:
-                        "Vui long nhap day du thong tin"
+                    message: "Vui lòng nhập đầy đủ thông tin"
                 });
-
             }
 
+            const emailMoi = email.trim();
+            const hoTenMoi = ho_ten.trim();
 
-            const [emailTrung] =
-                await db.query(
-                    `
-                    SELECT id
-                    FROM nguoi_dung
-                    WHERE email = ?
-                    AND id <> ?
-                    `,
-                    [
-                        email,
-                        req.nguoiDung.id
-                    ]
-                );
-
+            const [emailTrung] = await db.query(`
+                SELECT id
+                FROM nguoi_dung
+                WHERE email = ?
+                AND id <> ?
+            `, [
+                emailMoi,
+                req.nguoiDung.id
+            ]);
 
             if (emailTrung.length > 0) {
-
                 return res.status(400).json({
-                    message:
-                        "Email da duoc su dung"
+                    message: "Email đã được sử dụng"
                 });
-
             }
 
-
-            await db.query(
-                `
+            await db.query(`
                 UPDATE nguoi_dung
                 SET
                     ho_ten = ?,
                     email = ?,
-                    ngay_sua = NOW()
+                    ngay_sua = CURRENT_TIMESTAMP
                 WHERE id = ?
-                `,
-                [
-                    ho_ten,
-                    email,
-                    req.nguoiDung.id
-                ]
-            );
-
+            `, [
+                hoTenMoi,
+                emailMoi,
+                req.nguoiDung.id
+            ]);
 
             res.json({
-                message:
-                    "Cap nhat thong tin thanh cong"
+                message: "Cập nhật thông tin thành công"
             });
 
         } catch (error) {
-
-            console.error(error);
+            console.error("PUT /api/tai-khoan:", error);
 
             res.status(500).json({
-                message:
-                    "Khong cap nhat duoc thong tin"
+                message: "Không cập nhật được thông tin",
+                error: error.message
             });
-
         }
-
     }
 );
 
 
-/* Đổi mật khẩu */
-
+// Đổi mật khẩu
 router.put(
     "/mat-khau",
     kiemTraDangNhap,
     async function (req, res) {
-
         try {
-
             const {
                 mat_khau_cu,
                 mat_khau_moi
             } = req.body;
 
-
-            if (
-                !mat_khau_cu ||
-                !mat_khau_moi
-            ) {
-
+            if (!mat_khau_cu || !mat_khau_moi) {
                 return res.status(400).json({
-                    message:
-                        "Vui long nhap day du mat khau"
+                    message: "Vui lòng nhập đầy đủ mật khẩu"
                 });
-
             }
-
 
             if (mat_khau_moi.length < 6) {
-
                 return res.status(400).json({
                     message:
-                        "Mat khau moi phai co it nhat 6 ky tu"
+                        "Mật khẩu mới phải có ít nhất 6 ký tự"
                 });
-
             }
 
-
-            const [rows] =
-                await db.query(
-                    `
-                    SELECT mat_khau
-                    FROM nguoi_dung
-                    WHERE id = ?
-                    `,
-                    [req.nguoiDung.id]
-                );
-
+            const [rows] = await db.query(`
+                SELECT mat_khau
+                FROM nguoi_dung
+                WHERE id = ?
+            `, [
+                req.nguoiDung.id
+            ]);
 
             if (rows.length === 0) {
-
                 return res.status(404).json({
-                    message:
-                        "Khong tim thay tai khoan"
+                    message: "Không tìm thấy tài khoản"
                 });
-
             }
 
-
-            if (
-                rows[0].mat_khau !==
-                mat_khau_cu
-            ) {
-
+            if (rows[0].mat_khau !== mat_khau_cu) {
                 return res.status(400).json({
-                    message:
-                        "Mat khau cu khong dung"
+                    message: "Mật khẩu cũ không đúng"
                 });
-
             }
 
-
-            await db.query(
-                `
+            await db.query(`
                 UPDATE nguoi_dung
                 SET
                     mat_khau = ?,
-                    ngay_sua = NOW()
+                    ngay_sua = CURRENT_TIMESTAMP
                 WHERE id = ?
-                `,
-                [
-                    mat_khau_moi,
-                    req.nguoiDung.id
-                ]
-            );
-
+            `, [
+                mat_khau_moi,
+                req.nguoiDung.id
+            ]);
 
             res.json({
-                message:
-                    "Doi mat khau thanh cong"
+                message: "Đổi mật khẩu thành công"
             });
 
         } catch (error) {
-
-            console.error(error);
+            console.error(
+                "PUT /api/tai-khoan/mat-khau:",
+                error
+            );
 
             res.status(500).json({
-                message:
-                    "Khong doi duoc mat khau"
+                message: "Không đổi được mật khẩu",
+                error: error.message
             });
-
         }
-
     }
 );
 

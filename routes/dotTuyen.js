@@ -9,90 +9,86 @@ const {
 const router = express.Router();
 
 
-router.get(
-    "/",
-    kiemTraDangNhap,
-    async function (req, res) {
-        try {
-            const [rows] = await db.query(`
-                SELECT
-                    d.id,
-                    d.ten,
-                    d.mo_ta,
-                    d.trang_thai,
-                    d.nguoi_tao,
-                    DATE_FORMAT(d.ngay_bat_dau, '%Y-%m-%d') AS ngay_bat_dau,
-                    DATE_FORMAT(d.ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc,
-                    d.ngay_tao,
-                    d.ngay_sua,
-                    n.ho_ten AS nguoi_tao_ten
-                FROM dot_tuyen d
-                LEFT JOIN nguoi_dung n
-                    ON d.nguoi_tao = n.id
-                ORDER BY d.id DESC
-            `);
+// Lấy danh sách đợt tuyển
+router.get("/", kiemTraDangNhap, async function (req, res) {
+    try {
+        const [rows] = await db.query(`
+            SELECT
+                d.id,
+                d.ten,
+                d.mo_ta,
+                d.trang_thai,
+                d.nguoi_tao,
+                DATE_FORMAT(d.ngay_bat_dau, '%Y-%m-%d') AS ngay_bat_dau,
+                DATE_FORMAT(d.ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc,
+                d.ngay_tao,
+                d.ngay_sua,
+                n.ho_ten AS nguoi_tao_ten
+            FROM dot_tuyen AS d
+            LEFT JOIN nguoi_dung AS n
+                ON d.nguoi_tao = n.id
+            ORDER BY d.id DESC
+        `);
 
-            res.json(rows);
+        res.json(rows);
 
-        } catch (error) {
-            console.error(error);
+    } catch (error) {
+        console.error("GET /api/dot-tuyen:", error);
 
-            res.status(500).json({
-                message: "Không lấy được danh sách đợt tuyển"
+        res.status(500).json({
+            message: "Không lấy được danh sách đợt tuyển",
+            error: error.message
+        });
+    }
+});
+
+
+// Lấy chi tiết đợt tuyển
+router.get("/:id", kiemTraDangNhap, async function (req, res) {
+    try {
+        const [rows] = await db.query(`
+            SELECT
+                d.id,
+                d.ten,
+                d.mo_ta,
+                d.trang_thai,
+                d.nguoi_tao,
+                DATE_FORMAT(d.ngay_bat_dau, '%Y-%m-%d') AS ngay_bat_dau,
+                DATE_FORMAT(d.ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc,
+                d.ngay_tao,
+                d.ngay_sua,
+                n.ho_ten AS nguoi_tao_ten
+            FROM dot_tuyen AS d
+            LEFT JOIN nguoi_dung AS n
+                ON d.nguoi_tao = n.id
+            WHERE d.id = ?
+        `, [req.params.id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                message: "Không tìm thấy đợt tuyển"
             });
         }
+
+        res.json(rows[0]);
+
+    } catch (error) {
+        console.error("GET /api/dot-tuyen/:id:", error);
+
+        res.status(500).json({
+            message: "Không lấy được thông tin đợt tuyển",
+            error: error.message
+        });
     }
-);
+});
 
 
-router.get(
-    "/:id",
-    kiemTraDangNhap,
-    async function (req, res) {
-        try {
-            const [rows] = await db.query(`
-                SELECT
-                    d.id,
-                    d.ten,
-                    d.mo_ta,
-                    d.trang_thai,
-                    d.nguoi_tao,
-                    DATE_FORMAT(d.ngay_bat_dau, '%Y-%m-%d') AS ngay_bat_dau,
-                    DATE_FORMAT(d.ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc,
-                    d.ngay_tao,
-                    d.ngay_sua,
-                    n.ho_ten AS nguoi_tao_ten
-                FROM dot_tuyen d
-                LEFT JOIN nguoi_dung n
-                    ON d.nguoi_tao = n.id
-                WHERE d.id = ?
-            `, [req.params.id]);
-
-            if (rows.length === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy đợt tuyển"
-                });
-            }
-
-            res.json(rows[0]);
-
-        } catch (error) {
-            console.error(error);
-
-            res.status(500).json({
-                message: "Không lấy được thông tin đợt tuyển"
-            });
-        }
-    }
-);
-
-
+// Thêm đợt tuyển
 router.post(
     "/",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager"),
     async function (req, res) {
-
         try {
             const {
                 ten,
@@ -133,7 +129,7 @@ router.post(
                 VALUES (?, ?, ?, ?, ?, ?)
             `, [
                 ten.trim(),
-                mo_ta || "",
+                mo_ta ? mo_ta.trim() : "",
                 trang_thai || "nhap",
                 req.nguoiDung.id,
                 ngay_bat_dau,
@@ -146,22 +142,23 @@ router.post(
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("POST /api/dot-tuyen:", error);
 
             res.status(500).json({
-                message: "Không thêm được đợt tuyển"
+                message: "Không thêm được đợt tuyển",
+                error: error.message
             });
         }
     }
 );
 
 
+// Cập nhật đợt tuyển
 router.put(
     "/:id",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager"),
     async function (req, res) {
-
         try {
             const {
                 ten,
@@ -201,7 +198,7 @@ router.put(
                 WHERE id = ?
             `, [
                 ten.trim(),
-                mo_ta || "",
+                mo_ta ? mo_ta.trim() : "",
                 trang_thai || "nhap",
                 ngay_bat_dau,
                 ngay_ket_thuc,
@@ -219,22 +216,23 @@ router.put(
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("PUT /api/dot-tuyen/:id:", error);
 
             res.status(500).json({
-                message: "Không cập nhật được đợt tuyển"
+                message: "Không cập nhật được đợt tuyển",
+                error: error.message
             });
         }
     }
 );
 
 
+// Xóa đợt tuyển
 router.delete(
     "/:id",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager"),
     async function (req, res) {
-
         try {
             const [result] = await db.query(
                 "DELETE FROM dot_tuyen WHERE id = ?",
@@ -245,7 +243,6 @@ router.delete(
                 return res.status(404).json({
                     message: "Không tìm thấy đợt tuyển"
                 });
-
             }
 
             res.json({
@@ -253,10 +250,11 @@ router.delete(
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("DELETE /api/dot-tuyen/:id:", error);
 
             res.status(500).json({
-                message: "Không xóa được đợt tuyển"
+                message: "Không xóa được đợt tuyển",
+                error: error.message
             });
         }
     }

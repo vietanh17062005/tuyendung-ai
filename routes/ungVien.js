@@ -1,7 +1,4 @@
 const express = require("express");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
 const db = require("../database/db");
 
 const {
@@ -11,146 +8,72 @@ const {
 
 const router = express.Router();
 
-const dangChayVercel = process.env.VERCEL === "1";
-const thuMucUpload = path.join(__dirname, "../uploads/cv");
 
-if (!dangChayVercel && !fs.existsSync(thuMucUpload)) {
-    fs.mkdirSync(thuMucUpload, { recursive: true });
-}
+// Lấy danh sách JD
+router.get("/", kiemTraDangNhap, async function (req, res) {
+    try {
+        const [rows] = await db.query(`
+            SELECT
+                jd.*,
+                dt.ten AS ten_dot_tuyen,
+                nd.ho_ten AS ten_nguoi_duyet
+            FROM jd
+            INNER JOIN dot_tuyen AS dt
+                ON jd.dot_tuyen_id = dt.id
+            LEFT JOIN nguoi_dung AS nd
+                ON jd.nguoi_duyet = nd.id
+            ORDER BY jd.id DESC
+        `);
 
-const storage = dangChayVercel
-    ? multer.memoryStorage()
-    : multer.diskStorage({
-        destination: function (req, file, cb) {
-            cb(null, thuMucUpload);
-        },
-        filename: function (req, file, cb) {
-            const tenGoc = path
-                .basename(file.originalname)
-                .replace(/[^a-zA-Z0-9._-]/g, "_");
+        res.json(rows);
 
-            cb(null, Date.now() + "_" + tenGoc);
-        }
-    });
+    } catch (error) {
+        console.error("GET /api/jd:", error);
 
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 10 * 1024 * 1024
-    },
-    fileFilter: function (req, file, cb) {
-        const duoiFile = path.extname(file.originalname).toLowerCase();
-
-        const danhSachDuocPhep = [
-            ".pdf",
-            ".doc",
-            ".docx",
-            ".jpg",
-            ".jpeg",
-            ".png"
-        ];
-
-        if (!danhSachDuocPhep.includes(duoiFile)) {
-            return cb(
-                new Error(
-                    "Chỉ cho phép PDF, DOC, DOCX, JPG, JPEG, PNG"
-                )
-            );
-        }
-
-        cb(null, true);
+        res.status(500).json({
+            message: "Không lấy được danh sách JD",
+            error: error.message
+        });
     }
 });
 
-router.get(
-    "/",
-    kiemTraDangNhap,
-    async function (req, res) {
-        try {
-            const { dot_tuyen_id } = req.query;
 
-            let sql = `
-                SELECT
-                    uv.*,
-                    dt.ten AS ten_dot_tuyen,
-                    cv.id AS cv_id,
-                    cv.ten_file,
-                    cv.loai_file,
-                    cv.kich_thuoc,
-                    cv.ngay_tai
-                FROM ung_vien AS uv
-                JOIN dot_tuyen AS dt
-                    ON uv.dot_tuyen_id = dt.id
-                LEFT JOIN cv
-                    ON cv.ung_vien_id = uv.id
-            `;
+// Lấy chi tiết JD
+router.get("/:id", kiemTraDangNhap, async function (req, res) {
+    try {
+        const [rows] = await db.query(`
+            SELECT
+                jd.*,
+                dt.ten AS ten_dot_tuyen,
+                nd.ho_ten AS ten_nguoi_duyet
+            FROM jd
+            INNER JOIN dot_tuyen AS dt
+                ON jd.dot_tuyen_id = dt.id
+            LEFT JOIN nguoi_dung AS nd
+                ON jd.nguoi_duyet = nd.id
+            WHERE jd.id = ?
+        `, [req.params.id]);
 
-            const params = [];
-
-            if (dot_tuyen_id) {
-                sql += " WHERE uv.dot_tuyen_id = ?";
-                params.push(dot_tuyen_id);
-            }
-
-            sql += " ORDER BY uv.id DESC";
-
-            const [rows] = await db.query(sql, params);
-
-            res.json(rows);
-
-        } catch (error) {
-            console.error(error);
-
-            res.status(500).json({
-                message: "Không lấy được danh sách ứng viên"
+        if (rows.length === 0) {
+            return res.status(404).json({
+                message: "Không tìm thấy JD"
             });
         }
+
+        res.json(rows[0]);
+
+    } catch (error) {
+        console.error("GET /api/jd/:id:", error);
+
+        res.status(500).json({
+            message: "Không lấy được JD",
+            error: error.message
+        });
     }
-);
+});
 
-router.get(
-    "/:id",
-    kiemTraDangNhap,
-    async function (req, res) {
-        try {
-            const [rows] = await db.query(`
-                SELECT
-                    uv.*,
-                    dt.ten AS ten_dot_tuyen
-                FROM ung_vien AS uv
-                JOIN dot_tuyen AS dt
-                    ON uv.dot_tuyen_id = dt.id
-                WHERE uv.id = ?
-            `, [req.params.id]);
 
-            if (rows.length === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy ứng viên"
-                });
-            }
-
-            const [cv] = await db.query(`
-                SELECT *
-                FROM cv
-                WHERE ung_vien_id = ?
-                ORDER BY id DESC
-            `, [req.params.id]);
-
-            res.json({
-                ung_vien: rows[0],
-                cv: cv
-            });
-
-        } catch (error) {
-            console.error(error);
-
-            res.status(500).json({
-                message: "Không lấy được ứng viên"
-            });
-        }
-    }
-);
-
+// Tạo JD
 router.post(
     "/",
     kiemTraDangNhap,
@@ -159,70 +82,71 @@ router.post(
         try {
             const {
                 dot_tuyen_id,
-                ho_ten,
-                email,
-                sdt,
-                nguon,
-                ghi_chu
+                tieu_de,
+                mo_ta,
+                yeu_cau,
+                quyen_loi,
+                tieu_chi
             } = req.body;
 
-            if (!dot_tuyen_id || !ho_ten) {
+            if (!dot_tuyen_id || !tieu_de || !tieu_de.trim()) {
                 return res.status(400).json({
-                    message: "Vui lòng nhập đợt tuyển dụng và họ tên"
+                    message: "Vui lòng nhập đợt tuyển dụng và tiêu đề JD"
                 });
             }
 
-            if (email) {
-                const [trungEmail] = await db.query(`
-                    SELECT id
-                    FROM ung_vien
-                    WHERE dot_tuyen_id = ?
-                    AND email = ?
-                `, [dot_tuyen_id, email]);
+            const [dotTuyen] = await db.query(
+                "SELECT id FROM dot_tuyen WHERE id = ?",
+                [dot_tuyen_id]
+            );
 
-                if (trungEmail.length > 0) {
-                    return res.status(400).json({
-                        message:
-                            "Ứng viên có email này đã tồn tại trong đợt tuyển dụng"
-                    });
-                }
+            if (dotTuyen.length === 0) {
+                return res.status(400).json({
+                    message: "Đợt tuyển dụng không tồn tại"
+                });
             }
 
             const [result] = await db.query(`
-                INSERT INTO ung_vien (
+                INSERT INTO jd
+                (
                     dot_tuyen_id,
-                    ho_ten,
-                    email,
-                    sdt,
-                    nguon,
-                    trang_thai,
-                    ghi_chu
+                    tieu_de,
+                    mo_ta,
+                    yeu_cau,
+                    quyen_loi,
+                    tieu_chi,
+                    trang_thai
                 )
-                VALUES (?, ?, ?, ?, ?, 'moi', ?)
+                VALUES (?, ?, ?, ?, ?, ?, 'nhap')
             `, [
                 dot_tuyen_id,
-                ho_ten,
-                email || null,
-                sdt || null,
-                nguon || null,
-                ghi_chu || null
+                tieu_de.trim(),
+                mo_ta || null,
+                yeu_cau || null,
+                quyen_loi || null,
+                tieu_chi
+                    ? JSON.stringify(tieu_chi)
+                    : null
             ]);
 
             res.status(201).json({
-                message: "Thêm ứng viên thành công",
+                message: "Tạo JD thành công",
                 id: result.insertId
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("POST /api/jd:", error);
 
             res.status(500).json({
-                message: "Thêm ứng viên thất bại"
+                message: "Tạo JD thất bại",
+                error: error.message
             });
         }
     }
 );
 
+
+// Sửa JD
 router.put(
     "/:id",
     kiemTraDangNhap,
@@ -231,319 +155,230 @@ router.put(
         try {
             const {
                 dot_tuyen_id,
-                ho_ten,
-                email,
-                sdt,
-                nguon,
-                trang_thai,
-                ghi_chu
+                tieu_de,
+                mo_ta,
+                yeu_cau,
+                quyen_loi,
+                tieu_chi
             } = req.body;
 
-            const [result] = await db.query(`
-                UPDATE ung_vien
+            if (!dot_tuyen_id || !tieu_de || !tieu_de.trim()) {
+                return res.status(400).json({
+                    message: "Vui lòng nhập đầy đủ thông tin JD"
+                });
+            }
+
+            const [jd] = await db.query(
+                "SELECT trang_thai FROM jd WHERE id = ?",
+                [req.params.id]
+            );
+
+            if (jd.length === 0) {
+                return res.status(404).json({
+                    message: "Không tìm thấy JD"
+                });
+            }
+
+            if (jd[0].trang_thai === "da_duyet") {
+                return res.status(400).json({
+                    message: "JD đã được duyệt, không thể chỉnh sửa"
+                });
+            }
+
+            const [dotTuyen] = await db.query(
+                "SELECT id FROM dot_tuyen WHERE id = ?",
+                [dot_tuyen_id]
+            );
+
+            if (dotTuyen.length === 0) {
+                return res.status(400).json({
+                    message: "Đợt tuyển dụng không tồn tại"
+                });
+            }
+
+            await db.query(`
+                UPDATE jd
                 SET
                     dot_tuyen_id = ?,
-                    ho_ten = ?,
-                    email = ?,
-                    sdt = ?,
-                    nguon = ?,
-                    trang_thai = ?,
-                    ghi_chu = ?,
+                    tieu_de = ?,
+                    mo_ta = ?,
+                    yeu_cau = ?,
+                    quyen_loi = ?,
+                    tieu_chi = ?,
                     ngay_sua = CURRENT_TIMESTAMP
                 WHERE id = ?
             `, [
                 dot_tuyen_id,
-                ho_ten,
-                email || null,
-                sdt || null,
-                nguon || null,
-                trang_thai || "moi",
-                ghi_chu || null,
+                tieu_de.trim(),
+                mo_ta || null,
+                yeu_cau || null,
+                quyen_loi || null,
+                tieu_chi
+                    ? JSON.stringify(tieu_chi)
+                    : null,
                 req.params.id
             ]);
 
-            if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy ứng viên"
-                });
-            }
-
             res.json({
-                message: "Cập nhật ứng viên thành công"
+                message: "Cập nhật JD thành công"
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("PUT /api/jd/:id:", error);
 
             res.status(500).json({
-                message: "Cập nhật ứng viên thất bại"
+                message: "Cập nhật JD thất bại",
+                error: error.message
             });
         }
     }
 );
 
-router.post(
-    "/:id/cv",
+
+// Gửi JD để duyệt
+router.put(
+    "/:id/gui-duyet",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager", "hr"),
-    function (req, res) {
-        if (dangChayVercel) {
-            return res.status(503).json({
-                message:
-                    "Upload CV trên Vercel cần cấu hình lưu trữ file online"
-            });
-        }
+    async function (req, res) {
+        try {
+            const [jd] = await db.query(
+                "SELECT trang_thai FROM jd WHERE id = ?",
+                [req.params.id]
+            );
 
-        upload.single("cv")(req, res, async function (error) {
-            if (error) {
+            if (jd.length === 0) {
+                return res.status(404).json({
+                    message: "Không tìm thấy JD"
+                });
+            }
+
+            if (jd[0].trang_thai === "da_duyet") {
                 return res.status(400).json({
-                    message: error.message
+                    message: "JD đã được duyệt"
                 });
             }
 
-            try {
-                if (!req.file) {
-                    return res.status(400).json({
-                        message: "Vui lòng chọn file CV"
-                    });
-                }
-
-                const [ungVien] = await db.query(
-                    "SELECT id FROM ung_vien WHERE id = ?",
-                    [req.params.id]
-                );
-
-                if (ungVien.length === 0) {
-                    if (req.file.path && fs.existsSync(req.file.path)) {
-                        fs.unlinkSync(req.file.path);
-                    }
-
-                    return res.status(404).json({
-                        message: "Không tìm thấy ứng viên"
-                    });
-                }
-
-                const duoiFile = path
-                    .extname(req.file.originalname)
-                    .toLowerCase();
-
-                const [cvCu] = await db.query(`
-                    SELECT id
-                    FROM cv
-                    WHERE ung_vien_id = ?
-                    AND ten_file = ?
-                `, [
-                    req.params.id,
-                    req.file.originalname
-                ]);
-
-                if (cvCu.length > 0) {
-                    if (req.file.path && fs.existsSync(req.file.path)) {
-                        fs.unlinkSync(req.file.path);
-                    }
-
-                    return res.status(400).json({
-                        message: "CV này đã được tải lên trước đó"
-                    });
-                }
-
-                await db.query(`
-                    INSERT INTO cv (
-                        ung_vien_id,
-                        ten_file,
-                        duong_dan,
-                        loai_file,
-                        kich_thuoc,
-                        nguoi_tai
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?)
-                `, [
-                    req.params.id,
-                    req.file.originalname,
-                    req.file.filename,
-                    duoiFile,
-                    req.file.size,
-                    req.nguoiDung.id
-                ]);
-
-                res.json({
-                    message: "Upload CV thành công"
-                });
-
-            } catch (error) {
-                console.error(error);
-
-                if (
-                    req.file &&
-                    req.file.path &&
-                    fs.existsSync(req.file.path)
-                ) {
-                    fs.unlinkSync(req.file.path);
-                }
-
-                res.status(500).json({
-                    message: "Upload CV thất bại"
-                });
-            }
-        });
-    }
-);
-
-router.get(
-    "/:id/cv/:cvId",
-    kiemTraDangNhap,
-    async function (req, res) {
-        try {
-            const [rows] = await db.query(`
-                SELECT *
-                FROM cv
+            await db.query(`
+                UPDATE jd
+                SET
+                    trang_thai = 'cho_duyet',
+                    ngay_sua = CURRENT_TIMESTAMP
                 WHERE id = ?
-                AND ung_vien_id = ?
-            `, [
-                req.params.cvId,
-                req.params.id
-            ]);
-
-            if (rows.length === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy CV"
-                });
-            }
-
-            const cv = rows[0];
-
-            if (dangChayVercel) {
-                return res.status(503).json({
-                    message:
-                        "Tải CV trên Vercel cần cấu hình lưu trữ file online"
-                });
-            }
-
-            const duongDan = path.join(
-                thuMucUpload,
-                cv.duong_dan
-            );
-
-            if (!fs.existsSync(duongDan)) {
-                return res.status(404).json({
-                    message: "File CV không tồn tại"
-                });
-            }
-
-            res.download(duongDan, cv.ten_file);
-
-        } catch (error) {
-            console.error(error);
-
-            res.status(500).json({
-                message: "Không tải được CV"
-            });
-        }
-    }
-);
-
-router.delete(
-    "/:id/cv/:cvId",
-    kiemTraDangNhap,
-    kiemTraVaiTro("admin", "manager", "hr"),
-    async function (req, res) {
-        try {
-            const [rows] = await db.query(`
-                SELECT *
-                FROM cv
-                WHERE id = ?
-                AND ung_vien_id = ?
-            `, [
-                req.params.cvId,
-                req.params.id
-            ]);
-
-            if (rows.length === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy CV"
-                });
-            }
-
-            const cv = rows[0];
-
-            if (!dangChayVercel) {
-                const duongDan = path.join(
-                    thuMucUpload,
-                    cv.duong_dan
-                );
-
-                if (fs.existsSync(duongDan)) {
-                    fs.unlinkSync(duongDan);
-                }
-            }
-
-            await db.query(
-                "DELETE FROM cv WHERE id = ?",
-                [req.params.cvId]
-            );
+            `, [req.params.id]);
 
             res.json({
-                message: "Xóa CV thành công"
+                message: "Đã gửi JD chờ duyệt"
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("PUT /api/jd/:id/gui-duyet:", error);
 
             res.status(500).json({
-                message: "Xóa CV thất bại"
+                message: "Gửi duyệt JD thất bại",
+                error: error.message
             });
         }
     }
 );
 
+
+// Duyệt JD
+router.put(
+    "/:id/duyet",
+    kiemTraDangNhap,
+    kiemTraVaiTro("admin", "manager"),
+    async function (req, res) {
+        try {
+            const [jd] = await db.query(
+                "SELECT trang_thai FROM jd WHERE id = ?",
+                [req.params.id]
+            );
+
+            if (jd.length === 0) {
+                return res.status(404).json({
+                    message: "Không tìm thấy JD"
+                });
+            }
+
+            if (jd[0].trang_thai !== "cho_duyet") {
+                return res.status(400).json({
+                    message: "JD chưa ở trạng thái chờ duyệt"
+                });
+            }
+
+            await db.query(`
+                UPDATE jd
+                SET
+                    trang_thai = 'da_duyet',
+                    nguoi_duyet = ?,
+                    ngay_duyet = CURRENT_TIMESTAMP,
+                    ngay_sua = CURRENT_TIMESTAMP
+                WHERE id = ?
+            `, [
+                req.nguoiDung.id,
+                req.params.id
+            ]);
+
+            res.json({
+                message: "Duyệt JD thành công"
+            });
+
+        } catch (error) {
+            console.error("PUT /api/jd/:id/duyet:", error);
+
+            res.status(500).json({
+                message: "Duyệt JD thất bại",
+                error: error.message
+            });
+        }
+    }
+);
+
+
+// Xóa JD
 router.delete(
     "/:id",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager"),
     async function (req, res) {
         try {
-            const [cv] = await db.query(`
-                SELECT duong_dan
-                FROM cv
-                WHERE ung_vien_id = ?
-            `, [req.params.id]);
-
-            if (!dangChayVercel) {
-                for (const file of cv) {
-                    const duongDan = path.join(
-                        thuMucUpload,
-                        file.duong_dan
-                    );
-
-                    if (fs.existsSync(duongDan)) {
-                        fs.unlinkSync(duongDan);
-                    }
-                }
-            }
-
-            const [result] = await db.query(
-                "DELETE FROM ung_vien WHERE id = ?",
+            const [jd] = await db.query(
+                "SELECT trang_thai FROM jd WHERE id = ?",
                 [req.params.id]
             );
 
-            if (result.affectedRows === 0) {
+            if (jd.length === 0) {
                 return res.status(404).json({
-                    message: "Không tìm thấy ứng viên"
+                    message: "Không tìm thấy JD"
                 });
             }
 
+            if (jd[0].trang_thai === "da_duyet") {
+                return res.status(400).json({
+                    message: "JD đã duyệt không thể xóa"
+                });
+            }
+
+            await db.query(
+                "DELETE FROM jd WHERE id = ?",
+                [req.params.id]
+            );
+
             res.json({
-                message: "Xóa ứng viên thành công"
+                message: "Xóa JD thành công"
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("DELETE /api/jd/:id:", error);
 
             res.status(500).json({
-                message: "Xóa ứng viên thất bại"
+                message: "Xóa JD thất bại",
+                error: error.message
             });
         }
     }
 );
+
 
 module.exports = router;
