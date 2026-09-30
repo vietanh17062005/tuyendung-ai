@@ -6,16 +6,13 @@ const db = mysql.createPool({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-
     charset: "utf8mb4",
-
     ssl: {
         minVersion: "TLSv1.2"
     },
-
     waitForConnections: true,
     connectionLimit: 5,
     queueLimit: 0
 });
 
-module.exports = db;
+module.exports = db; v
