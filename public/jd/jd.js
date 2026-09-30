@@ -5,6 +5,9 @@ if (!token) {
 }
 
 const danhSachJD = document.getElementById("danhSachJD");
+const tongSo = document.getElementById("tongSo");
+const oTimKiem = document.getElementById("oTimKiem");
+const locTrangThai = document.getElementById("locTrangThai");
 const modal = document.getElementById("modal");
 const formJD = document.getElementById("formJD");
 const dotTuyenId = document.getElementById("dotTuyenId");
@@ -21,6 +24,7 @@ const nguoiDung = JSON.parse(
 );
 
 let hanhDongXacNhan = null;
+let tatCaJD = [];
 
 // Kiểm tra quyền duyệt
 function coQuyenDuyet() {
@@ -70,6 +74,162 @@ async function layDotTuyen() {
     }
 }
 
+function renderJD(data) {
+    if (tongSo) {
+        tongSo.textContent = `${data.length} JD`;
+    }
+
+    danhSachJD.innerHTML = "";
+
+    if (data.length === 0) {
+        danhSachJD.innerHTML = `
+            <tr>
+                <td colspan="7">
+                    Không tìm thấy JD nào
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+    data.forEach(function (jd) {
+        const tr = document.createElement("tr");
+
+        let nutSua = "";
+
+        if (jd.trang_thai !== "da_duyet") {
+            nutSua = `
+                <button
+                    class="btn-sua"
+                    onclick="suaJD(${jd.id})"
+                >
+                    Sửa
+                </button>
+            `;
+        }
+
+        let nutGuiDuyet = "";
+
+        if (jd.trang_thai === "nhap") {
+            nutGuiDuyet = `
+                <button
+                    class="btn-gui"
+                    onclick="guiDuyetJD(${jd.id})"
+                >
+                    Gửi duyệt
+                </button>
+            `;
+        }
+
+        let nutDuyet = "";
+
+        if (
+            jd.trang_thai === "cho_duyet" &&
+            coQuyenDuyet()
+        ) {
+            nutDuyet = `
+                <button
+                    class="btn-duyet"
+                    onclick="duyetJD(${jd.id})"
+                >
+                    Duyệt
+                </button>
+            `;
+        }
+
+        let nutXoa = "";
+
+        if (
+            (
+                nguoiDung.vai_tro === "admin" ||
+                nguoiDung.vai_tro === "manager"
+            ) &&
+            jd.trang_thai !== "da_duyet"
+        ) {
+            nutXoa = `
+                <button
+                    class="btn-xoa"
+                    onclick="xoaJD(${jd.id})"
+                >
+                    Xóa
+                </button>
+            `;
+        }
+
+        tr.innerHTML = `
+            <td>${jd.id}</td>
+
+            <td>
+                <strong>${escapeHTML(jd.tieu_de)}</strong>
+            </td>
+
+            <td>
+                ${escapeHTML(jd.ten_dot_tuyen)}
+            </td>
+
+            <td>
+                <span class="badge ${jd.trang_thai}">
+                    ${layTenTrangThai(jd.trang_thai)}
+                </span>
+            </td>
+
+            <td>
+                ${jd.ten_nguoi_duyet
+                ? escapeHTML(jd.ten_nguoi_duyet)
+                : "-"
+            }
+            </td>
+
+            <td>
+                ${formatNgay(jd.ngay_tao)}
+            </td>
+
+            <td class="action">
+                ${nutSua}
+                ${nutGuiDuyet}
+                ${nutDuyet}
+                ${nutXoa}
+            </td>
+        `;
+
+        danhSachJD.appendChild(tr);
+    });
+}
+
+function locDanhSachJD() {
+    const tuKhoa = (oTimKiem?.value || "").trim().toLowerCase();
+    const trangThaiLoc = (locTrangThai?.value || "").trim();
+
+    const danhSachLoc = tatCaJD.filter(function (jd) {
+        const tieuDe = (jd.tieu_de || "").toLowerCase();
+        const dotTuyen = (jd.ten_dot_tuyen || "").toLowerCase();
+        const trangThai = (jd.trang_thai || "").toLowerCase();
+
+        const dungTuKhoa =
+            !tuKhoa ||
+            tieuDe.includes(tuKhoa) ||
+            dotTuyen.includes(tuKhoa) ||
+            trangThai.includes(tuKhoa);
+
+        const dungTrangThai =
+            !trangThaiLoc ||
+            trangThai === trangThaiLoc;
+
+        return dungTuKhoa && dungTrangThai;
+    });
+
+    renderJD(danhSachLoc);
+}
+
+if (oTimKiem) {
+    oTimKiem.addEventListener("input", locDanhSachJD);
+}
+
+if (locTrangThai) {
+    locTrangThai.addEventListener("change", locDanhSachJD);
+}
+
 // Lấy danh sách JD
 async function layDanhSachJD() {
     try {
@@ -84,129 +244,8 @@ async function layDanhSachJD() {
         }
 
         const data = await response.json();
-
-        danhSachJD.innerHTML = "";
-
-        if (data.length === 0) {
-            danhSachJD.innerHTML = `
-                <tr>
-                    <td colspan="7">
-                        Chưa có JD nào
-                    </td>
-                </tr>
-            `;
-
-            return;
-        }
-
-        data.forEach(function (jd) {
-
-            const tr = document.createElement("tr");
-
-            // Nút Sửa
-            let nutSua = "";
-
-            if (jd.trang_thai !== "da_duyet") {
-                nutSua = `
-                    <button
-                        class="btn-sua"
-                        onclick="suaJD(${jd.id})"
-                    >
-                        Sửa
-                    </button>
-                `;
-            }
-
-            // Nút Gửi duyệt
-            let nutGuiDuyet = "";
-
-            if (jd.trang_thai === "nhap") {
-                nutGuiDuyet = `
-                    <button
-                        class="btn-gui"
-                        onclick="guiDuyetJD(${jd.id})"
-                    >
-                        Gửi duyệt
-                    </button>
-                `;
-            }
-
-            // Nút Duyệt
-            let nutDuyet = "";
-
-            if (
-                jd.trang_thai === "cho_duyet" &&
-                coQuyenDuyet()
-            ) {
-                nutDuyet = `
-                    <button
-                        class="btn-duyet"
-                        onclick="duyetJD(${jd.id})"
-                    >
-                        Duyệt
-                    </button>
-                `;
-            }
-
-            // Nút Xóa
-            let nutXoa = "";
-
-            if (
-                (
-                    nguoiDung.vai_tro === "admin" ||
-                    nguoiDung.vai_tro === "manager"
-                ) &&
-                jd.trang_thai !== "da_duyet"
-            ) {
-                nutXoa = `
-                    <button
-                        class="btn-xoa"
-                        onclick="xoaJD(${jd.id})"
-                    >
-                        Xóa
-                    </button>
-                `;
-            }
-
-            tr.innerHTML = `
-                <td>${jd.id}</td>
-
-                <td>
-                    <strong>${escapeHTML(jd.tieu_de)}</strong>
-                </td>
-
-                <td>
-                    ${escapeHTML(jd.ten_dot_tuyen)}
-                </td>
-
-                <td>
-                    <span class="badge ${jd.trang_thai}">
-                        ${layTenTrangThai(jd.trang_thai)}
-                    </span>
-                </td>
-
-                <td>
-                    ${
-                        jd.ten_nguoi_duyet
-                            ? escapeHTML(jd.ten_nguoi_duyet)
-                            : "-"
-                    }
-                </td>
-
-                <td>
-                    ${formatNgay(jd.ngay_tao)}
-                </td>
-
-                <td class="action">
-                    ${nutSua}
-                    ${nutGuiDuyet}
-                    ${nutDuyet}
-                    ${nutXoa}
-                </td>
-            `;
-
-            danhSachJD.appendChild(tr);
-        });
+        tatCaJD = data || [];
+        locDanhSachJD();
 
     } catch (error) {
         console.error(error);
