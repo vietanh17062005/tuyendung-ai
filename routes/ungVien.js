@@ -11,41 +11,35 @@ const {
 
 const router = express.Router();
 
+const dangChayVercel = process.env.VERCEL === "1";
 const thuMucUpload = path.join(__dirname, "../uploads/cv");
 
-if (!fs.existsSync(thuMucUpload)) {
-    fs.mkdirSync(thuMucUpload, {
-        recursive: true
-    });
+if (!dangChayVercel && !fs.existsSync(thuMucUpload)) {
+    fs.mkdirSync(thuMucUpload, { recursive: true });
 }
 
-const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
-        cb(null, thuMucUpload);
-    },
+const storage = dangChayVercel
+    ? multer.memoryStorage()
+    : multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, thuMucUpload);
+        },
+        filename: function (req, file, cb) {
+            const tenGoc = path
+                .basename(file.originalname)
+                .replace(/[^a-zA-Z0-9._-]/g, "_");
 
-    filename: function(req, file, cb) {
-        const tenGoc = path
-            .basename(file.originalname)
-            .replace(/[^a-zA-Z0-9._-]/g, "_");
-
-        const tenFile =
-            Date.now() + "_" + tenGoc;
-
-        cb(null, tenFile);
-    }
-});
+            cb(null, Date.now() + "_" + tenGoc);
+        }
+    });
 
 const upload = multer({
     storage: storage,
-
     limits: {
         fileSize: 10 * 1024 * 1024
     },
-
-    fileFilter: function(req, file, cb) {
-        const duoiFile =
-            path.extname(file.originalname).toLowerCase();
+    fileFilter: function (req, file, cb) {
+        const duoiFile = path.extname(file.originalname).toLowerCase();
 
         const danhSachDuocPhep = [
             ".pdf",
@@ -68,11 +62,10 @@ const upload = multer({
     }
 });
 
-// Lấy danh sách ứng viên
 router.get(
     "/",
     kiemTraDangNhap,
-    async function(req, res) {
+    async function (req, res) {
         try {
             const { dot_tuyen_id } = req.query;
 
@@ -95,21 +88,13 @@ router.get(
             const params = [];
 
             if (dot_tuyen_id) {
-                sql += `
-                    WHERE uv.dot_tuyen_id = ?
-                `;
-
+                sql += " WHERE uv.dot_tuyen_id = ?";
                 params.push(dot_tuyen_id);
             }
 
-            sql += `
-                ORDER BY uv.id DESC
-            `;
+            sql += " ORDER BY uv.id DESC";
 
-            const [rows] = await db.query(
-                sql,
-                params
-            );
+            const [rows] = await db.query(sql, params);
 
             res.json(rows);
 
@@ -123,11 +108,10 @@ router.get(
     }
 );
 
-// Lấy chi tiết ứng viên
 router.get(
     "/:id",
     kiemTraDangNhap,
-    async function(req, res) {
+    async function (req, res) {
         try {
             const [rows] = await db.query(`
                 SELECT
@@ -167,12 +151,11 @@ router.get(
     }
 );
 
-// Thêm ứng viên
 router.post(
     "/",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager", "hr"),
-    async function(req, res) {
+    async function (req, res) {
         try {
             const {
                 dot_tuyen_id,
@@ -185,8 +168,7 @@ router.post(
 
             if (!dot_tuyen_id || !ho_ten) {
                 return res.status(400).json({
-                    message:
-                        "Vui lòng nhập đợt tuyển dụng và họ tên"
+                    message: "Vui lòng nhập đợt tuyển dụng và họ tên"
                 });
             }
 
@@ -196,10 +178,7 @@ router.post(
                     FROM ung_vien
                     WHERE dot_tuyen_id = ?
                     AND email = ?
-                `, [
-                    dot_tuyen_id,
-                    email
-                ]);
+                `, [dot_tuyen_id, email]);
 
                 if (trungEmail.length > 0) {
                     return res.status(400).json({
@@ -244,12 +223,11 @@ router.post(
     }
 );
 
-// Sửa ứng viên
 router.put(
     "/:id",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager", "hr"),
-    async function(req, res) {
+    async function (req, res) {
         try {
             const {
                 dot_tuyen_id,
@@ -304,15 +282,19 @@ router.put(
     }
 );
 
-// Upload CV
 router.post(
     "/:id/cv",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager", "hr"),
-    function(req, res) {
+    function (req, res) {
+        if (dangChayVercel) {
+            return res.status(503).json({
+                message:
+                    "Upload CV trên Vercel cần cấu hình lưu trữ file online"
+            });
+        }
 
-        upload.single("cv")(req, res, async function(error) {
-
+        upload.single("cv")(req, res, async function (error) {
             if (error) {
                 return res.status(400).json({
                     message: error.message
@@ -332,17 +314,18 @@ router.post(
                 );
 
                 if (ungVien.length === 0) {
-                    fs.unlinkSync(req.file.path);
+                    if (req.file.path && fs.existsSync(req.file.path)) {
+                        fs.unlinkSync(req.file.path);
+                    }
 
                     return res.status(404).json({
                         message: "Không tìm thấy ứng viên"
                     });
                 }
 
-                const duoiFile =
-                    path.extname(
-                        req.file.originalname
-                    ).toLowerCase();
+                const duoiFile = path
+                    .extname(req.file.originalname)
+                    .toLowerCase();
 
                 const [cvCu] = await db.query(`
                     SELECT id
@@ -355,11 +338,12 @@ router.post(
                 ]);
 
                 if (cvCu.length > 0) {
-                    fs.unlinkSync(req.file.path);
+                    if (req.file.path && fs.existsSync(req.file.path)) {
+                        fs.unlinkSync(req.file.path);
+                    }
 
                     return res.status(400).json({
-                        message:
-                            "CV này đã được tải lên trước đó"
+                        message: "CV này đã được tải lên trước đó"
                     });
                 }
 
@@ -391,6 +375,7 @@ router.post(
 
                 if (
                     req.file &&
+                    req.file.path &&
                     fs.existsSync(req.file.path)
                 ) {
                     fs.unlinkSync(req.file.path);
@@ -404,11 +389,10 @@ router.post(
     }
 );
 
-// Tải CV
 router.get(
     "/:id/cv/:cvId",
     kiemTraDangNhap,
-    async function(req, res) {
+    async function (req, res) {
         try {
             const [rows] = await db.query(`
                 SELECT *
@@ -427,6 +411,13 @@ router.get(
             }
 
             const cv = rows[0];
+
+            if (dangChayVercel) {
+                return res.status(503).json({
+                    message:
+                        "Tải CV trên Vercel cần cấu hình lưu trữ file online"
+                });
+            }
 
             const duongDan = path.join(
                 thuMucUpload,
@@ -439,10 +430,7 @@ router.get(
                 });
             }
 
-            res.download(
-                duongDan,
-                cv.ten_file
-            );
+            res.download(duongDan, cv.ten_file);
 
         } catch (error) {
             console.error(error);
@@ -454,12 +442,11 @@ router.get(
     }
 );
 
-// Xóa CV
 router.delete(
     "/:id/cv/:cvId",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager", "hr"),
-    async function(req, res) {
+    async function (req, res) {
         try {
             const [rows] = await db.query(`
                 SELECT *
@@ -479,13 +466,15 @@ router.delete(
 
             const cv = rows[0];
 
-            const duongDan = path.join(
-                thuMucUpload,
-                cv.duong_dan
-            );
+            if (!dangChayVercel) {
+                const duongDan = path.join(
+                    thuMucUpload,
+                    cv.duong_dan
+                );
 
-            if (fs.existsSync(duongDan)) {
-                fs.unlinkSync(duongDan);
+                if (fs.existsSync(duongDan)) {
+                    fs.unlinkSync(duongDan);
+                }
             }
 
             await db.query(
@@ -507,12 +496,11 @@ router.delete(
     }
 );
 
-// Xóa ứng viên
 router.delete(
     "/:id",
     kiemTraDangNhap,
     kiemTraVaiTro("admin", "manager"),
-    async function(req, res) {
+    async function (req, res) {
         try {
             const [cv] = await db.query(`
                 SELECT duong_dan
@@ -520,14 +508,16 @@ router.delete(
                 WHERE ung_vien_id = ?
             `, [req.params.id]);
 
-            for (const file of cv) {
-                const duongDan = path.join(
-                    thuMucUpload,
-                    file.duong_dan
-                );
+            if (!dangChayVercel) {
+                for (const file of cv) {
+                    const duongDan = path.join(
+                        thuMucUpload,
+                        file.duong_dan
+                    );
 
-                if (fs.existsSync(duongDan)) {
-                    fs.unlinkSync(duongDan);
+                    if (fs.existsSync(duongDan)) {
+                        fs.unlinkSync(duongDan);
+                    }
                 }
             }
 
