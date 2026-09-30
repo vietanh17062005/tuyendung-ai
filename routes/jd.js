@@ -39,7 +39,7 @@ router.get("/", kiemTraDangNhap, async function (req, res) {
         console.error("GET /api/jd:", error);
 
         res.status(500).json({
-            message: "Khong lay duoc danh sach JD",
+            message: "Không lấy được danh sách JD",
             error: error.message
         });
     }
@@ -73,7 +73,7 @@ router.get("/:id", kiemTraDangNhap, async function (req, res) {
 
         if (rows.length === 0) {
             return res.status(404).json({
-                message: "Khong tim thay JD"
+                message: "Không tìm thấy JD"
             });
         }
 
@@ -82,7 +82,7 @@ router.get("/:id", kiemTraDangNhap, async function (req, res) {
         console.error("GET /api/jd/:id:", error);
 
         res.status(500).json({
-            message: "Khong lay duoc JD",
+            message: "Không lấy được JD",
             error: error.message
         });
     }
@@ -106,7 +106,7 @@ router.post(
 
             if (!dot_tuyen_id || !tieu_de) {
                 return res.status(400).json({
-                    message: "Vui long nhap day du thong tin JD"
+                    message: "Vui lòng nhập đầy đủ thông tin JD"
                 });
             }
 
@@ -133,14 +133,14 @@ router.post(
             ]);
 
             res.status(201).json({
-                message: "Tao JD thanh cong",
+                message: "Tạo JD thành công",
                 id: result.insertId
             });
         } catch (error) {
             console.error("POST /api/jd:", error);
 
             res.status(500).json({
-                message: "Khong tao duoc JD",
+                message: "Không tạo được JD",
                 error: error.message
             });
         }
@@ -165,7 +165,7 @@ router.put(
 
             if (!dot_tuyen_id || !tieu_de) {
                 return res.status(400).json({
-                    message: "Vui long nhap day du thong tin JD"
+                    message: "Vui lòng nhập đầy đủ thông tin JD"
                 });
             }
 
@@ -193,24 +193,76 @@ router.put(
 
             if (result.affectedRows === 0) {
                 return res.status(404).json({
-                    message: "Khong tim thay JD"
+                    message: "Không tìm thấy JD"
                 });
             }
 
             res.json({
-                message: "Cap nhat JD thanh cong"
+                message: "Cập nhật JD thành công"
             });
         } catch (error) {
             console.error("PUT /api/jd/:id:", error);
 
             res.status(500).json({
-                message: "Khong cap nhat duoc JD",
+                message: "Không cập nhật được JD",
                 error: error.message
             });
         }
     }
 );
 
+/*
+ * GUI DUYET JD
+ * nhap -> cho_duyet
+ */
+router.put(
+    "/:id/gui-duyet",
+    kiemTraDangNhap,
+    kiemTraVaiTro("admin", "manager", "hr"),
+    async function (req, res) {
+        try {
+            const [result] = await db.query(`
+                UPDATE jd
+                SET trang_thai = 'cho_duyet'
+                WHERE id = ?
+                AND trang_thai = 'nhap'
+            `, [req.params.id]);
+
+            if (result.affectedRows === 0) {
+                const [rows] = await db.query(
+                    "SELECT id, trang_thai FROM jd WHERE id = ?",
+                    [req.params.id]
+                );
+
+                if (rows.length === 0) {
+                    return res.status(404).json({
+                        message: "Không tìm thấy JD"
+                    });
+                }
+
+                return res.status(400).json({
+                    message: "JD không ở trạng thái Nháp"
+                });
+            }
+
+            res.json({
+                message: "Gửi duyệt JD thành công"
+            });
+        } catch (error) {
+            console.error("PUT /api/jd/:id/gui-duyet:", error);
+
+            res.status(500).json({
+                message: "Không gửi duyệt được JD",
+                error: error.message
+            });
+        }
+    }
+);
+
+/*
+ * DUYET JD
+ * cho_duyet -> da_duyet
+ */
 router.put(
     "/:id/duyet",
     kiemTraDangNhap,
@@ -224,25 +276,37 @@ router.put(
                     nguoi_duyet_id = ?,
                     ngay_duyet = NOW()
                 WHERE id = ?
+                AND trang_thai = 'cho_duyet'
             `, [
                 req.nguoiDung.id,
                 req.params.id
             ]);
 
             if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    message: "Khong tim thay JD"
+                const [rows] = await db.query(
+                    "SELECT id, trang_thai FROM jd WHERE id = ?",
+                    [req.params.id]
+                );
+
+                if (rows.length === 0) {
+                    return res.status(404).json({
+                        message: "Không tìm thấy JD"
+                    });
+                }
+
+                return res.status(400).json({
+                    message: "JD chưa được gửi duyệt"
                 });
             }
 
             res.json({
-                message: "Duyet JD thanh cong"
+                message: "Duyệt JD thành công"
             });
         } catch (error) {
             console.error("PUT /api/jd/:id/duyet:", error);
 
             res.status(500).json({
-                message: "Khong duyet duoc JD",
+                message: "Không duyệt được JD",
                 error: error.message
             });
         }
@@ -262,18 +326,18 @@ router.delete(
 
             if (result.affectedRows === 0) {
                 return res.status(404).json({
-                    message: "Khong tim thay JD"
+                    message: "Không tìm thấy JD"
                 });
             }
 
             res.json({
-                message: "Xoa JD thanh cong"
+                message: "Xóa JD thành công"
             });
         } catch (error) {
             console.error("DELETE /api/jd/:id:", error);
 
             res.status(500).json({
-                message: "Khong xoa duoc JD",
+                message: "Không xóa được JD",
                 error: error.message
             });
         }

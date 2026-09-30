@@ -38,7 +38,7 @@ router.get(
             console.error(error);
 
             res.status(500).json({
-                message: "Khong lay duoc danh sach nguoi dung"
+                message: "Không lấy được danh sách người dùng"
             });
         }
     }
@@ -66,7 +66,7 @@ router.post(
             if (!ho_ten || !email || !mat_khau || !vai_tro) {
 
                 return res.status(400).json({
-                    message: "Vui long nhap day du thong tin"
+                    message: "Vui lòng nhập đầy đủ thông tin"
                 });
             }
 
@@ -83,7 +83,7 @@ router.post(
             if (!vaiTroHopLe.includes(vai_tro)) {
 
                 return res.status(400).json({
-                    message: "Vai tro khong hop le"
+                    message: "Vai trò không hợp lệ"
                 });
             }
 
@@ -97,7 +97,7 @@ router.post(
             if (tonTai.length > 0) {
 
                 return res.status(400).json({
-                    message: "Email da ton tai"
+                    message: "Email đã tồn tại"
                 });
             }
 
@@ -125,7 +125,7 @@ router.post(
 
 
             res.json({
-                message: "Them nguoi dung thanh cong"
+                message: "Thêm người dùng thành công"
             });
 
         } catch (error) {
@@ -133,7 +133,7 @@ router.post(
             console.error(error);
 
             res.status(500).json({
-                message: "Khong them duoc nguoi dung"
+                message: "Không thêm được người dùng"
             });
         }
     }
@@ -163,7 +163,7 @@ router.put(
             if (!ho_ten || !email || !vai_tro) {
 
                 return res.status(400).json({
-                    message: "Vui long nhap day du thong tin"
+                    message: "Vui lòng nhập đầy đủ thông tin"
                 });
             }
 
@@ -180,7 +180,7 @@ router.put(
             if (!vaiTroHopLe.includes(vai_tro)) {
 
                 return res.status(400).json({
-                    message: "Vai tro khong hop le"
+                    message: "Vai trò không hợp lệ"
                 });
             }
 
@@ -199,7 +199,7 @@ router.put(
             if (emailTrung.length > 0) {
 
                 return res.status(400).json({
-                    message: "Email da duoc su dung"
+                    message: "Email đã được sử dụng"
                 });
             }
 
@@ -253,7 +253,7 @@ router.put(
 
 
             res.json({
-                message: "Cap nhat nguoi dung thanh cong"
+                message: "Cập nhật người dùng thành công"
             });
 
         } catch (error) {
@@ -261,7 +261,7 @@ router.put(
             console.error(error);
 
             res.status(500).json({
-                message: "Khong cap nhat duoc nguoi dung"
+                message: "Không cập nhật được người dùng"
             });
         }
     }
@@ -287,7 +287,7 @@ router.put(
             ) {
 
                 return res.status(400).json({
-                    message: "Trang thai khong hop le"
+                    message: "Trạng thái không hợp lệ"
                 });
             }
 
@@ -308,7 +308,7 @@ router.put(
 
 
             res.json({
-                message: "Cap nhat trang thai thanh cong"
+                message: "Cập nhật trạng thái thành công"
             });
 
         } catch (error) {
@@ -316,7 +316,7 @@ router.put(
             console.error(error);
 
             res.status(500).json({
-                message: "Khong cap nhat duoc trang thai"
+                message: "Không cập nhật được trạng thái"
             });
         }
     }

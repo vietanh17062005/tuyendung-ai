@@ -1,7 +1,3 @@
--- =========================================================
--- XÓA DATABASE CŨ VÀ TẠO LẠI
--- =========================================================
-
 DROP DATABASE IF EXISTS tuyendung_ai;
 
 CREATE DATABASE tuyendung_ai
@@ -11,11 +7,6 @@ COLLATE utf8mb4_unicode_ci;
 USE tuyendung_ai;
 
 SET NAMES utf8mb4;
-
-
--- =========================================================
--- 1. NGUOI DUNG
--- =========================================================
 
 CREATE TABLE nguoi_dung (
     id INT NOT NULL AUTO_INCREMENT,
@@ -27,7 +18,7 @@ CREATE TABLE nguoi_dung (
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ngay_sua DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     UNIQUE KEY email (email),
     KEY idx_nguoi_dung_vai_tro (vai_tro),
     KEY idx_nguoi_dung_trang_thai (trang_thai)
@@ -36,29 +27,19 @@ ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
 
-
 INSERT INTO nguoi_dung
 (id, ho_ten, email, mat_khau, vai_tro, trang_thai, ngay_tao, ngay_sua)
 VALUES
 (1, 'Admin', 'admin@gmail.com', '123456', 'admin', 'hoat_dong',
  '2026-09-23 15:45:31', '2026-09-24 11:14:09'),
-
 (2, 'Quản lý', 'manager@gmail.com', '123456', 'manager', 'hoat_dong',
  '2026-09-23 15:45:31', '2026-09-24 10:16:01'),
-
 (3, 'Nhân sự', 'hr@gmail.com', '123456', 'hr', 'hoat_dong',
  '2026-09-23 15:45:31', '2026-09-24 10:16:06'),
-
 (4, 'Phỏng vấn', 'interviewer@gmail.com', '123456', 'interviewer', 'hoat_dong',
  '2026-09-23 15:45:31', '2026-09-24 10:16:12'),
-
 (5, 'Người xem', 'viewer@gmail.com', '123456', 'viewer', 'hoat_dong',
  '2026-09-23 15:45:31', '2026-09-24 10:19:28');
-
-
--- =========================================================
--- 2. DOT TUYEN
--- =========================================================
 
 CREATE TABLE dot_tuyen (
     id INT NOT NULL AUTO_INCREMENT,
@@ -71,18 +52,17 @@ CREATE TABLE dot_tuyen (
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ngay_sua DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     KEY idx_dot_tuyen_trang_thai (trang_thai),
     KEY idx_dot_tuyen_nguoi_tao (nguoi_tao),
 
-    CONSTRAINT fk_dot_tuyen_nguoi_tao
+CONSTRAINT fk_dot_tuyen_nguoi_tao
         FOREIGN KEY (nguoi_tao)
         REFERENCES nguoi_dung (id)
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
 
 INSERT INTO dot_tuyen
 (id, ten, mo_ta, trang_thai, nguoi_tao, ngay_bat_dau, ngay_ket_thuc, ngay_tao, ngay_sua)
@@ -95,7 +75,6 @@ VALUES
  '2026-09-30',
  '2026-09-23 16:04:16',
  '2026-09-24 09:45:18'),
-
 (2, 'Tuyển thực tập sinh 2026',
  'Tuyển thực tập sinh AI',
  'tam_dung',
@@ -104,7 +83,6 @@ VALUES
  '2026-12-31',
  '2026-09-24 09:21:35',
  '2026-09-24 11:22:30'),
-
 (3, 'Tuyển dụng Tester',
  'Kiểm thử các phần mềm',
  'nhap',
@@ -113,11 +91,6 @@ VALUES
  '2027-02-02',
  '2026-09-24 11:21:24',
  '2026-09-24 11:42:10');
-
-
--- =========================================================
--- 3. JD
--- =========================================================
 
 CREATE TABLE jd (
     id INT NOT NULL AUTO_INCREMENT,
@@ -133,17 +106,17 @@ CREATE TABLE jd (
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ngay_sua DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     KEY idx_jd_dot_tuyen (dot_tuyen_id),
     KEY idx_jd_trang_thai (trang_thai),
     KEY idx_jd_nguoi_duyet (nguoi_duyet),
 
-    CONSTRAINT fk_jd_dot_tuyen
+CONSTRAINT fk_jd_dot_tuyen
         FOREIGN KEY (dot_tuyen_id)
         REFERENCES dot_tuyen (id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_jd_nguoi_duyet
+CONSTRAINT fk_jd_nguoi_duyet
         FOREIGN KEY (nguoi_duyet)
         REFERENCES nguoi_dung (id)
         ON DELETE SET NULL
@@ -151,7 +124,6 @@ CREATE TABLE jd (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
 
 INSERT INTO jd
 (id, dot_tuyen_id, tieu_de, mo_ta, yeu_cau, quyen_loi,
@@ -172,11 +144,6 @@ VALUES
     '2026-09-23 17:24:35'
 );
 
-
--- =========================================================
--- 4. UNG VIEN
--- =========================================================
-
 CREATE TABLE ung_vien (
     id INT NOT NULL AUTO_INCREMENT,
     dot_tuyen_id INT NOT NULL,
@@ -188,14 +155,13 @@ CREATE TABLE ung_vien (
     ghi_chu TEXT DEFAULT NULL,
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     ngay_sua DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-
     PRIMARY KEY (id),
     KEY idx_ung_vien_dot_tuyen (dot_tuyen_id),
     KEY idx_ung_vien_email (email),
     KEY idx_ung_vien_trang_thai (trang_thai),
     KEY idx_ung_vien_ho_ten (ho_ten),
 
-    CONSTRAINT fk_ung_vien_dot_tuyen
+CONSTRAINT fk_ung_vien_dot_tuyen
         FOREIGN KEY (dot_tuyen_id)
         REFERENCES dot_tuyen (id)
         ON DELETE CASCADE
@@ -203,11 +169,6 @@ CREATE TABLE ung_vien (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
-
--- =========================================================
--- 5. CV
--- =========================================================
 
 CREATE TABLE cv (
     id INT NOT NULL AUTO_INCREMENT,
@@ -219,15 +180,15 @@ CREATE TABLE cv (
     nguoi_tai INT NOT NULL,
     ngay_tai DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     KEY idx_cv_ung_vien (ung_vien_id),
     KEY idx_cv_nguoi_tai (nguoi_tai),
 
-    CONSTRAINT fk_cv_nguoi_tai
+CONSTRAINT fk_cv_nguoi_tai
         FOREIGN KEY (nguoi_tai)
         REFERENCES nguoi_dung (id),
 
-    CONSTRAINT fk_cv_ung_vien
+CONSTRAINT fk_cv_ung_vien
         FOREIGN KEY (ung_vien_id)
         REFERENCES ung_vien (id)
         ON DELETE CASCADE
@@ -235,11 +196,6 @@ CREATE TABLE cv (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
-
--- =========================================================
--- 6. PHAN TICH AI
--- =========================================================
 
 CREATE TABLE phan_tich_ai (
     id INT NOT NULL AUTO_INCREMENT,
@@ -257,23 +213,23 @@ CREATE TABLE phan_tich_ai (
     model VARCHAR(100) DEFAULT NULL,
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     KEY idx_ai_ung_vien (ung_vien_id),
     KEY idx_ai_cv (cv_id),
     KEY idx_ai_jd (jd_id),
     KEY idx_ai_diem (diem),
 
-    CONSTRAINT fk_ai_cv
+CONSTRAINT fk_ai_cv
         FOREIGN KEY (cv_id)
         REFERENCES cv (id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_ai_jd
+CONSTRAINT fk_ai_jd
         FOREIGN KEY (jd_id)
         REFERENCES jd (id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_ai_ung_vien
+CONSTRAINT fk_ai_ung_vien
         FOREIGN KEY (ung_vien_id)
         REFERENCES ung_vien (id)
         ON DELETE CASCADE
@@ -281,11 +237,6 @@ CREATE TABLE phan_tich_ai (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
-
--- =========================================================
--- 7. PHONG VAN
--- =========================================================
 
 CREATE TABLE phong_van (
     id INT NOT NULL AUTO_INCREMENT,
@@ -300,22 +251,22 @@ CREATE TABLE phong_van (
     ghi_chu TEXT DEFAULT NULL,
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     KEY idx_phong_van_ung_vien (ung_vien_id),
     KEY idx_phong_van_nguoi_tao (nguoi_tao),
     KEY idx_phong_van_nguoi_pv (nguoi_phong_van),
     KEY idx_phong_van_thoi_gian (bat_dau),
     KEY idx_phong_van_trang_thai (trang_thai),
 
-    CONSTRAINT fk_phong_van_nguoi_pv
+CONSTRAINT fk_phong_van_nguoi_pv
         FOREIGN KEY (nguoi_phong_van)
         REFERENCES nguoi_dung (id),
 
-    CONSTRAINT fk_phong_van_nguoi_tao
+CONSTRAINT fk_phong_van_nguoi_tao
         FOREIGN KEY (nguoi_tao)
         REFERENCES nguoi_dung (id),
 
-    CONSTRAINT fk_phong_van_ung_vien
+CONSTRAINT fk_phong_van_ung_vien
         FOREIGN KEY (ung_vien_id)
         REFERENCES ung_vien (id)
         ON DELETE CASCADE
@@ -323,11 +274,6 @@ CREATE TABLE phong_van (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
-
--- =========================================================
--- 8. DANH GIA
--- =========================================================
 
 CREATE TABLE danh_gia (
     id INT NOT NULL AUTO_INCREMENT,
@@ -340,17 +286,17 @@ CREATE TABLE danh_gia (
     de_xuat VARCHAR(50) DEFAULT NULL,
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     UNIQUE KEY uq_danh_gia (phong_van_id, nguoi_danh_gia),
     KEY idx_danh_gia_phong_van (phong_van_id),
     KEY idx_danh_gia_nguoi (nguoi_danh_gia),
     KEY idx_danh_gia_diem (diem),
 
-    CONSTRAINT fk_danh_gia_nguoi
+CONSTRAINT fk_danh_gia_nguoi
         FOREIGN KEY (nguoi_danh_gia)
         REFERENCES nguoi_dung (id),
 
-    CONSTRAINT fk_danh_gia_phong_van
+CONSTRAINT fk_danh_gia_phong_van
         FOREIGN KEY (phong_van_id)
         REFERENCES phong_van (id)
         ON DELETE CASCADE
@@ -358,11 +304,6 @@ CREATE TABLE danh_gia (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
-
--- =========================================================
--- 9. QUYET DINH
--- =========================================================
 
 CREATE TABLE quyet_dinh (
     id INT NOT NULL AUTO_INCREMENT,
@@ -372,16 +313,16 @@ CREATE TABLE quyet_dinh (
     ly_do TEXT DEFAULT NULL,
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     KEY idx_quyet_dinh_ung_vien (ung_vien_id),
     KEY idx_quyet_dinh_nguoi (nguoi_quyet_dinh),
     KEY idx_quyet_dinh_ket_qua (ket_qua),
 
-    CONSTRAINT fk_quyet_dinh_nguoi
+CONSTRAINT fk_quyet_dinh_nguoi
         FOREIGN KEY (nguoi_quyet_dinh)
         REFERENCES nguoi_dung (id),
 
-    CONSTRAINT fk_quyet_dinh_ung_vien
+CONSTRAINT fk_quyet_dinh_ung_vien
         FOREIGN KEY (ung_vien_id)
         REFERENCES ung_vien (id)
         ON DELETE CASCADE
@@ -390,11 +331,6 @@ ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
 
-
--- =========================================================
--- 10. THANH VIEN
--- =========================================================
-
 CREATE TABLE thanh_vien (
     id INT NOT NULL AUTO_INCREMENT,
     dot_tuyen_id INT NOT NULL,
@@ -402,17 +338,17 @@ CREATE TABLE thanh_vien (
     vai_tro VARCHAR(30) NOT NULL,
     ngay_them DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     UNIQUE KEY uq_thanh_vien (dot_tuyen_id, nguoi_dung_id),
     KEY idx_thanh_vien_dot_tuyen (dot_tuyen_id),
     KEY idx_thanh_vien_nguoi_dung (nguoi_dung_id),
 
-    CONSTRAINT fk_thanh_vien_dot_tuyen
+CONSTRAINT fk_thanh_vien_dot_tuyen
         FOREIGN KEY (dot_tuyen_id)
         REFERENCES dot_tuyen (id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_thanh_vien_nguoi_dung
+CONSTRAINT fk_thanh_vien_nguoi_dung
         FOREIGN KEY (nguoi_dung_id)
         REFERENCES nguoi_dung (id)
         ON DELETE CASCADE
@@ -420,11 +356,6 @@ CREATE TABLE thanh_vien (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
-
--- =========================================================
--- 11. THONG BAO
--- =========================================================
 
 CREATE TABLE thong_bao (
     id INT NOT NULL AUTO_INCREMENT,
@@ -435,12 +366,12 @@ CREATE TABLE thong_bao (
     da_doc TINYINT(1) NOT NULL DEFAULT 0,
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     KEY idx_thong_bao_nguoi_dung (nguoi_dung_id),
     KEY idx_thong_bao_da_doc (da_doc),
     KEY idx_thong_bao_ngay_tao (ngay_tao),
 
-    CONSTRAINT fk_thong_bao_nguoi_dung
+CONSTRAINT fk_thong_bao_nguoi_dung
         FOREIGN KEY (nguoi_dung_id)
         REFERENCES nguoi_dung (id)
         ON DELETE CASCADE
@@ -448,11 +379,6 @@ CREATE TABLE thong_bao (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
-
--- =========================================================
--- 12. NHAT KY
--- =========================================================
 
 CREATE TABLE nhat_ky (
     id INT NOT NULL AUTO_INCREMENT,
@@ -464,13 +390,13 @@ CREATE TABLE nhat_ky (
     ip VARCHAR(45) DEFAULT NULL,
     ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    PRIMARY KEY (id),
+PRIMARY KEY (id),
     KEY idx_nhat_ky_nguoi_dung (nguoi_dung_id),
     KEY idx_nhat_ky_loai (loai),
     KEY idx_nhat_ky_du_lieu (du_lieu_id),
     KEY idx_nhat_ky_ngay_tao (ngay_tao),
 
-    CONSTRAINT fk_nhat_ky_nguoi_dung
+CONSTRAINT fk_nhat_ky_nguoi_dung
         FOREIGN KEY (nguoi_dung_id)
         REFERENCES nguoi_dung (id)
         ON DELETE SET NULL
@@ -478,11 +404,6 @@ CREATE TABLE nhat_ky (
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
 AUTO_ID_CACHE=1;
-
-
--- =========================================================
--- KIỂM TRA
--- =========================================================
 
 SELECT
     TABLE_NAME,

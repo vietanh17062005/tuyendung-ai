@@ -33,7 +33,7 @@ router.get("/", kiemTraDangNhap, async function (req, res) {
         console.error("GET /api/dot-tuyen:", error);
 
         res.status(500).json({
-            message: "Khong lay duoc danh sach dot tuyen",
+            message: "Không lấy được danh sách đợt tuyển",
             error: error.message
         });
     }
@@ -61,7 +61,7 @@ router.get("/:id", kiemTraDangNhap, async function (req, res) {
 
         if (rows.length === 0) {
             return res.status(404).json({
-                message: "Khong tim thay dot tuyen"
+                message: "Không tìm thấy đợt tuyển"
             });
         }
 
@@ -70,7 +70,7 @@ router.get("/:id", kiemTraDangNhap, async function (req, res) {
         console.error("GET /api/dot-tuyen/:id:", error);
 
         res.status(500).json({
-            message: "Khong lay duoc dot tuyen",
+            message: "Không lấy được đợt tuyển",
             error: error.message
         });
     }
@@ -92,7 +92,7 @@ router.post(
 
             if (!ten) {
                 return res.status(400).json({
-                    message: "Vui long nhap ten dot tuyen"
+                    message: "Vui lòng nhập tên đợt tuyển"
                 });
             }
 
@@ -119,14 +119,14 @@ router.post(
             ]);
 
             res.status(201).json({
-                message: "Tao dot tuyen thanh cong",
+                message: "Tạo đợt tuyển thành công",
                 id: result.insertId
             });
         } catch (error) {
             console.error("POST /api/dot-tuyen:", error);
 
             res.status(500).json({
-                message: "Khong tao duoc dot tuyen",
+                message: "Không tạo được đợt tuyển",
                 error: error.message
             });
         }
@@ -149,7 +149,7 @@ router.put(
 
             if (!ten) {
                 return res.status(400).json({
-                    message: "Vui long nhap ten dot tuyen"
+                    message: "Vui lòng nhập tên đợt tuyển"
                 });
             }
 
@@ -173,18 +173,18 @@ router.put(
 
             if (result.affectedRows === 0) {
                 return res.status(404).json({
-                    message: "Khong tim thay dot tuyen"
+                    message: "Không tìm thấy đợt tuyển"
                 });
             }
 
             res.json({
-                message: "Cap nhat dot tuyen thanh cong"
+                message: "Cập nhật đợt tuyển thành công"
             });
         } catch (error) {
             console.error("PUT /api/dot-tuyen/:id:", error);
 
             res.status(500).json({
-                message: "Khong cap nhat duoc dot tuyen",
+                message: "Không cập nhật được đợt tuyển",
                 error: error.message
             });
         }
@@ -204,18 +204,18 @@ router.delete(
 
             if (result.affectedRows === 0) {
                 return res.status(404).json({
-                    message: "Khong tim thay dot tuyen"
+                    message: "Không tìm thấy đợt tuyển"
                 });
             }
 
             res.json({
-                message: "Xoa dot tuyen thanh cong"
+                message: "Xóa đợt tuyển thành công"
             });
         } catch (error) {
             console.error("DELETE /api/dot-tuyen/:id:", error);
 
             res.status(500).json({
-                message: "Khong xoa duoc dot tuyen",
+                message: "Không xóa được đợt tuyển",
                 error: error.message
             });
         }

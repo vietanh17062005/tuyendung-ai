@@ -10,7 +10,7 @@ router.post("/login", async function (req, res) {
 
         if (!email || !mat_khau) {
             return res.status(400).json({
-                message: "Vui long nhap email va mat khau"
+                message: "Vui lòng nhập email và mật khẩu"
             });
         }
 
@@ -21,7 +21,7 @@ router.post("/login", async function (req, res) {
 
         if (rows.length === 0) {
             return res.status(401).json({
-                message: "Email hoac mat khau khong dung"
+                message: "Email hoặc mật khẩu không đúng"
             });
         }
 
@@ -29,13 +29,13 @@ router.post("/login", async function (req, res) {
 
         if (nguoiDung.mat_khau !== mat_khau) {
             return res.status(401).json({
-                message: "Email hoac mat khau khong dung"
+                message: "Email hoặc mật khẩu không đúng"
             });
         }
 
         if (nguoiDung.trang_thai !== "hoat_dong") {
             return res.status(403).json({
-                message: "Tai khoan dang bi khoa"
+                message: "Tài khoản đang bị khóa"
             });
         }
 
@@ -53,7 +53,7 @@ router.post("/login", async function (req, res) {
         );
 
         res.json({
-            message: "Dang nhap thanh cong",
+            message: "Đăng nhập thành công",
             token: token,
             nguoi_dung: {
                 id: nguoiDung.id,
@@ -67,7 +67,7 @@ router.post("/login", async function (req, res) {
         console.error(error);
 
         res.status(500).json({
-            message: "Loi may chu"
+            message: "Lỗi máy chủ"
         });
     }
 });
