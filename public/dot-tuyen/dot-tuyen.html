@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Đợt tuyển dụng - Recruitment Hub</title>
+
+    <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css" />
+    <link rel="stylesheet" href="/account/account.css" />
+  </head>
+
+  <body>
+    <div class="khung">
+      <!-- SIDEBAR -->
+
+      <aside class="menu">
+        <div class="logo">
+          <div class="logo-icon">RH</div>
+
+          <div>
+            <div class="logo-title">Recruitment Hub</div>
+
+            <div class="logo-subtitle">AI Recruitment System</div>
+          </div>
+        </div>
+
+        <nav class="menu-list">
+          <a href="/dashboard/dashboard.html"><span>▦</span>Dashboard</a>
+          <a href="/dot-tuyen/dot-tuyen.html" class="active"
+            ><span>▤</span>Đợt tuyển dụng</a
+          >
+          <a href="/jd/jd.html"><span>▤</span>JD tuyển dụng</a>
+          <a href="/ung-vien/ung-vien.html"><span>♙</span>Ứng viên</a>
+          <a href="#"><span>▣</span>CV</a>
+          <a href="#"><span>◷</span>Phỏng vấn</a>
+          <a href="#"><span>▥</span>Báo cáo</a>
+          <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung"
+            ><span>♙</span>Người dùng</a
+          >
+        </nav>
+      </aside>
+
+      <!-- MAIN -->
+
+      <main class="noi-dung">
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+          <div>
+            <p class="tieu-de-nho">QUẢN LÝ TUYỂN DỤNG</p>
+            <h1>Đợt tuyển dụng</h1>
+          </div>
+
+          <div class="tai-khoan" id="taiKhoan">
+            <div class="tai-khoan-thong-tin">
+              <div class="avatar" id="avatar">A</div>
+              <div class="nguoi-dung-info">
+                <strong id="tenNguoiDung">Admin</strong>
+                <span id="vaiTro">Quản trị viên</span>
+              </div>
+            </div>
+
+            <span class="mui-ten">▾</span>
+
+            <div class="menu-tai-khoan" id="menuTaiKhoan">
+              <div class="tai-khoan-header">
+                <strong id="tenMenuTaiKhoan">Admin</strong>
+                <span id="emailMenuTaiKhoan">admin@gmail.com</span>
+              </div>
+
+              <button id="btnThongTin">
+                <span>👤</span>Thông tin tài khoản
+              </button>
+              <button id="btnDoiMatKhau"><span>🔑</span>Đổi mật khẩu</button>
+
+              <div class="duong-ke"></div>
+
+              <button id="btnDangXuat" class="btn-dang-xuat">
+                <span>↪</span>Đăng xuất
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- TOOLBAR -->
+
+        <section class="toolbar">
+          <div class="tim-kiem">
+            <span>⌕</span
+            ><input
+              type="text"
+              id="oTimKiem"
+              placeholder="Tìm kiếm đợt tuyển dụng..."
+            />
+          </div>
+
+          <div class="bo-loc">
+            <select id="locTrangThai">
+              <option value="">Tất cả trạng thái</option>
+              <option value="nhap">Nháp</option>
+              <option value="dang_tuyen">Đang tuyển</option>
+              <option value="tam_dung">Tạm dừng</option>
+              <option value="ket_thuc">Kết thúc</option>
+            </select>
+
+            <button id="btnThem" class="btn-them">+ Thêm đợt tuyển dụng</button>
+          </div>
+        </section>
+
+        <!-- TABLE -->
+
+        <section class="table-container">
+          <div class="table-header">
+            <div>
+              <h2>Danh sách đợt tuyển dụng</h2>
+              <p id="tongSo">0 đợt tuyển dụng</p>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>STT</th>
+
+                  <th>Tên đợt tuyển dụng</th>
+
+                  <th>Mô tả</th>
+
+                  <th>Trạng thái</th>
+
+                  <th>Người tạo</th>
+
+                  <th>Ngày bắt đầu</th>
+
+                  <th>Ngày kết thúc</th>
+
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+
+              <tbody id="danhSach"></tbody>
+            </table>
+          </div>
+
+          <div class="khong-co-du-lieu" id="khongCoDuLieu">
+            Không tìm thấy đợt tuyển dụng nào.
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- MODAL THÊM / SỬA -->
+
+    <div class="modal" id="modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div>
+            <h2 id="tieuDeModal">Thêm đợt tuyển dụng</h2>
+
+            <p>Nhập thông tin đợt tuyển dụng</p>
+          </div>
+
+          <button class="btn-dong" id="btnDong">×</button>
+        </div>
+
+        <form id="form">
+          <input type="hidden" id="id" />
+
+          <div class="form-group">
+            <label>Tên đợt tuyển dụng <span>*</span></label>
+
+            <input
+              type="text"
+              id="ten"
+              placeholder="Ví dụ: Tuyển dụng nhân viên CNTT 2026"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Mô tả</label>
+
+            <textarea
+              id="moTa"
+              rows="4"
+              placeholder="Mô tả ngắn về đợt tuyển dụng..."
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group date-group">
+              <label>Ngày bắt đầu <span>*</span></label>
+
+              <div class="date-control">
+                <input
+                  type="text"
+                  id="ngayBatDau"
+                  inputmode="numeric"
+                  pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+                  placeholder="dd/mm/yyyy"
+                  title="Nhập ngày theo dạng dd/mm/yyyy"
+                  autocomplete="off"
+                  required
+                />
+                <button
+                  type="button"
+                  class="date-picker-button"
+                  id="btnPickerNgayBatDau"
+                  aria-label="Chọn ngày bắt đầu"
+                >
+                  ▦
+                </button>
+                <input
+                  type="date"
+                  class="date-native-picker"
+                  id="pickerNgayBatDau"
+                  tabindex="-1"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+
+            <div class="form-group date-group">
+              <label>Ngày kết thúc <span>*</span></label>
+
+              <div class="date-control">
+                <input
+                  type="text"
+                  id="ngayKetThuc"
+                  inputmode="numeric"
+                  pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+                  placeholder="dd/mm/yyyy"
+                  title="Nhập ngày theo dạng dd/mm/yyyy"
+                  autocomplete="off"
+                  required
+                />
+                <button
+                  type="button"
+                  class="date-picker-button"
+                  id="btnPickerNgayKetThuc"
+                  aria-label="Chọn ngày kết thúc"
+                >
+                  ▦
+                </button>
+                <input
+                  type="date"
+                  class="date-native-picker"
+                  id="pickerNgayKetThuc"
+                  tabindex="-1"
+                  aria-hidden="true"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Trạng thái</label>
+
+            <select id="trangThai">
+              <option value="nhap">Nháp</option>
+              <option value="dang_tuyen">Đang tuyển</option>
+              <option value="tam_dung">Tạm dừng</option>
+              <option value="ket_thuc">Kết thúc</option>
+            </select>
+          </div>
+
+          <div class="thong-bao" id="thongBao"></div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn-huy" id="btnHuy">Hủy</button>
+            <button type="submit" class="btn-luu">Lưu đợt tuyển dụng</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL XÁC NHẬN -->
+
+    <div class="modal" id="modalXacNhan">
+      <div class="modal-box xac-nhan-box">
+        <div class="xac-nhan-icon">!</div>
+
+        <h2>Xóa đợt tuyển dụng?</h2>
+        <p id="noiDungXacNhan">Bạn có chắc chắn muốn xóa đợt tuyển dụng này?</p>
+
+        <div class="modal-footer">
+          <button class="btn-huy" id="btnKhongXoa">Hủy</button>
+          <button class="btn-xoa-confirm" id="btnXacNhanXoa">Xóa</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/dot-tuyen/dot-tuyen.js"></script>
+    <script src="/account/account.js"></script>
+  </body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Đăng nhập | Recruitment Hub</title>
+
+    <link rel="stylesheet" href="/login/login.css" />
+  </head>
+
+  <body>
+    <main class="login-page">
+      <div class="login-card">
+        <div class="brand">
+          <div class="brand-icon">RH</div>
+
+          <div>
+            <div class="brand-name">Hệ thống quản lý tuyển dụng</div>
+          </div>
+        </div>
+
+        <div class="form-header">
+          <span class="welcome">Chào mừng quay trở lại</span>
+          <h1>Đăng nhập</h1>
+          <p>Đăng nhập để tiếp tục quản lý hệ thống tuyển dụng.</p>
+        </div>
+
+        <form id="formDangNhap">
+          <div class="form-group">
+            <label for="email">Email</label>
+
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                  ></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+              </span>
+
+              <input
+                type="email"
+                id="email"
+                placeholder="Nhập email của bạn"
+                autocomplete="email"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="matKhau">Mật khẩu</label>
+
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg viewBox="0 0 24 24">
+                  <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </span>
+
+              <input
+                type="password"
+                id="matKhau"
+                placeholder="Nhập mật khẩu"
+                autocomplete="current-password"
+              />
+
+              <button
+                type="button"
+                id="btnHienMatKhau"
+                class="password-toggle"
+                aria-label="Hiện mật khẩu"
+              >
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"
+                  ></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div id="thongBao" class="thong-bao"></div>
+
+          <button type="submit" id="btnDangNhap" class="btn-dang-nhap">
+            <span id="textDangNhap">Đăng nhập</span
+            ><span id="loading" class="loading"></span>
+          </button>
+        </form>
+
+        <div class="login-footer">Recruitment Hub © 2026</div>
+      </div>
+    </main>
+
+    <script src="/login/login.js"></script>
+  </body>
+</html>

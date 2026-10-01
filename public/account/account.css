@@ -1,0 +1,146 @@
+.account-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.account-overlay.open {
+  display: flex;
+}
+
+.account-dialog {
+  width: 460px;
+  max-width: 100%;
+  max-height: min(90vh, 720px);
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+  color: #0f172a;
+}
+
+.account-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.account-dialog-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.account-dialog-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.account-close {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.account-dialog form[hidden] {
+  display: none;
+}
+
+.account-dialog label {
+  display: block;
+  margin: 15px 0 7px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.account-dialog input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 12px;
+}
+
+.account-dialog input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.account-dialog input[readonly] {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.account-notice {
+  display: none;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.account-notice.visible,
+.account-notice.success {
+  display: block;
+}
+
+.account-notice.success {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+.account-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.account-actions button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.account-primary {
+  background: #2563eb;
+  color: white;
+}
+
+@media (max-width: 520px) {
+  .account-dialog {
+    padding: 20px;
+  }
+}

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Người dùng - Tuyển dụng AI</title>
+
+    <link rel="stylesheet" href="/nguoi-dung/nguoi-dung.css" />
+  </head>
+
+  <body>
+    <div class="khung">
+      <aside class="menu">
+        <div class="logo">
+          <div class="logo-icon">RH</div>
+
+          <div>
+            <div class="logo-title">Recruitment Hub</div>
+
+            <div class="logo-subtitle">AI Recruitment System</div>
+          </div>
+        </div>
+
+        <nav class="menu-list">
+          <a href="/dashboard/dashboard.html"><span>▦</span>Dashboard</a>
+          <a href="/dot-tuyen/dot-tuyen.html"><span>▤</span>Đợt tuyển dụng</a>
+          <a href="/ung-vien/ung-vien.html"><span>♙</span>Ứng viên</a>
+          <a href="#"><span>▣</span>CV</a>
+          <a href="#"><span>◷</span>Phỏng vấn</a>
+          <a href="#"><span>▥</span>Báo cáo</a>
+          <a href="/nguoi-dung/nguoi-dung.html" class="active"
+            ><span>♙</span>Người dùng</a
+          >
+        </nav>
+
+        <button id="btnDangXuat" class="btn-dang-xuat">↪ Đăng xuất</button>
+      </aside>
+
+      <main class="noi-dung">
+        <header class="topbar">
+          <div>
+            <p>QUẢN TRỊ HỆ THỐNG</p>
+            <h1>Người dùng & phân quyền</h1>
+          </div>
+          <div class="thong-tin-admin">
+            <div class="avatar" id="avatar">A</div>
+            <div>
+              <strong id="tenAdmin">Admin</strong>
+              <span>Quản trị viên</span>
+            </div>
+          </div>
+        </header>
+
+        <section class="thanh-cong-cu">
+          <div class="tim-kiem">
+            <span>⌕</span>
+            <input
+              type="text"
+              id="timKiem"
+              placeholder="Tìm theo tên hoặc email..."
+            />
+          </div>
+          <button id="btnThem" class="btn-them">+ Thêm người dùng</button>
+        </section>
+
+        <section class="bang-container">
+          <table>
+            <thead>
+              <tr>
+                <th class="cot-stt">STT</th>
+                <th>Người dùng</th>
+                <th>Email</th>
+                <th class="cot-vai-tro">Vai trò</th>
+                <th class="cot-trang-thai">Trạng thái</th>
+                <th class="cot-thao-tac">Thao tác</th>
+              </tr>
+            </thead>
+
+            <tbody id="danhSachNguoiDung"></tbody>
+          </table>
+
+          <div id="khongCoDuLieu" class="khong-co-du-lieu">
+            Không có người dùng nào.
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Modal -->
+
+    <div id="modal" class="modal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div>
+            <h2 id="tieuDeModal">Thêm người dùng</h2>
+            <p>Nhập thông tin tài khoản</p>
+          </div>
+
+          <button id="btnDong">×</button>
+        </div>
+
+        <form id="formNguoiDung">
+          <input type="hidden" id="idNguoiDung" />
+
+          <div class="form-group">
+            <label>Họ tên</label>
+
+            <input type="text" id="hoTen" placeholder="Nhập họ tên" />
+          </div>
+
+          <div class="form-group">
+            <label>Email</label>
+
+            <input type="email" id="email" placeholder="Nhập email" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Mật khẩu</label>
+
+              <input type="password" id="matKhau" placeholder="Nhập mật khẩu" />
+
+              <small>Để trống nếu không muốn đổi mật khẩu.</small>
+            </div>
+
+            <div class="form-group">
+              <label>Vai trò</label>
+
+              <select id="vaiTro">
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="hr">HR</option>
+                <option value="interviewer">Interviewer</option>
+                <option value="viewer">Viewer</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Trạng thái</label>
+
+            <select id="trangThai">
+              <option value="hoat_dong">Hoạt động</option>
+              <option value="bi_khoa">Bị khóa</option>
+            </select>
+          </div>
+
+          <div id="thongBao" class="thong-bao"></div>
+
+          <div class="modal-footer">
+            <button type="button" id="btnHuy" class="btn-huy">Hủy</button>
+            <button type="submit" class="btn-luu">Lưu người dùng</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="/nguoi-dung/nguoi-dung.js"></script>
+  </body>
+</html>
