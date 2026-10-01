@@ -151,39 +151,46 @@ async function layDotTuyen() {
             );
         }
 
-        const danhSachDotTuyen = [...data].sort(
-            function (a, b) {
-                return (
-                    Number(
-                        dotTuyenKhoaTaoUngVien(
-                            a.trang_thai
-                        )
-                    ) -
-                    Number(
-                        dotTuyenKhoaTaoUngVien(
-                            b.trang_thai
-                        )
-                    )
-                );
-            }
-        );
+        const danhSachDotTuyen = Array.isArray(data)
+            ? data
+            : data.data || data.dot_tuyen || [];
+
+        // Sắp xếp: Đợt đang tuyển/hoạt động lên trên, tạm dừng/kết thúc xuống dưới cùng
+        danhSachDotTuyen.sort(function (a, b) {
+            const isInactiveA = dotTuyenKhoaTaoUngVien(a.trang_thai);
+            const isInactiveB = dotTuyenKhoaTaoUngVien(b.trang_thai);
+
+            if (isInactiveA === isInactiveB) return 0;
+            return isInactiveA ? 1 : -1;
+        });
+
+        // Giữ lại option mặc định ban đầu
+        dotTuyenId.innerHTML = '<option value="">-- Chọn đợt tuyển dụng --</option>';
+        locDotTuyen.innerHTML = '<option value="">Tất cả đợt tuyển dụng</option>';
 
         danhSachDotTuyen.forEach(function (dotTuyen) {
             const khoa = dotTuyenKhoaTaoUngVien(
                 dotTuyen.trang_thai
             );
 
-            const nhan = khoa
-                ? `${dotTuyen.ten} (Tạm dừng/đã đóng)`
-                : dotTuyen.ten;
+            let tenHienThi = dotTuyen.ten_dot || dotTuyen.ten || "";
+            if (dotTuyen.trang_thai === "tam_dung") {
+                tenHienThi += " (Tạm dừng)";
+            } else if (dotTuyen.trang_thai === "ket_thuc" || dotTuyen.trang_thai === "da_dong" || dotTuyen.trang_thai === "dong" || dotTuyen.trang_thai === "closed") {
+                tenHienThi += " (Đã kết thúc)";
+            }
 
             const optionForm =
                 document.createElement("option");
 
             optionForm.value = dotTuyen.id;
-            optionForm.textContent = nhan;
+            optionForm.textContent = tenHienThi;
             optionForm.dataset.khoaTaoUngVien = khoa;
             optionForm.disabled = khoa;
+            if (khoa) {
+                optionForm.style.color = "#94a3b8";
+                optionForm.style.backgroundColor = "#f1f5f9";
+            }
 
             dotTuyenId.appendChild(optionForm);
 
@@ -191,7 +198,7 @@ async function layDotTuyen() {
                 document.createElement("option");
 
             optionFilter.value = dotTuyen.id;
-            optionFilter.textContent = nhan;
+            optionFilter.textContent = tenHienThi;
 
             locDotTuyen.appendChild(optionFilter);
         });
@@ -256,7 +263,7 @@ async function layUngVien() {
 
         danhSachUngVien.innerHTML = `
             <tr>
-                <td colspan="7" class="table-empty">
+                <td colspan="${coQuyenQuanLyUngVien ? 7 : 6}" class="table-empty">
                     Không tải được dữ liệu
                 </td>
             </tr>
@@ -307,7 +314,7 @@ function renderUngVien(danhSach) {
     if (danhSach.length === 0) {
         danhSachUngVien.innerHTML = `
             <tr>
-                <td colspan="7" class="table-empty">
+                <td colspan="${coQuyenQuanLyUngVien ? 7 : 6}" class="table-empty">
                     Không tìm thấy ứng viên
                 </td>
             </tr>
@@ -456,19 +463,21 @@ function renderUngVien(danhSach) {
                     </span>
                 </td>
 
-                <td class="action">
-                    ${nutSua}
+                ${coQuyenQuanLyUngVien ? `
+                    <td class="action">
+                        ${nutSua}
 
-                    <button
-                        class="btn-xem"
-                        data-action="detail"
-                        data-id="${ungVien.id}"
-                    >
-                        Chi tiết
-                    </button>
+                        <button
+                            class="btn-xem"
+                            data-action="detail"
+                            data-id="${ungVien.id}"
+                        >
+                            Chi tiết
+                        </button>
 
-                    ${nutXoa}
-                </td>
+                        ${nutXoa}
+                    </td>
+                ` : ""}
             `;
 
             danhSachUngVien.appendChild(tr);
@@ -587,6 +596,10 @@ document.getElementById(
     "btnThem"
 ).hidden =
     !coQuyenQuanLyUngVien;
+
+if (!coQuyenQuanLyUngVien) {
+    document.getElementById("cotThaoTac")?.remove();
+}
 
 document
     .getElementById("btnDong")

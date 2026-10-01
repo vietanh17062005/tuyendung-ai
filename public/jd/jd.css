@@ -129,6 +129,7 @@ textarea {
   letter-spacing: -0.7px;
 }
 
+/* Account & Dropdown */
 .tai-khoan {
   position: relative;
   display: flex;
@@ -284,10 +285,6 @@ textarea {
   color: #334155;
 }
 
-.tim-kiem input::placeholder {
-  color: #94a3b8;
-}
-
 .bo-loc {
   display: flex;
   align-items: center;
@@ -305,18 +302,6 @@ textarea {
   outline: none;
 }
 
-.btn-them,
-.btn-huy,
-.btn-luu,
-.btn-sua,
-.btn-gui,
-.btn-duyet,
-.btn-xoa,
-.btn-dong {
-  font-weight: 600;
-  cursor: pointer;
-}
-
 .btn-them {
   height: 42px;
   padding: 0 17px;
@@ -325,32 +310,12 @@ textarea {
   background: #2563eb;
   color: white;
   font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .btn-them:hover {
   background: #1d4ed8;
-}
-
-#thongBao {
-  margin-bottom: 15px;
-}
-
-.thong-bao {
-  display: block;
-  padding: 10px 12px;
-  border-radius: 7px;
-  font-size: 11px;
-  line-height: 1.5;
-}
-
-.thong-bao.loi {
-  background: #fef2f2;
-  color: #dc2626;
-}
-
-.thong-bao.thanh-cong {
-  background: #ecfdf5;
-  color: #15803d;
 }
 
 .table-container {
@@ -485,17 +450,16 @@ td:nth-child(7) {
   color: #475569;
 }
 
-.action {
-  white-space: nowrap;
-}
-
-.action button {
+/* Các nút thao tác bảng */
+.cot-thao-tac button {
   display: inline-block;
   padding: 6px 9px;
   border-radius: 6px;
   font-size: 10px;
-  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
   margin: 0 2px;
+  border: 1px solid transparent;
 }
 
 .btn-sua {
@@ -508,13 +472,13 @@ td:nth-child(7) {
   background: #dbeafe;
 }
 
-.btn-gui {
+.btn-gui-duyet {
   border-color: #fef3c7;
-  background: #fff7ed;
+  background: #fffbeb;
   color: #b45309;
 }
 
-.btn-gui:hover {
+.btn-gui-duyet:hover {
   background: #fef3c7;
 }
 
@@ -528,6 +492,26 @@ td:nth-child(7) {
   background: #dcfce7;
 }
 
+.btn-tu-choi {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.btn-tu-choi:hover {
+  background: #ffedd5;
+}
+
+.btn-huy {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-huy:hover {
+  background: #e2e8f0;
+}
+
 .btn-xoa {
   border-color: #fee2e2;
   background: #fef2f2;
@@ -538,16 +522,7 @@ td:nth-child(7) {
   background: #fee2e2;
 }
 
-.btn-huy-jd {
-  border-color: #fed7aa !important;
-  background: #fff7ed;
-  color: #c2410c;
-}
-
-.btn-huy-jd:hover {
-  background: #ffedd5;
-}
-
+/* Modal */
 .modal {
   position: fixed;
   inset: 0;
@@ -560,29 +535,22 @@ td:nth-child(7) {
   overflow-y: auto;
 }
 
-.modal.show {
-  display: flex;
-}
-
 .modal-box {
   width: 100%;
-  max-width: 620px;
-  max-height: 90vh;
+  max-width: 560px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
-  overflow-y: auto;
 }
 
 .confirm-box {
-  width: 420px;
+  width: 400px;
   max-width: 100%;
-  max-height: 90vh;
   background: white;
   border-radius: 12px;
-  padding: 24px;
+  padding: 28px;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
-  overflow-y: auto;
+  text-align: center;
 }
 
 .modal-header {
@@ -612,6 +580,7 @@ td:nth-child(7) {
   background: #f1f5f9;
   color: #64748b;
   font-size: 20px;
+  cursor: pointer;
 }
 
 #formJD {
@@ -632,6 +601,10 @@ td:nth-child(7) {
   font-weight: 600;
 }
 
+.form-group label span {
+  color: #dc2626;
+}
+
 .form-group input,
 .form-group textarea,
 .form-group select {
@@ -640,7 +613,7 @@ td:nth-child(7) {
   border: 1px solid #e2e8f0;
   border-radius: 7px;
   outline: none;
-  background: white;
+  background: #ffffff;
   color: #334155;
   font-size: 12px;
 }
@@ -652,6 +625,13 @@ td:nth-child(7) {
 .form-group textarea {
   resize: vertical;
   min-height: 95px;
+}
+
+/* Sửa triệt để lỗi màu chữ bị đè nền đen/xám mặc định của trình duyệt */
+.form-group select option {
+  background: #ffffff !important;
+  color: #334155 !important;
+  padding: 8px 12px;
 }
 
 .form-group input:focus,
@@ -668,70 +648,40 @@ td:nth-child(7) {
   padding-top: 5px;
 }
 
-.btn-huy,
-.btn-luu {
+.form-buttons .btn-huy,
+.form-buttons .btn-luu {
   height: 40px;
   padding: 0 17px;
   border-radius: 7px;
   font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.btn-huy {
+.form-buttons .btn-huy {
   border: 1px solid #e2e8f0;
   background: white;
   color: #64748b;
 }
 
-.btn-luu {
+.form-buttons .btn-luu {
   border: none;
   background: #2563eb;
   color: white;
 }
 
-.btn-luu:hover {
+.form-buttons .btn-luu:hover {
   background: #1d4ed8;
 }
 
 .confirm-box h2 {
   margin-top: 0;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .confirm-box p {
   margin: 12px 0 20px;
-  color: #475569;
-  line-height: 1.5;
-  font-size: 12px;
-}
-
-.form-buttons button[type="submit"],
-#btnXacNhan {
-  background: #2563eb;
-  color: white;
-}
-
-.form-buttons button[type="button"],
-#btnHuyXacNhan {
-  background: #e5e7eb;
-  color: #222;
-}
-
-#thongBao {
-  margin-bottom: 15px;
-}
-
-.thong-bao {
-  padding: 12px 15px;
-  border-radius: 6px;
-  margin-bottom: 15px;
-}
-
-.thong-bao.thanh-cong {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.thong-bao.loi {
-  background: #fee2e2;
-  color: #991b1b;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.6;
 }
