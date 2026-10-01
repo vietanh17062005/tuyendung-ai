@@ -13,18 +13,18 @@ router.get("/", kiemTraDangNhap, async function (req, res) {
         const [rows] = await db.query(`
             SELECT
                 d.id,
-                d.ten_dot AS ten,
+                d.ten,
                 d.mo_ta,
                 d.trang_thai,
-                d.nguoi_tao_id,
+                d.nguoi_tao AS nguoi_tao_id,
                 DATE_FORMAT(d.ngay_bat_dau, '%Y-%m-%d') AS ngay_bat_dau,
                 DATE_FORMAT(d.ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc,
                 d.ngay_tao,
-                d.ngay_cap_nhat,
+                d.ngay_sua AS ngay_cap_nhat,
                 n.ho_ten AS nguoi_tao_ten
             FROM dot_tuyen AS d
             LEFT JOIN nguoi_dung AS n
-                ON d.nguoi_tao_id = n.id
+                ON d.nguoi_tao = n.id
             ORDER BY d.id ASC
         `);
 
@@ -44,18 +44,18 @@ router.get("/:id", kiemTraDangNhap, async function (req, res) {
         const [rows] = await db.query(`
             SELECT
                 d.id,
-                d.ten_dot AS ten,
+                d.ten,
                 d.mo_ta,
                 d.trang_thai,
-                d.nguoi_tao_id,
+                d.nguoi_tao AS nguoi_tao_id,
                 DATE_FORMAT(d.ngay_bat_dau, '%Y-%m-%d') AS ngay_bat_dau,
                 DATE_FORMAT(d.ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc,
                 d.ngay_tao,
-                d.ngay_cap_nhat,
+                d.ngay_sua AS ngay_cap_nhat,
                 n.ho_ten AS nguoi_tao_ten
             FROM dot_tuyen AS d
             LEFT JOIN nguoi_dung AS n
-                ON d.nguoi_tao_id = n.id
+                ON d.nguoi_tao = n.id
             WHERE d.id = ?
         `, [req.params.id]);
 
@@ -101,9 +101,9 @@ router.post(
             const [result] = await db.query(`
                 INSERT INTO dot_tuyen
                 (
-                    ten_dot,
+                    ten,
                     mo_ta,
-                    nguoi_tao_id,
+                    nguoi_tao,
                     trang_thai,
                     ngay_bat_dau,
                     ngay_ket_thuc
@@ -156,7 +156,7 @@ router.put(
             const [result] = await db.query(`
                 UPDATE dot_tuyen
                 SET
-                    ten_dot = ?,
+                    ten = ?,
                     mo_ta = ?,
                     trang_thai = ?,
                     ngay_bat_dau = ?,

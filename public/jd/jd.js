@@ -20,8 +20,50 @@ const btnXacNhan = document.getElementById("btnXacNhan");
 const btnHuyXacNhan = document.getElementById("btnHuyXacNhan");
 
 const nguoiDung = JSON.parse(
-    localStorage.getItem("nguoiDung") || "{}"
+    localStorage.getItem("nguoi_dung") || "{}"
 );
+
+const taiKhoan = document.getElementById("taiKhoan");
+const menuTaiKhoan = document.getElementById("menuTaiKhoan");
+
+function layTenVaiTro(vaiTro) {
+    const danhSach = {
+        admin: "Quản trị viên",
+        manager: "Quản lý",
+        hr: "Nhân sự",
+        interviewer: "Người phỏng vấn",
+        viewer: "Người xem"
+    };
+
+    return danhSach[vaiTro] || vaiTro || "";
+}
+
+if (nguoiDung.ho_ten) {
+    document.getElementById("tenNguoiDung").textContent = nguoiDung.ho_ten;
+    document.getElementById("avatar").textContent = nguoiDung.ho_ten.charAt(0).toUpperCase();
+    document.getElementById("vaiTro").textContent = layTenVaiTro(nguoiDung.vai_tro);
+    document.getElementById("tenMenuTaiKhoan").textContent = nguoiDung.ho_ten;
+    document.getElementById("emailMenuTaiKhoan").textContent = nguoiDung.email || "";
+}
+
+taiKhoan.addEventListener("click", function (event) {
+    event.stopPropagation();
+    menuTaiKhoan.classList.toggle("hien");
+});
+
+menuTaiKhoan.addEventListener("click", function (event) {
+    event.stopPropagation();
+});
+
+document.addEventListener("click", function () {
+    menuTaiKhoan.classList.remove("hien");
+});
+
+document.getElementById("btnDangXuat").addEventListener("click", function () {
+    localStorage.removeItem("token");
+    localStorage.removeItem("nguoi_dung");
+    window.location.href = "/login/login.html";
+});
 
 let hanhDongXacNhan = null;
 let tatCaJD = [];
@@ -98,7 +140,7 @@ function renderJD(data) {
 
         let nutSua = "";
 
-        if (jd.trang_thai !== "da_duyet") {
+        if (jd.trang_thai === "nhap" || jd.trang_thai === "tu_choi") {
             nutSua = `
                 <button
                     class="btn-sua"
@@ -111,7 +153,7 @@ function renderJD(data) {
 
         let nutGuiDuyet = "";
 
-        if (jd.trang_thai === "nhap") {
+        if (jd.trang_thai === "nhap" || jd.trang_thai === "tu_choi") {
             nutGuiDuyet = `
                 <button
                     class="btn-gui"
@@ -134,6 +176,12 @@ function renderJD(data) {
                     onclick="duyetJD(${jd.id})"
                 >
                     Duyệt
+                </button>
+                <button
+                    class="btn-xoa"
+                    onclick="tuChoiJD(${jd.id})"
+                >
+                    Từ chối
                 </button>
             `;
         }
@@ -557,6 +605,42 @@ function duyetJD(id) {
                     "Không kết nối được máy chủ",
                     "loi"
                 );
+            }
+        }
+    );
+}
+
+// Từ chối JD
+function tuChoiJD(id) {
+    if (!coQuyenDuyet()) {
+        hienThongBao("Bạn không có quyền từ chối JD", "loi");
+        return;
+    }
+
+    moXacNhan(
+        "Từ chối JD",
+        "Bạn có chắc muốn từ chối JD này? JD sẽ chuyển sang trạng thái Từ chối.",
+        async function () {
+            try {
+                const response = await fetch("/api/jd/" + id + "/tu-choi", {
+                    method: "PUT",
+                    headers: {
+                        Authorization: "Bearer " + token
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    hienThongBao(data.message || "Không từ chối được JD", "loi");
+                    return;
+                }
+
+                hienThongBao(data.message, "thanh-cong");
+                await layDanhSachJD();
+            } catch (error) {
+                console.error(error);
+                hienThongBao("Không kết nối được máy chủ", "loi");
             }
         }
     );

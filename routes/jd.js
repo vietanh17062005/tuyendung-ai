@@ -19,18 +19,18 @@ router.get("/", kiemTraDangNhap, async function (req, res) {
                 jd.yeu_cau,
                 jd.quyen_loi,
                 jd.trang_thai,
-                jd.nguoi_duyet_id,
+                jd.nguoi_duyet AS nguoi_duyet_id,
                 jd.ngay_duyet,
                 jd.tieu_chi,
                 jd.ngay_tao,
-                jd.ngay_cap_nhat,
+                jd.ngay_sua AS ngay_cap_nhat,
                 dt.ten_dot AS ten_dot_tuyen,
                 nd.ho_ten AS ten_nguoi_duyet
             FROM jd
             INNER JOIN dot_tuyen AS dt
                 ON jd.dot_tuyen_id = dt.id
             LEFT JOIN nguoi_dung AS nd
-                ON jd.nguoi_duyet_id = nd.id
+                ON jd.nguoi_duyet = nd.id
             ORDER BY jd.id ASC
         `);
 
@@ -56,18 +56,18 @@ router.get("/:id", kiemTraDangNhap, async function (req, res) {
                 jd.yeu_cau,
                 jd.quyen_loi,
                 jd.trang_thai,
-                jd.nguoi_duyet_id,
+                jd.nguoi_duyet AS nguoi_duyet_id,
                 jd.ngay_duyet,
                 jd.tieu_chi,
                 jd.ngay_tao,
-                jd.ngay_cap_nhat,
+                jd.ngay_sua AS ngay_cap_nhat,
                 dt.ten_dot AS ten_dot_tuyen,
                 nd.ho_ten AS ten_nguoi_duyet
             FROM jd
             INNER JOIN dot_tuyen AS dt
                 ON jd.dot_tuyen_id = dt.id
             LEFT JOIN nguoi_dung AS nd
-                ON jd.nguoi_duyet_id = nd.id
+                ON jd.nguoi_duyet = nd.id
             WHERE jd.id = ?
         `, [req.params.id]);
 
@@ -100,7 +100,6 @@ router.post(
                 mo_ta,
                 yeu_cau,
                 quyen_loi,
-                trang_thai,
                 tieu_chi
             } = req.body;
 
@@ -128,7 +127,7 @@ router.post(
                 mo_ta || null,
                 yeu_cau || null,
                 quyen_loi || null,
-                trang_thai || "nhap",
+                "nhap",
                 tieu_chi ? JSON.stringify(tieu_chi) : null
             ]);
 
@@ -159,7 +158,6 @@ router.put(
                 mo_ta,
                 yeu_cau,
                 quyen_loi,
-                trang_thai,
                 tieu_chi
             } = req.body;
 
@@ -177,24 +175,36 @@ router.put(
                     mo_ta = ?,
                     yeu_cau = ?,
                     quyen_loi = ?,
-                    trang_thai = ?,
                     tieu_chi = ?
                 WHERE id = ?
+                AND trang_thai IN ('nhap', 'tu_choi')
             `, [
                 dot_tuyen_id,
                 tieu_de,
                 mo_ta || null,
                 yeu_cau || null,
                 quyen_loi || null,
-                trang_thai || "nhap",
                 tieu_chi ? JSON.stringify(tieu_chi) : null,
                 req.params.id
             ]);
 
             if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy JD"
-                });
+                const [jdRows] = await db.query(
+                    "SELECT trang_thai FROM jd WHERE id = ?",
+                    [req.params.id]
+                );
+
+                if (jdRows.length === 0) {
+                    return res.status(404).json({
+                        message: "Không tìm thấy JD"
+                    });
+                }
+
+                if (!["nhap", "tu_choi"].includes(jdRows[0].trang_thai)) {
+                    return res.status(400).json({
+                        message: "Chỉ có thể sửa JD ở trạng thái Nháp hoặc Từ chối"
+                    });
+                }
             }
 
             res.json({
@@ -225,7 +235,7 @@ router.put(
                 UPDATE jd
                 SET trang_thai = 'cho_duyet'
                 WHERE id = ?
-                AND trang_thai = 'nhap'
+                AND trang_thai IN ('nhap', 'tu_choi')
             `, [req.params.id]);
 
             if (result.affectedRows === 0) {
@@ -241,7 +251,7 @@ router.put(
                 }
 
                 return res.status(400).json({
-                    message: "JD không ở trạng thái Nháp"
+                    message: "Chỉ có thể gửi duyệt JD ở trạng thái Nháp hoặc Từ chối"
                 });
             }
 
@@ -273,7 +283,7 @@ router.put(
                 UPDATE jd
                 SET
                     trang_thai = 'da_duyet',
-                    nguoi_duyet_id = ?,
+                    nguoi_duyet = ?,
                     ngay_duyet = NOW()
                 WHERE id = ?
                 AND trang_thai = 'cho_duyet'
@@ -313,20 +323,79 @@ router.put(
     }
 );
 
+/*
+ * TU CHOI JD
+ * cho_duyet -> tu_choi
+ */
+router.put(
+    "/:id/tu-choi",
+    kiemTraDangNhap,
+    kiemTraVaiTro("admin", "manager"),
+    async function (req, res) {
+        try {
+            const [result] = await db.query(`
+                UPDATE jd
+                SET trang_thai = 'tu_choi'
+                WHERE id = ?
+                AND trang_thai = 'cho_duyet'
+            `, [req.params.id]);
+
+            if (result.affectedRows === 0) {
+                const [rows] = await db.query(
+                    "SELECT id, trang_thai FROM jd WHERE id = ?",
+                    [req.params.id]
+                );
+
+                if (rows.length === 0) {
+                    return res.status(404).json({
+                        message: "Không tìm thấy JD"
+                    });
+                }
+
+                return res.status(400).json({
+                    message: "Chỉ có thể từ chối JD đang chờ duyệt"
+                });
+            }
+
+            res.json({
+                message: "Từ chối JD thành công"
+            });
+        } catch (error) {
+            console.error("PUT /api/jd/:id/tu-choi:", error);
+
+            res.status(500).json({
+                message: "Không từ chối được JD",
+                error: error.message
+            });
+        }
+    }
+);
+
 router.delete(
     "/:id",
     kiemTraDangNhap,
-    kiemTraVaiTro("admin", "manager", "hr"),
+    kiemTraVaiTro("admin", "manager"),
     async function (req, res) {
         try {
             const [result] = await db.query(
-                "DELETE FROM jd WHERE id = ?",
+                "DELETE FROM jd WHERE id = ? AND trang_thai <> 'da_duyet'",
                 [req.params.id]
             );
 
             if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    message: "Không tìm thấy JD"
+                const [jdRows] = await db.query(
+                    "SELECT trang_thai FROM jd WHERE id = ?",
+                    [req.params.id]
+                );
+
+                if (jdRows.length === 0) {
+                    return res.status(404).json({
+                        message: "Không tìm thấy JD"
+                    });
+                }
+
+                return res.status(400).json({
+                    message: "Không thể xóa JD đã được duyệt"
                 });
             }
 
