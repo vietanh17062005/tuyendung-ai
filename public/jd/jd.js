@@ -76,6 +76,18 @@ const menuNguoiDung = document.getElementById("menuNguoiDung");
 let danhSachJD = [];
 let danhSachDotTuyen = [];
 
+function dotTuyenKhoaTao(trangThai) {
+  return [
+    "tam_dung",
+    "ket_thuc",
+    "da_dong",
+    "dong",
+    "closed"
+  ].includes(
+    String(trangThai || "").toLowerCase()
+  );
+}
+
 function layTenTrangThai(trangThai) {
   const danhSach = {
     nhap: "Nháp",
@@ -225,7 +237,6 @@ function renderJD(danhSach) {
   danhSach.forEach(function (jd, index) {
     const tr = document.createElement("tr");
 
-    // Hỗ trợ quét nhiều tên trường dữ liệu trả về cho Người duyệt
     const nguoiDyet =
       jd.nguoi_duyet_ten ||
       jd.nguoi_duyet ||
@@ -317,11 +328,11 @@ async function layDotTuyen() {
       ? data
       : data.data || data.dot_tuyen || [];
 
-    // Sắp xếp: Đợt đang tuyển/nháp lên trên, tạm dừng/kết thúc xuống dưới cùng
+    // Sắp xếp: Đợt đang hoạt động lên trên, tạm dừng/kết thúc xuống dưới cùng
     danhSachDotTuyen.sort(function (a, b) {
-      const isInactiveA = ["tam_dung", "ket_thuc"].includes(a.trang_thai);
-      const isInactiveB = ["tam_dung", "ket_thuc"].includes(b.trang_thai);
-      
+      const isInactiveA = dotTuyenKhoaTao(a.trang_thai);
+      const isInactiveB = dotTuyenKhoaTao(b.trang_thai);
+
       if (isInactiveA === isInactiveB) return 0;
       return isInactiveA ? 1 : -1;
     });
@@ -332,21 +343,37 @@ async function layDotTuyen() {
       `;
 
       danhSachDotTuyen.forEach(function (dotTuyen) {
-        const trangThai = dotTuyen.trang_thai;
-        let tenHienThi = dotTuyen.ten_dot || dotTuyen.ten;
-        let khongChoChon = false;
+        const khoa = dotTuyenKhoaTao(dotTuyen.trang_thai);
+        let tenHienThi = dotTuyen.ten_dot || dotTuyen.ten || "";
 
-        if (trangThai === "tam_dung") {
+        if (dotTuyen.trang_thai === "tam_dung") {
           tenHienThi += " (Tạm dừng)";
-          khongChoChon = true;
-        } else if (trangThai === "ket_thuc") {
+        } else if (["ket_thuc", "da_dong", "dong", "closed"].includes(dotTuyen.trang_thai)) {
           tenHienThi += " (Đã kết thúc)";
-          khongChoChon = true;
         }
 
-        inputDotTuyen.innerHTML += `
-          <option value="${escapeHTML(dotTuyen.id)}" ${khongChoChon ? "disabled style='color: #94a3b8; background-color: #f1f5f9;'" : ""}>
-            ${escapeHTML(tenHienThi)}
+        const option = document.createElement("option");
+        option.value = dotTuyen.id;
+        option.textContent = tenHienThi;
+        option.disabled = khoa;
+        if (khoa) {
+          option.style.color = "#94a3b8";
+          option.style.backgroundColor = "#f1f5f9";
+        }
+
+        inputDotTuyen.appendChild(option);
+      });
+    }
+
+    if (locDotTuyen) {
+      locDotTuyen.innerHTML = `
+        <option value="">Tất cả đợt tuyển dụng</option>
+      `;
+
+      danhSachDotTuyen.forEach(function (dotTuyen) {
+        locDotTuyen.innerHTML += `
+          <option value="${escapeHTML(dotTuyen.id)}">
+            ${escapeHTML(dotTuyen.ten_dot || dotTuyen.ten)}
           </option>
         `;
       });
@@ -448,7 +475,7 @@ async function suaJD(id) {
     if (inputMoTa) inputMoTa.value = jd.mo_ta || "";
     if (inputYeuCau) inputYeuCau.value = jd.yeu_cau || "";
     if (inputQuyenLoi) inputQuyenLoi.value = jd.quyen_loi || "";
-    if (inputTieuChi) inputTieuChi.value = jd.tieu_chi || "";
+    if (inputTieuChi) inputTieuChi.value = jd.tieu_chi || jd.scoring_rubric || "";
 
     const tieuDeModal = document.getElementById("tieuDeModal");
     if (tieuDeModal) {
@@ -477,13 +504,13 @@ async function luuJD(event) {
 
   const id = inputId?.value;
 
-  const payload = {
-    tieu_de: inputTieuDe?.value.trim(),
-    dot_tuyen_id: inputDotTuyen?.value,
-    mo_ta: inputMoTa?.value.trim(),
-    yeu_cau: inputYeuCau?.value.trim(),
-    quyen_loi: inputQuyenLoi?.value.trim(),
-    tieu_chi: inputTieuChi?.value.trim(),
+const payload = {
+    tieu_de: inputTieuDe?.value.trim() || null,
+    dot_tuyen_id: inputDotTuyen?.value ? Number(inputDotTuyen.value) : null,
+    mo_ta: inputMoTa?.value.trim() || null,
+    yeu_cau: inputYeuCau?.value.trim() || null,
+    quyen_loi: inputQuyenLoi?.value.trim() || null,
+    tieu_chi: inputTieuChi?.value.trim() || null,
   };
 
   if (!payload.tieu_de) {
@@ -691,6 +718,18 @@ if (btnDangXuat) {
     localStorage.removeItem("token");
     localStorage.removeItem("nguoi_dung");
     window.location.href = "/login/login.html";
+  });
+}
+
+if (btnThongTin) {
+  btnThongTin.addEventListener("click", function () {
+    alert("Chức năng thông tin tài khoản");
+  });
+}
+
+if (btnDoiMatKhau) {
+  btnDoiMatKhau.addEventListener("click", function () {
+    alert("Chức năng đổi mật khẩu");
   });
 }
 
