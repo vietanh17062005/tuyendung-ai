@@ -537,7 +537,7 @@ form textarea {
   margin: 0;
 }
 
-.candidate-details > div {
+.candidate-details>div {
   min-width: 0;
   padding: 12px 0;
   border-bottom: 1px solid #f1f5f9;
@@ -583,11 +583,11 @@ form textarea {
   border-top: 1px solid #e2e8f0;
 }
 
-.cv-item > div {
+.cv-item>div {
   min-width: 0;
 }
 
-.cv-item > div:first-child {
+.cv-item>div:first-child {
   min-width: 0;
   flex: 1;
 }

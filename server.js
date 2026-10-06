@@ -11,6 +11,7 @@ const dotTuyenRoutes = require("./routes/dotTuyen");
 const jdRoutes = require("./routes/jd");
 const ungVienRoutes = require("./routes/ungVien");
 const taiKhoanRoutes = require("./routes/taiKhoan");
+const cvRoutes = require("./routes/cv");
 
 const { kiemTraDangNhap, kiemTraVaiTro } = require("./middleware/auth");
 
@@ -46,6 +47,7 @@ app.use("/api/dot-tuyen", dotTuyenRoutes);
 app.use("/api/jd", jdRoutes);
 app.use("/api/ung-vien", ungVienRoutes);
 app.use("/api/tai-khoan", taiKhoanRoutes);
+app.use("/api/cv", cvRoutes);
 
 app.get("/api/dashboard", kiemTraDangNhap, async function (req, res) {
   try {
@@ -61,13 +63,11 @@ app.get("/api/dashboard", kiemTraDangNhap, async function (req, res) {
       "SELECT COUNT(*) AS so_luong FROM phong_van",
     );
 
-    const [daTuyen] = await db.query(
-      `
-                SELECT COUNT(*) AS so_luong
-                FROM quyet_dinh
-                WHERE ket_qua = 'hired'
-                `,
-    );
+    const [daTuyen] = await db.query(`
+      SELECT COUNT(*) AS so_luong
+      FROM quyet_dinh
+      WHERE ket_qua = 'hired'
+    `);
 
     res.json({
       so_dot_tuyen: dotTuyen[0].so_luong,

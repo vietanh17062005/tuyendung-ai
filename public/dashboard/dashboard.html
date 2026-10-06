@@ -1,249 +1,247 @@
 <!doctype html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+  <meta charset="UTF-8" />
 
-    <title>Hệ thống tuyển dụng nhân sự</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" href="/dashboard/dashboard.css" />
-  </head>
+  <title>Hệ thống tuyển dụng nhân sự</title>
 
-  <body>
-    <div class="khung">
-      <!-- SIDEBAR -->
+  <link rel="stylesheet" href="/dashboard/dashboard.css" />
+</head>
 
-      <aside class="menu">
-        <div class="logo">
-          <div class="logo-icon">RH</div>
+<body>
+  <div class="khung">
+    <!-- SIDEBAR -->
 
-          <div>
-            <div class="logo-title">Hệ thống tuyển dụng nhân sự</div>
+    <aside class="menu">
+      <div class="logo">
+        <div class="logo-icon">RH</div>
 
-            <div class="logo-subtitle">AI Recruitment System</div>
-          </div>
+        <div>
+          <div class="logo-title">Hệ thống tuyển dụng nhân sự</div>
+
+          <div class="logo-subtitle">AI Recruitment System</div>
         </div>
-
-        <nav class="menu-list">
-          <a href="/dashboard/dashboard.html" class="active"
-            ><span>▦</span>Dashboard</a
-          >
-          <a href="/dot-tuyen/dot-tuyen.html"><span>▤</span>Đợt tuyển dụng</a>
-          <a href="/jd/jd.html"><span>▤</span>JD tuyển dụng</a>
-          <a href="/ung-vien/ung-vien.html"><span>♙</span>Ứng viên</a>
-          <a href="#"><span>▣</span>CV</a>
-          <a href="#"><span>◷</span>Phỏng vấn</a>
-          <a href="#"><span>▥</span>Báo cáo</a>
-          <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung"
-            ><span>♙</span>Người dùng</a
-          >
-        </nav>
-      </aside>
-
-      <!-- NỘI DUNG -->
-
-      <main class="noi-dung">
-        <!-- TOPBAR -->
-
-        <header class="topbar">
-          <div>
-            <p class="tieu-de-nho">TỔNG QUAN HỆ THỐNG</p>
-            <h1>Dashboard</h1>
-          </div>
-
-          <!-- TÀI KHOẢN -->
-
-          <div class="tai-khoan" id="taiKhoan">
-            <div class="tai-khoan-thong-tin">
-              <div class="avatar" id="avatar">A</div>
-              <div class="nguoi-dung-info">
-                <strong id="tenNguoiDung">Admin</strong>
-                <span id="vaiTro">Quản trị viên</span>
-              </div>
-            </div>
-
-            <span class="mui-ten">▾</span>
-
-            <!-- DROPDOWN -->
-
-            <div class="menu-tai-khoan" id="menuTaiKhoan">
-              <div class="tai-khoan-header">
-                <strong id="tenMenuTaiKhoan">Admin</strong>
-                <span id="emailMenuTaiKhoan">admin@gmail.com</span>
-              </div>
-
-              <button id="btnThongTin">
-                <span>👤</span>Thông tin tài khoản
-              </button>
-              <button id="btnDoiMatKhau"><span>🔑</span>Đổi mật khẩu</button>
-
-              <div class="duong-ke"></div>
-
-              <button id="btnDangXuat" class="btn-dang-xuat">
-                <span>↪</span>Đăng xuất
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <!-- WELCOME -->
-
-        <section class="thong-tin">
-          <div>
-            <h2 id="xinChao">Xin chào!</h2>
-            <p id="moTaVaiTro">Chào mừng bạn quay trở lại hệ thống.</p>
-          </div>
-        </section>
-
-        <!-- THỐNG KÊ -->
-
-        <section class="the">
-          <div class="the-item">
-            <div class="the-icon">▤</div>
-
-            <div class="the-noi-dung">
-              <span>Đợt tuyển dụng</span>
-              <strong id="soDotTuyen">0</strong>
-            </div>
-          </div>
-
-          <div class="the-item">
-            <div class="the-icon">♙</div>
-
-            <div class="the-noi-dung">
-              <span>Ứng viên</span>
-              <strong id="soUngVien">0</strong>
-            </div>
-          </div>
-
-          <div class="the-item">
-            <div class="the-icon">◷</div>
-
-            <div class="the-noi-dung">
-              <span> Phỏng vấn </span>
-
-              <strong id="soPhongVan"> 0 </strong>
-            </div>
-          </div>
-
-          <div class="the-item">
-            <div class="the-icon">✓</div>
-
-            <div class="the-noi-dung">
-              <span> Đã tuyển </span>
-
-              <strong id="soDaTuyen"> 0 </strong>
-            </div>
-          </div>
-        </section>
-
-        <!-- QUYỀN -->
-
-        <section class="quyen-container">
-          <div class="quyen-header">
-            <div>
-              <h2>Quyền truy cập</h2>
-
-              <p>Các chức năng bạn có thể sử dụng trong hệ thống.</p>
-            </div>
-          </div>
-
-          <div class="danh-sach-quyen" id="danhSachQuyen"></div>
-        </section>
-      </main>
-    </div>
-
-    <!-- MODAL THÔNG TIN TÀI KHOẢN -->
-
-    <div class="modal" id="modalThongTin">
-      <div class="modal-box">
-        <div class="modal-header">
-          <div>
-            <h2>Thông tin tài khoản</h2>
-
-            <p>Cập nhật thông tin cá nhân</p>
-          </div>
-
-          <button class="btn-dong" id="btnDongThongTin">×</button>
-        </div>
-
-        <form id="formThongTin">
-          <div class="form-group">
-            <label>Họ tên</label>
-
-            <input type="text" id="taiKhoanHoTen" required />
-          </div>
-
-          <div class="form-group">
-            <label>Email</label>
-
-            <input type="email" id="taiKhoanEmail" required />
-          </div>
-
-          <div class="form-group">
-            <label>Vai trò</label>
-
-            <input type="text" id="taiKhoanVaiTro" readonly />
-          </div>
-
-          <div class="thong-bao" id="thongBaoThongTin"></div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn-huy" id="btnHuyThongTin">
-              Hủy
-            </button>
-            <button type="submit" class="btn-luu">Lưu thay đổi</button>
-          </div>
-        </form>
       </div>
-    </div>
 
-    <!-- MODAL ĐỔI MẬT KHẨU -->
+      <nav class="menu-list">
+        <a href="/dashboard/dashboard.html" class="active"><span>▦</span>Dashboard</a>
+        <a href="/dot-tuyen/dot-tuyen.html"><span>▤</span>Đợt tuyển dụng</a>
+        <a href="/jd/jd.html"><span>▤</span>JD tuyển dụng</a>
+        <a href="/ung-vien/ung-vien.html"><span>♙</span>Ứng viên</a>
+        <a href="/cv/cv.html"><span>▣</span>CV</a>
+        <a href="#"><span>◷</span>Phỏng vấn</a>
+        <a href="#"><span>▥</span>Báo cáo</a>
+        <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung"><span>♙</span>Người dùng</a>
+      </nav>
+    </aside>
 
-    <div class="modal" id="modalMatKhau">
-      <div class="modal-box">
-        <div class="modal-header">
-          <div>
-            <h2>Đổi mật khẩu</h2>
+    <!-- NỘI DUNG -->
 
-            <p>Cập nhật mật khẩu đăng nhập</p>
-          </div>
+    <main class="noi-dung">
+      <!-- TOPBAR -->
 
-          <button class="btn-dong" id="btnDongMatKhau">×</button>
+      <header class="topbar">
+        <div>
+          <p class="tieu-de-nho">TỔNG QUAN HỆ THỐNG</p>
+          <h1>Dashboard</h1>
         </div>
 
-        <form id="formMatKhau">
-          <div class="form-group">
-            <label>Mật khẩu hiện tại</label>
+        <!-- TÀI KHOẢN -->
 
-            <input type="password" id="matKhauCu" required />
+        <div class="tai-khoan" id="taiKhoan">
+          <div class="tai-khoan-thong-tin">
+            <div class="avatar" id="avatar">A</div>
+            <div class="nguoi-dung-info">
+              <strong id="tenNguoiDung">Admin</strong>
+              <span id="vaiTro">Quản trị viên</span>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>Mật khẩu mới</label>
+          <span class="mui-ten">▾</span>
 
-            <input type="password" id="matKhauMoi" required />
-          </div>
+          <!-- DROPDOWN -->
 
-          <div class="form-group">
-            <label>Nhập lại mật khẩu mới</label>
+          <div class="menu-tai-khoan" id="menuTaiKhoan">
+            <div class="tai-khoan-header">
+              <strong id="tenMenuTaiKhoan">Admin</strong>
+              <span id="emailMenuTaiKhoan">admin@gmail.com</span>
+            </div>
 
-            <input type="password" id="xacNhanMatKhau" required />
-          </div>
-
-          <div class="thong-bao" id="thongBaoMatKhau"></div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn-huy" id="btnHuyMatKhau">
-              Hủy
+            <button id="btnThongTin">
+              <span>👤</span>Thông tin tài khoản
             </button>
-            <button type="submit" class="btn-luu">Đổi mật khẩu</button>
-          </div>
-        </form>
-      </div>
-    </div>
+            <button id="btnDoiMatKhau"><span>🔑</span>Đổi mật khẩu</button>
 
-    <script src="/dashboard/dashboard.js"></script>
-  </body>
+            <div class="duong-ke"></div>
+
+            <button id="btnDangXuat" class="btn-dang-xuat">
+              <span>↪</span>Đăng xuất
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- WELCOME -->
+
+      <section class="thong-tin">
+        <div>
+          <h2 id="xinChao">Xin chào!</h2>
+          <p id="moTaVaiTro">Chào mừng bạn quay trở lại hệ thống.</p>
+        </div>
+      </section>
+
+      <!-- THỐNG KÊ -->
+
+      <section class="the">
+        <div class="the-item">
+          <div class="the-icon">▤</div>
+
+          <div class="the-noi-dung">
+            <span>Đợt tuyển dụng</span>
+            <strong id="soDotTuyen">0</strong>
+          </div>
+        </div>
+
+        <div class="the-item">
+          <div class="the-icon">♙</div>
+
+          <div class="the-noi-dung">
+            <span>Ứng viên</span>
+            <strong id="soUngVien">0</strong>
+          </div>
+        </div>
+
+        <div class="the-item">
+          <div class="the-icon">◷</div>
+
+          <div class="the-noi-dung">
+            <span> Phỏng vấn </span>
+
+            <strong id="soPhongVan"> 0 </strong>
+          </div>
+        </div>
+
+        <div class="the-item">
+          <div class="the-icon">✓</div>
+
+          <div class="the-noi-dung">
+            <span> Đã tuyển </span>
+
+            <strong id="soDaTuyen"> 0 </strong>
+          </div>
+        </div>
+      </section>
+
+      <!-- QUYỀN -->
+
+      <section class="quyen-container">
+        <div class="quyen-header">
+          <div>
+            <h2>Quyền truy cập</h2>
+
+            <p>Các chức năng bạn có thể sử dụng trong hệ thống.</p>
+          </div>
+        </div>
+
+        <div class="danh-sach-quyen" id="danhSachQuyen"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL THÔNG TIN TÀI KHOẢN -->
+
+  <div class="modal" id="modalThongTin">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h2>Thông tin tài khoản</h2>
+
+          <p>Cập nhật thông tin cá nhân</p>
+        </div>
+
+        <button class="btn-dong" id="btnDongThongTin">×</button>
+      </div>
+
+      <form id="formThongTin">
+        <div class="form-group">
+          <label>Họ tên</label>
+
+          <input type="text" id="taiKhoanHoTen" required />
+        </div>
+
+        <div class="form-group">
+          <label>Email</label>
+
+          <input type="email" id="taiKhoanEmail" required />
+        </div>
+
+        <div class="form-group">
+          <label>Vai trò</label>
+
+          <input type="text" id="taiKhoanVaiTro" readonly />
+        </div>
+
+        <div class="thong-bao" id="thongBaoThongTin"></div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-huy" id="btnHuyThongTin">
+            Hủy
+          </button>
+          <button type="submit" class="btn-luu">Lưu thay đổi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL ĐỔI MẬT KHẨU -->
+
+  <div class="modal" id="modalMatKhau">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h2>Đổi mật khẩu</h2>
+
+          <p>Cập nhật mật khẩu đăng nhập</p>
+        </div>
+
+        <button class="btn-dong" id="btnDongMatKhau">×</button>
+      </div>
+
+      <form id="formMatKhau">
+        <div class="form-group">
+          <label>Mật khẩu hiện tại</label>
+
+          <input type="password" id="matKhauCu" required />
+        </div>
+
+        <div class="form-group">
+          <label>Mật khẩu mới</label>
+
+          <input type="password" id="matKhauMoi" required />
+        </div>
+
+        <div class="form-group">
+          <label>Nhập lại mật khẩu mới</label>
+
+          <input type="password" id="xacNhanMatKhau" required />
+        </div>
+
+        <div class="thong-bao" id="thongBaoMatKhau"></div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-huy" id="btnHuyMatKhau">
+            Hủy
+          </button>
+          <button type="submit" class="btn-luu">Đổi mật khẩu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/dashboard/dashboard.js"></script>
+</body>
+
 </html>

@@ -1,103 +1,157 @@
-(function () {
-  const token = localStorage.getItem("token");
-  const btnThongTin = document.getElementById("btnThongTin");
-  const btnDoiMatKhau = document.getElementById("btnDoiMatKhau");
-  const btnDangXuat = document.getElementById("btnDangXuat");
+const token = localStorage.getItem("token"); // Lấy token đăng nhập
+const nguoiDungJSON = localStorage.getItem("nguoi_dung"); // Lấy thông tin người dùng
 
-  function dangXuat() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("nguoi_dung");
-    window.location.href = "/login/login.html";
-  }
+if (!token || !nguoiDungJSON) {
+  window.location.href = "/login/login.html";
+}
 
-  if (!token) {
-    if (btnDangXuat) {
-      btnDangXuat.addEventListener("click", dangXuat);
-    }
+let nguoiDung;
+
+try {
+  nguoiDung = JSON.parse(nguoiDungJSON);
+} catch (error) {
+  localStorage.removeItem("token");
+  localStorage.removeItem("nguoi_dung");
+
+  window.location.href = "/login/login.html";
+}
+
+if (!nguoiDung) {
+  localStorage.removeItem("token");
+  localStorage.removeItem("nguoi_dung");
+
+  window.location.href = "/login/login.html";
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  khoiTaoTaiKhoan();
+});
+
+/* DOM */
+
+function khoiTaoTaiKhoan() {
+  const tenNguoiDung = document.getElementById("tenNguoiDung");
+  const vaiTro = document.getElementById("vaiTro");
+  const avatar = document.getElementById("avatar");
+
+  const taiKhoan = document.getElementById("taiKhoan");
+  const menuTaiKhoan = document.getElementById("menuTaiKhoan");
+
+  const tenMenuTaiKhoan =
+    document.getElementById("tenMenuTaiKhoan");
+
+  const emailMenuTaiKhoan =
+    document.getElementById("emailMenuTaiKhoan");
+
+  const btnThongTin =
+    document.getElementById("btnThongTin");
+
+  const btnDoiMatKhau =
+    document.getElementById("btnDoiMatKhau");
+
+  const btnDangXuat =
+    document.getElementById("btnDangXuat");
+
+  if (!taiKhoan || !menuTaiKhoan) {
+    console.warn("Không tìm thấy menu tài khoản.");
     return;
   }
 
-  const overlay = document.createElement("div");
-  overlay.className = "account-overlay";
-  overlay.id = "accountOverlay";
-  overlay.setAttribute("aria-hidden", "true");
+  /* Hiển thị tài khoản */
 
-  overlay.innerHTML = `
-        <section class="account-dialog" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
-            <header class="account-dialog-header">
-                <div>
-                    <h2 id="accountTitle"></h2>
-                    <p id="accountSubtitle"></p>
-                </div>
-                <button type="button" class="account-close" id="accountClose" aria-label="Đóng">&times;</button>
-            </header>
+  const hoTen =
+    nguoiDung.ho_ten ||
+    nguoiDung.ten ||
+    nguoiDung.username ||
+    "Người dùng";
 
-            <form id="accountProfileForm" hidden>
-                <label for="accountName">Họ tên</label>
-                <input id="accountName" type="text" maxlength="100" required>
+  if (tenNguoiDung) {
+    tenNguoiDung.textContent = hoTen;
+  }
 
-                <label for="accountEmail">Email</label>
-                <input id="accountEmail" type="email" maxlength="150" required>
+  if (avatar) {
+    avatar.textContent = hoTen
+      .charAt(0)
+      .toUpperCase();
+  }
 
-                <label for="accountRole">Vai trò</label>
-                <input id="accountRole" type="text" readonly>
+  if (vaiTro) {
+    vaiTro.textContent =
+      layTenVaiTro(nguoiDung.vai_tro);
+  }
 
-                <div class="account-notice" id="accountProfileNotice" role="status"></div>
+  if (tenMenuTaiKhoan) {
+    tenMenuTaiKhoan.textContent = hoTen;
+  }
 
-                <footer class="account-actions">
-                    <button type="button" class="account-secondary" data-account-close>
-                        Hủy
-                    </button>
-                    <button type="submit" class="account-primary">
-                        Lưu thay đổi
-                    </button>
-                </footer>
-            </form>
+  if (emailMenuTaiKhoan) {
+    emailMenuTaiKhoan.textContent =
+      nguoiDung.email || "";
+  }
 
-            <form id="accountPasswordForm" hidden>
-                <label for="accountCurrentPassword">Mật khẩu hiện tại</label>
-                <input
-                    id="accountCurrentPassword"
-                    type="password"
-                    autocomplete="current-password"
-                    required
-                >
+  /* Dropdown tài khoản */
 
-                <label for="accountNewPassword">Mật khẩu mới</label>
-                <input
-                    id="accountNewPassword"
-                    type="password"
-                    minlength="6"
-                    autocomplete="new-password"
-                    required
-                >
+  taiKhoan.addEventListener("click", function (event) {
+    event.stopPropagation();
 
-                <label for="accountConfirmPassword">Nhập lại mật khẩu mới</label>
-                <input
-                    id="accountConfirmPassword"
-                    type="password"
-                    minlength="6"
-                    autocomplete="new-password"
-                    required
-                >
+    menuTaiKhoan.classList.toggle("hien");
+  });
 
-                <div class="account-notice" id="accountPasswordNotice" role="status"></div>
+  menuTaiKhoan.addEventListener("click", function (event) {
+    event.stopPropagation();
+  });
 
-                <footer class="account-actions">
-                    <button type="button" class="account-secondary" data-account-close>
-                        Hủy
-                    </button>
-                    <button type="submit" class="account-primary">
-                        Đổi mật khẩu
-                    </button>
-                </footer>
-            </form>
-        </section>
-    `;
+  document.addEventListener("click", function () {
+    menuTaiKhoan.classList.remove("hien");
+  });
 
-  document.body.appendChild(overlay);
+  /* Thông tin tài khoản */
 
-  const roleNames = {
+  if (btnThongTin) {
+    btnThongTin.addEventListener(
+      "click",
+      async function () {
+        menuTaiKhoan.classList.remove("hien");
+
+        await moModalThongTin();
+      },
+    );
+  }
+
+  /* Đổi mật khẩu */
+
+  if (btnDoiMatKhau) {
+    btnDoiMatKhau.addEventListener(
+      "click",
+      function () {
+        menuTaiKhoan.classList.remove("hien");
+
+        moModalMatKhau();
+      },
+    );
+  }
+
+  /* Đăng xuất */
+
+  if (btnDangXuat) {
+    btnDangXuat.addEventListener(
+      "click",
+      function () {
+        dangXuat();
+      },
+    );
+  }
+
+  /* Khởi tạo modal */
+
+  khoiTaoModalThongTin();
+  khoiTaoModalMatKhau();
+}
+
+/* Vai trò */
+
+function layTenVaiTro(vaiTro) {
+  const danhSach = {
     admin: "Quản trị viên",
     manager: "Quản lý",
     hr: "Nhân sự",
@@ -105,319 +159,475 @@
     viewer: "Người xem",
   };
 
-  function dongMenu() {
-    document.getElementById("menuTaiKhoan")?.classList.remove("hien");
-  }
+  return danhSach[vaiTro] || vaiTro || "Người dùng";
+}
 
-  function hienThongBao(element, message, success) {
-    element.textContent = message || "";
-    element.className =
-      "account-notice" + (success ? " success" : message ? " visible" : "");
-  }
+/* Modal thông tin */
 
-  function dongModal() {
-    overlay.classList.remove("open");
-    overlay.setAttribute("aria-hidden", "true");
-  }
+function khoiTaoModalThongTin() {
+  const btnDong =
+    document.getElementById("btnDongThongTin");
 
-  async function moThongTin() {
-    dongMenu();
+  const btnHuy =
+    document.getElementById("btnHuyThongTin");
 
-    document.getElementById("accountTitle").textContent =
-      "Thông tin tài khoản";
+  const form =
+    document.getElementById("formThongTin");
 
-    document.getElementById("accountSubtitle").textContent =
-      "Cập nhật thông tin cá nhân";
-
-    const form = document.getElementById("accountProfileForm");
-
-    form.hidden = false;
-
-    document.getElementById("accountPasswordForm").hidden = true;
-
-    hienThongBao(
-      document.getElementById("accountProfileNotice"),
-      "",
-      false
+  if (btnDong) {
+    btnDong.addEventListener(
+      "click",
+      function () {
+        dongModalThongTin();
+      },
     );
+  }
 
-    overlay.classList.add("open");
-    overlay.setAttribute("aria-hidden", "false");
+  if (btnHuy) {
+    btnHuy.addEventListener(
+      "click",
+      function () {
+        dongModalThongTin();
+      },
+    );
+  }
 
-    try {
-      const response = await fetch("/api/tai-khoan", {
+  if (form) {
+    form.addEventListener(
+      "submit",
+      luuThongTinTaiKhoan,
+    );
+  }
+}
+
+async function moModalThongTin() {
+  try {
+    const response = await fetch(
+      "/api/tai-khoan",
+      {
         headers: {
           Authorization: "Bearer " + token,
         },
-      });
-
-      const data = await response.json();
-
-      if (response.status === 401) {
-        dangXuat();
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(
-          data.message || "Không lấy được thông tin tài khoản"
-        );
-      }
-
-      document.getElementById("accountName").value = data.ho_ten || "";
-      document.getElementById("accountEmail").value = data.email || "";
-
-      document.getElementById("accountRole").value =
-        roleNames[data.vai_tro] || data.vai_tro || "";
-
-      document.getElementById("accountName").focus();
-    } catch (error) {
-      hienThongBao(
-        document.getElementById("accountProfileNotice"),
-        error.message,
-        false
-      );
-    }
-  }
-
-  function moDoiMatKhau() {
-    dongMenu();
-
-    document.getElementById("accountTitle").textContent =
-      "Đổi mật khẩu";
-
-    document.getElementById("accountSubtitle").textContent =
-      "Cập nhật mật khẩu đăng nhập";
-
-    document.getElementById("accountProfileForm").hidden = true;
-
-    const form = document.getElementById("accountPasswordForm");
-
-    form.reset();
-    form.hidden = false;
-
-    hienThongBao(
-      document.getElementById("accountPasswordNotice"),
-      "",
-      false
+      },
     );
 
-    overlay.classList.add("open");
-    overlay.setAttribute("aria-hidden", "false");
-
-    document.getElementById("accountCurrentPassword").focus();
-  }
-
-  // Thông tin tài khoản
-  if (btnThongTin) {
-    btnThongTin.addEventListener("click", moThongTin);
-  }
-
-  // Đổi mật khẩu
-  if (btnDoiMatKhau) {
-    btnDoiMatKhau.addEventListener("click", moDoiMatKhau);
-  }
-
-  // Đăng xuất
-  if (btnDangXuat) {
-    btnDangXuat.addEventListener("click", function (event) {
-      event.preventDefault();
-      event.stopPropagation();
+    if (response.status === 401) {
       dangXuat();
-    });
-  }
-
-  // Đóng modal
-  document
-    .getElementById("accountClose")
-    .addEventListener("click", dongModal);
-
-  overlay.addEventListener("click", function (event) {
-    if (
-      event.target === overlay ||
-      event.target.closest("[data-account-close]")
-    ) {
-      dongModal();
+      return;
     }
-  });
 
-  // Nhấn ESC để đóng modal
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") {
-      dongModal();
-    }
-  });
+    const data = await response.json();
 
-  // Cập nhật thông tin tài khoản
-  document
-    .getElementById("accountProfileForm")
-    .addEventListener("submit", async function (event) {
-      event.preventDefault();
-
-      const notice = document.getElementById("accountProfileNotice");
-
-      const hoTen = document
-        .getElementById("accountName")
-        .value
-        .trim();
-
-      const email = document
-        .getElementById("accountEmail")
-        .value
-        .trim();
-
-      try {
-        const response = await fetch("/api/tai-khoan", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + token,
-          },
-          body: JSON.stringify({
-            ho_ten: hoTen,
-            email: email,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.status === 401) {
-          dangXuat();
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Không cập nhật được tài khoản"
-          );
-        }
-
-        const user = JSON.parse(
-          localStorage.getItem("nguoi_dung") || "{}"
-        );
-
-        user.ho_ten = hoTen;
-        user.email = email;
-
-        localStorage.setItem(
-          "nguoi_dung",
-          JSON.stringify(user)
-        );
-
-        const tenNguoiDung = document.getElementById("tenNguoiDung");
-        const avatar = document.getElementById("avatar");
-        const tenMenuTaiKhoan =
-          document.getElementById("tenMenuTaiKhoan");
-        const emailMenuTaiKhoan =
-          document.getElementById("emailMenuTaiKhoan");
-
-        if (tenNguoiDung) {
-          tenNguoiDung.textContent = hoTen;
-        }
-
-        if (avatar) {
-          avatar.textContent = hoTen
-            .charAt(0)
-            .toUpperCase();
-        }
-
-        if (tenMenuTaiKhoan) {
-          tenMenuTaiKhoan.textContent = hoTen;
-        }
-
-        if (emailMenuTaiKhoan) {
-          emailMenuTaiKhoan.textContent = email;
-        }
-
-        hienThongBao(
-          notice,
-          data.message,
-          true
-        );
-      } catch (error) {
-        hienThongBao(
-          notice,
-          error.message,
-          false
-        );
-      }
-    });
-
-  // Đổi mật khẩu
-  document
-    .getElementById("accountPasswordForm")
-    .addEventListener("submit", async function (event) {
-      event.preventDefault();
-
-      const notice = document.getElementById(
-        "accountPasswordNotice"
+    if (!response.ok) {
+      alert(
+        data.message ||
+        "Không lấy được thông tin tài khoản.",
       );
 
-      const current = document
-        .getElementById("accountCurrentPassword")
-        .value;
+      return;
+    }
 
-      const next = document
-        .getElementById("accountNewPassword")
-        .value;
+    const hoTen =
+      document.getElementById("taiKhoanHoTen");
 
-      const confirm = document
-        .getElementById("accountConfirmPassword")
-        .value;
+    const email =
+      document.getElementById("taiKhoanEmail");
 
-      if (next !== confirm) {
-        hienThongBao(
-          notice,
-          "Mật khẩu xác nhận không khớp",
-          false
-        );
-        return;
+    const vaiTro =
+      document.getElementById("taiKhoanVaiTro");
+
+    if (hoTen) {
+      hoTen.value = data.ho_ten || "";
+    }
+
+    if (email) {
+      email.value = data.email || "";
+    }
+
+    if (vaiTro) {
+      vaiTro.value =
+        layTenVaiTro(data.vai_tro);
+    }
+
+    const modal =
+      document.getElementById(
+        "modalThongTin",
+      );
+
+    if (modal) {
+      modal.classList.add("hien");
+    }
+  } catch (error) {
+    console.error(error);
+
+    alert(
+      "Không thể kết nối đến máy chủ.",
+    );
+  }
+}
+
+function dongModalThongTin() {
+  const modal =
+    document.getElementById(
+      "modalThongTin",
+    );
+
+  if (modal) {
+    modal.classList.remove("hien");
+  }
+}
+
+async function luuThongTinTaiKhoan(event) {
+  event.preventDefault();
+
+  const hoTen =
+    document
+      .getElementById("taiKhoanHoTen")
+      .value.trim();
+
+  const email =
+    document
+      .getElementById("taiKhoanEmail")
+      .value.trim();
+
+  const thongBao =
+    document.getElementById(
+      "thongBaoThongTin",
+    );
+
+  if (thongBao) {
+    thongBao.className = "thong-bao";
+    thongBao.textContent = "";
+  }
+
+  try {
+    const response = await fetch(
+      "/api/tai-khoan",
+      {
+        method: "PUT",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          Authorization:
+            "Bearer " + token,
+        },
+
+        body: JSON.stringify({
+          ho_ten: hoTen,
+          email: email,
+        }),
+      },
+    );
+
+    if (response.status === 401) {
+      dangXuat();
+      return;
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (thongBao) {
+        thongBao.textContent =
+          data.message ||
+          "Không thể cập nhật thông tin.";
+
+        thongBao.classList.add("hien");
       }
 
-      try {
-        const response = await fetch(
-          "/api/tai-khoan/mat-khau",
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + token,
-            },
-            body: JSON.stringify({
-              mat_khau_cu: current,
-              mat_khau_moi: next,
-            }),
-          }
-        );
+      return;
+    }
 
-        const data = await response.json();
+    nguoiDung.ho_ten = hoTen;
+    nguoiDung.email = email;
 
-        if (response.status === 401) {
-          dangXuat();
-          return;
-        }
+    localStorage.setItem(
+      "nguoi_dung",
+      JSON.stringify(nguoiDung),
+    );
 
-        if (!response.ok) {
-          throw new Error(
-            data.message || "Không đổi được mật khẩu"
-          );
-        }
+    capNhatTaiKhoanTrenGiaoDien();
 
-        hienThongBao(
-          notice,
-          data.message,
-          true
-        );
+    if (thongBao) {
+      thongBao.textContent =
+        "Cập nhật thông tin thành công.";
 
-        document
-          .getElementById("accountPasswordForm")
-          .reset();
-      } catch (error) {
-        hienThongBao(
-          notice,
-          error.message,
-          false
-        );
+      thongBao.classList.add(
+        "hien",
+        "thanh-cong",
+      );
+    }
+
+    setTimeout(function () {
+      dongModalThongTin();
+    }, 700);
+  } catch (error) {
+    console.error(error);
+
+    if (thongBao) {
+      thongBao.textContent =
+        "Không thể kết nối đến máy chủ.";
+
+      thongBao.classList.add("hien");
+    }
+  }
+}
+
+/* Cập nhật tài khoản */
+
+function capNhatTaiKhoanTrenGiaoDien() {
+  const hoTen =
+    nguoiDung.ho_ten ||
+    nguoiDung.ten ||
+    nguoiDung.username ||
+    "Người dùng";
+
+  const tenNguoiDung =
+    document.getElementById(
+      "tenNguoiDung",
+    );
+
+  const avatar =
+    document.getElementById("avatar");
+
+  const tenMenuTaiKhoan =
+    document.getElementById(
+      "tenMenuTaiKhoan",
+    );
+
+  const emailMenuTaiKhoan =
+    document.getElementById(
+      "emailMenuTaiKhoan",
+    );
+
+  if (tenNguoiDung) {
+    tenNguoiDung.textContent = hoTen;
+  }
+
+  if (avatar) {
+    avatar.textContent =
+      hoTen.charAt(0).toUpperCase();
+  }
+
+  if (tenMenuTaiKhoan) {
+    tenMenuTaiKhoan.textContent =
+      hoTen;
+  }
+
+  if (emailMenuTaiKhoan) {
+    emailMenuTaiKhoan.textContent =
+      nguoiDung.email || "";
+  }
+}
+
+/* Modal đổi mật khẩu */
+
+function khoiTaoModalMatKhau() {
+  const btnDong =
+    document.getElementById(
+      "btnDongMatKhau",
+    );
+
+  const btnHuy =
+    document.getElementById(
+      "btnHuyMatKhau",
+    );
+
+  const form =
+    document.getElementById(
+      "formMatKhau",
+    );
+
+  if (btnDong) {
+    btnDong.addEventListener(
+      "click",
+      function () {
+        dongModalMatKhau();
+      },
+    );
+  }
+
+  if (btnHuy) {
+    btnHuy.addEventListener(
+      "click",
+      function () {
+        dongModalMatKhau();
+      },
+    );
+  }
+
+  if (form) {
+    form.addEventListener(
+      "submit",
+      doiMatKhau,
+    );
+  }
+}
+
+function moModalMatKhau() {
+  const form =
+    document.getElementById(
+      "formMatKhau",
+    );
+
+  const thongBao =
+    document.getElementById(
+      "thongBaoMatKhau",
+    );
+
+  if (form) {
+    form.reset();
+  }
+
+  if (thongBao) {
+    thongBao.className = "thong-bao";
+    thongBao.textContent = "";
+  }
+
+  const modal =
+    document.getElementById(
+      "modalMatKhau",
+    );
+
+  if (modal) {
+    modal.classList.add("hien");
+  }
+}
+
+function dongModalMatKhau() {
+  const modal =
+    document.getElementById(
+      "modalMatKhau",
+    );
+
+  if (modal) {
+    modal.classList.remove("hien");
+  }
+}
+
+async function doiMatKhau(event) {
+  event.preventDefault();
+
+  const matKhauCu =
+    document.getElementById(
+      "matKhauCu",
+    ).value;
+
+  const matKhauMoi =
+    document.getElementById(
+      "matKhauMoi",
+    ).value;
+
+  const xacNhan =
+    document.getElementById(
+      "xacNhanMatKhau",
+    ).value;
+
+  const thongBao =
+    document.getElementById(
+      "thongBaoMatKhau",
+    );
+
+  if (thongBao) {
+    thongBao.className = "thong-bao";
+    thongBao.textContent = "";
+  }
+
+  if (matKhauMoi !== xacNhan) {
+    if (thongBao) {
+      thongBao.textContent =
+        "Mật khẩu xác nhận không khớp.";
+
+      thongBao.classList.add("hien");
+    }
+
+    return;
+  }
+
+  if (matKhauMoi.length < 6) {
+    if (thongBao) {
+      thongBao.textContent =
+        "Mật khẩu mới phải có ít nhất 6 ký tự.";
+
+      thongBao.classList.add("hien");
+    }
+
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "/api/tai-khoan/mat-khau",
+      {
+        method: "PUT",
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          Authorization:
+            "Bearer " + token,
+        },
+
+        body: JSON.stringify({
+          mat_khau_cu: matKhauCu,
+          mat_khau_moi: matKhauMoi,
+        }),
+      },
+    );
+
+    if (response.status === 401) {
+      dangXuat();
+      return;
+    }
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (thongBao) {
+        thongBao.textContent =
+          data.message ||
+          "Không thể đổi mật khẩu.";
+
+        thongBao.classList.add("hien");
       }
-    });
-})();
+
+      return;
+    }
+
+    if (thongBao) {
+      thongBao.textContent =
+        "Đổi mật khẩu thành công.";
+
+      thongBao.classList.add(
+        "hien",
+        "thanh-cong",
+      );
+    }
+
+    setTimeout(function () {
+      dongModalMatKhau();
+    }, 700);
+  } catch (error) {
+    console.error(error);
+
+    if (thongBao) {
+      thongBao.textContent =
+        "Không thể kết nối đến máy chủ.";
+
+      thongBao.classList.add("hien");
+    }
+  }
+}
+
+/* Đăng xuất */
+
+function dangXuat() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("nguoi_dung");
+
+  window.location.href =
+    "/login/login.html";
+}

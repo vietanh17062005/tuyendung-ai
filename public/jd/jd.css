@@ -1035,3 +1035,30 @@ td.thao-tac {
 .thao-tac .btn-xoa:hover {
   background: #fecaca;
 }
+
+/* FORM TÀI KHOẢN (modal Thông tin tài khoản / Đổi mật khẩu) */
+
+#formThongTin,
+#formMatKhau {
+  padding: 24px;
+}
+
+#formThongTin .thong-bao,
+#formMatKhau .thong-bao {
+  margin-bottom: 15px;
+}
+
+#formThongTin .modal-footer,
+#formMatKhau .modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 5px;
+}
+
+.form-group input[readonly] {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}

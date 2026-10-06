@@ -1,146 +1,293 @@
-.account-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  display: none;
+.tai-khoan {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tai-khoan:hover {
+  background: #f1f5f9;
+}
+
+.tai-khoan-thong-tin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  background: rgba(15, 23, 42, 0.48);
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #2563eb;
+  font-weight: 700;
 }
 
-.account-overlay.open {
+.nguoi-dung-info {
   display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.account-dialog {
-  width: 460px;
-  max-width: 100%;
-  max-height: min(90vh, 720px);
-  overflow-y: auto;
-  padding: 24px;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
-  color: #0f172a;
+.nguoi-dung-info strong {
+  font-size: 12px;
 }
 
-.account-dialog-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 22px;
+.nguoi-dung-info span {
+  color: #94a3b8;
+  font-size: 10px;
 }
 
-.account-dialog-header h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.account-dialog-header p {
-  margin: 6px 0 0;
+.mui-ten {
   color: #64748b;
   font-size: 12px;
 }
 
-.account-close {
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  border: 0;
-  border-radius: 6px;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 21px;
+.menu-tai-khoan {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  width: 245px;
+  display: none;
+  padding: 8px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+.menu-tai-khoan.hien {
+  display: block;
+}
+
+.tai-khoan-header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 11px 12px;
+}
+
+.tai-khoan-header strong {
+  font-size: 12px;
+}
+
+.tai-khoan-header span {
+  color: #94a3b8;
+  font-size: 10px;
+  word-break: break-all;
+}
+
+.menu-tai-khoan button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 11px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #334155;
+  font-size: 11px;
+  text-align: left;
   cursor: pointer;
 }
 
-.account-dialog form[hidden] {
-  display: none;
+.menu-tai-khoan button:hover {
+  background: #f1f5f9;
 }
 
-.account-dialog label {
+.menu-tai-khoan button span {
+  width: 18px;
+  text-align: center;
+}
+
+.duong-ke {
+  height: 1px;
+  margin: 6px 0;
+  background: #e2e8f0;
+}
+
+.menu-tai-khoan .btn-dang-xuat {
+  color: #dc2626;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.modal.hien {
+  display: flex;
+}
+
+.modal-box {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 22px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-header p {
+  margin: 5px 0 0;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.btn-dong {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#formThongTin,
+#formMatKhau {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 17px;
+}
+
+.form-group label {
   display: block;
-  margin: 15px 0 7px;
+  margin-bottom: 7px;
   color: #334155;
   font-size: 11px;
   font-weight: 600;
 }
 
-.account-dialog input {
+.form-group input {
   width: 100%;
   height: 42px;
   padding: 0 12px;
   border: 1px solid #e2e8f0;
   border-radius: 7px;
-  background: #fff;
+  outline: none;
   color: #334155;
-  font: inherit;
   font-size: 12px;
 }
 
-.account-dialog input:focus {
-  outline: none;
+.form-group input:focus {
   border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
 }
 
-.account-dialog input[readonly] {
+.form-group input[readonly] {
   background: #f8fafc;
   color: #64748b;
 }
 
-.account-notice {
+.thong-bao {
   display: none;
-  margin-top: 14px;
+  margin-bottom: 15px;
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: 7px;
   background: #fef2f2;
-  color: #b91c1c;
-  font-size: 12px;
+  color: #dc2626;
+  font-size: 11px;
 }
 
-.account-notice.visible,
-.account-notice.success {
+.thong-bao.hien {
   display: block;
 }
 
-.account-notice.success {
+.thong-bao.thanh-cong {
   background: #ecfdf5;
   color: #15803d;
 }
 
-.account-actions {
+.modal-footer {
+  width: 100%;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: flex-end !important;
   gap: 8px;
-  margin-top: 20px;
+  padding-top: 8px;
 }
 
-.account-actions button {
-  min-height: 40px;
-  padding: 0 16px;
-  border: 0;
+.btn-huy,
+.btn-luu {
+  height: 40px;
+  padding: 0 17px;
   border-radius: 7px;
-  font: inherit;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
 }
 
-.account-secondary {
-  background: #f1f5f9;
-  color: #475569;
+.btn-huy {
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
 }
 
-.account-primary {
+.btn-luu {
+  border: none;
   background: #2563eb;
   color: white;
 }
 
-@media (max-width: 520px) {
-  .account-dialog {
+.btn-luu:hover {
+  background: #1d4ed8;
+}
+
+@media (max-width: 550px) {
+  .nguoi-dung-info {
+    display: none;
+  }
+
+  .mui-ten {
+    display: none;
+  }
+
+  .menu-tai-khoan {
+    right: -5px;
+  }
+
+  .modal {
+    padding: 15px;
+  }
+
+  .modal-header {
+    padding: 18px 20px;
+  }
+
+  #formThongTin,
+  #formMatKhau {
     padding: 20px;
   }
 }
