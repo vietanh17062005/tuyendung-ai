@@ -633,18 +633,6 @@ if (btnDangXuat) {
   });
 }
 
-// if (btnThongTin) {
-//   btnThongTin.addEventListener("click", function () {
-//     alert("Chức năng thông tin tài khoản");
-//   });
-// }
-
-// if (btnDoiMatKhau) {
-//   btnDoiMatKhau.addEventListener("click", function () {
-//     alert("Chức năng đổi mật khẩu");
-//   });
-// }
-
 if (btnThem) {
   btnThem.addEventListener("click", moModalThem);
 }

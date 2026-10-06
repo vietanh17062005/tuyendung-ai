@@ -15,17 +15,16 @@ body {
   color: #0f172a;
 }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
+body.modal-open {
+  overflow: hidden;
 }
 
 .khung {
   min-height: 100vh;
   display: flex;
 }
+
+/* SIDEBAR */
 
 .menu {
   width: 250px;
@@ -102,6 +101,8 @@ textarea {
   text-align: center;
 }
 
+/* MAIN */
+
 .noi-dung {
   flex: 1;
   min-width: 0;
@@ -129,7 +130,8 @@ textarea {
   letter-spacing: -0.7px;
 }
 
-/* Account & Dropdown */
+/* TÀI KHOẢN */
+
 .tai-khoan {
   position: relative;
   display: flex;
@@ -182,6 +184,8 @@ textarea {
   color: #64748b;
   font-size: 12px;
 }
+
+/* DROPDOWN */
 
 .menu-tai-khoan {
   position: absolute;
@@ -252,6 +256,8 @@ textarea {
   color: #dc2626;
 }
 
+/* TOOLBAR */
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -261,55 +267,58 @@ textarea {
 }
 
 .tim-kiem {
-  width: 360px;
+  width: 100%;
+  max-width: 400px;
   height: 42px;
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 0 13px;
+  padding: 0 12px;
   background: white;
   border: 1px solid #e2e8f0;
-  border-radius: 7px;
+  border-radius: 8px;
 }
 
 .tim-kiem span {
   color: #94a3b8;
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .tim-kiem input {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
-  font-size: 12px;
+  background: transparent;
   color: #334155;
+  font-size: 12px;
 }
 
 .bo-loc {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .loc-trang-thai {
   height: 42px;
   padding: 0 12px;
   border: 1px solid #e2e8f0;
-  border-radius: 7px;
-  background: white;
-  color: #475569;
-  font-size: 12px;
+  border-radius: 8px;
   outline: none;
+  background: white;
+  color: #334155;
+  font-size: 11px;
 }
 
 .btn-them {
   height: 42px;
-  padding: 0 17px;
+  padding: 0 16px;
   border: none;
-  border-radius: 7px;
+  border-radius: 8px;
   background: #2563eb;
   color: white;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -317,6 +326,32 @@ textarea {
 .btn-them:hover {
   background: #1d4ed8;
 }
+
+/* THÔNG BÁO */
+
+#thongBao {
+  margin-bottom: 15px;
+}
+
+.thong-bao {
+  display: none;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 11px;
+}
+
+.thong-bao.hien {
+  display: block;
+}
+
+.thong-bao.thanh-cong {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+/* TABLE */
 
 .table-container {
   background: white;
@@ -326,47 +361,54 @@ textarea {
 }
 
 .table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 20px 22px;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .table-header h2 {
   margin: 0 0 5px;
-  font-size: 16px;
+  font-size: 17px;
 }
 
 .table-header p {
   margin: 0;
   color: #94a3b8;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .table-scroll {
+  width: 100%;
   overflow-x: auto;
 }
 
 table {
   width: 100%;
+  min-width: 900px;
   border-collapse: collapse;
-  table-layout: fixed;
+}
+
+thead {
+  background: #f8fafc;
 }
 
 th {
-  padding: 15px 12px;
-  background: #f8fafc;
+  padding: 13px 15px;
   border-bottom: 1px solid #e2e8f0;
-  color: #475569;
-  font-size: 11px;
-  font-weight: 600;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
   text-align: left;
   white-space: nowrap;
 }
 
 td {
-  padding: 15px 12px;
+  padding: 14px 15px;
   border-bottom: 1px solid #f1f5f9;
   color: #334155;
-  font-size: 12px;
+  font-size: 11px;
   vertical-align: middle;
 }
 
@@ -374,155 +416,174 @@ tbody tr:hover {
   background: #f8fafc;
 }
 
-th:nth-child(1),
-td:nth-child(1) {
-  width: 6%;
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* STT CĂN GIỮA */
+
+th:first-child,
+td:first-child {
+  width: 65px;
+  min-width: 65px;
   text-align: center;
+  vertical-align: middle;
 }
 
-th:nth-child(2),
-td:nth-child(2) {
-  width: 22%;
-}
+/* STATUS */
 
-th:nth-child(3),
-td:nth-child(3) {
-  width: 19%;
-}
-
-th:nth-child(4),
-td:nth-child(4) {
-  width: 12%;
-  text-align: center;
-}
-
-th:nth-child(5),
-td:nth-child(5) {
-  width: 13%;
-  text-align: center;
-}
-
-th:nth-child(6),
-td:nth-child(6) {
-  width: 12%;
-  text-align: center;
-}
-
-th:nth-child(7),
-td:nth-child(7) {
-  width: 16%;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.badge {
-  display: inline-block;
-  min-width: 76px;
-  padding: 6px 9px;
+.trang-thai {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 5px 8px;
   border-radius: 20px;
-  font-size: 10px;
-  font-weight: 600;
-  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
 }
 
-.badge.nhap {
+.trang-thai.nhap {
   background: #f1f5f9;
   color: #475569;
 }
 
-.badge.cho_duyet {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.badge.da_duyet {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.badge.tu_choi {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.badge.huy {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-/* Các nút thao tác bảng */
-.cot-thao-tac button {
-  display: inline-block;
-  padding: 6px 9px;
-  border-radius: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  margin: 0 2px;
-  border: 1px solid transparent;
-}
-
-.btn-sua {
-  border-color: #dbeafe;
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.btn-sua:hover {
-  background: #dbeafe;
-}
-
-.btn-gui-duyet {
-  border-color: #fef3c7;
-  background: #fffbeb;
-  color: #b45309;
-}
-
-.btn-gui-duyet:hover {
-  background: #fef3c7;
-}
-
-.btn-duyet {
-  border-color: #dcfce7;
-  background: #f0fdf4;
-  color: #15803d;
-}
-
-.btn-duyet:hover {
-  background: #dcfce7;
-}
-
-.btn-tu-choi {
-  border-color: #fed7aa;
+.trang-thai.cho_duyet {
   background: #fff7ed;
   color: #c2410c;
 }
 
-.btn-tu-choi:hover {
-  background: #ffedd5;
+.trang-thai.da_duyet {
+  background: #ecfdf5;
+  color: #15803d;
 }
 
-.btn-huy {
-  border-color: #e2e8f0;
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.btn-huy:hover {
-  background: #e2e8f0;
-}
-
-.btn-xoa {
-  border-color: #fee2e2;
+.trang-thai.tu_choi {
   background: #fef2f2;
   color: #dc2626;
 }
 
-.btn-xoa:hover {
-  background: #fee2e2;
+.trang-thai.huy {
+  background: #f1f5f9;
+  color: #64748b;
 }
 
-/* Modal */
+/* ACTION */
+
+td.action {
+  min-width: 310px;
+  white-space: nowrap;
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.action button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: auto;
+  height: 28px;
+  padding: 0 8px;
+  margin: 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+/* Xem */
+.action .btn-xem {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.action .btn-xem:hover {
+  background: #bae6fd;
+}
+
+/* Sửa */
+.action .btn-sua {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.action .btn-sua:hover {
+  background: #fde68a;
+}
+
+/* Gửi duyệt */
+.action .btn-gui-duyet {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.action .btn-gui-duyet:hover {
+  background: #bbf7d0;
+}
+
+/* Duyệt */
+.action .btn-duyet {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.action .btn-duyet:hover {
+  background: #bfdbfe;
+}
+
+/* Từ chối */
+.action .btn-tu-choi {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.action .btn-tu-choi:hover {
+  background: #fecaca;
+}
+
+/* Hủy */
+.action .btn-huy {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.action .btn-huy:hover {
+  background: #e2e8f0;
+}
+
+/* Xóa */
+.action .btn-xoa {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.action .btn-xoa:hover {
+  background: #fecaca;
+}
+
+/* EMPTY */
+
+.khong-co-du-lieu {
+  padding: 45px 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* MODAL */
+
 .modal {
   position: fixed;
   inset: 0;
@@ -532,25 +593,20 @@ td:nth-child(7) {
   justify-content: center;
   padding: 20px;
   background: rgba(15, 23, 42, 0.45);
-  overflow-y: auto;
+}
+
+.modal.hien {
+  display: flex;
 }
 
 .modal-box {
   width: 100%;
-  max-width: 560px;
+  max-width: 620px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
-}
-
-.confirm-box {
-  width: 400px;
-  max-width: 100%;
-  background: white;
-  border-radius: 12px;
-  padding: 28px;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
-  text-align: center;
 }
 
 .modal-header {
@@ -583,10 +639,14 @@ td:nth-child(7) {
   cursor: pointer;
 }
 
+.btn-dong:hover {
+  background: #e2e8f0;
+}
+
+/* FORM */
+
 #formJD {
   padding: 24px;
-  max-height: calc(90vh - 120px);
-  overflow-y: auto;
 }
 
 .form-group {
@@ -606,50 +666,47 @@ td:nth-child(7) {
 }
 
 .form-group input,
-.form-group textarea,
-.form-group select {
+.form-group select,
+.form-group textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 7px;
   outline: none;
-  background: #ffffff;
+  background: white;
   color: #334155;
+  font-family: inherit;
   font-size: 12px;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
   height: 42px;
 }
 
 .form-group textarea {
   resize: vertical;
   min-height: 95px;
-}
-
-/* Sửa triệt để lỗi màu chữ bị đè nền đen/xám mặc định của trình duyệt */
-.form-group select option {
-  background: #ffffff !important;
-  color: #334155 !important;
-  padding: 8px 12px;
+  line-height: 1.5;
 }
 
 .form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
 }
 
-.form-buttons {
+.form-buttons,
+.xem-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   padding-top: 5px;
 }
 
-.form-buttons .btn-huy,
-.form-buttons .btn-luu {
+.btn-huy,
+.btn-luu {
   height: 40px;
   padding: 0 17px;
   border-radius: 7px;
@@ -658,30 +715,323 @@ td:nth-child(7) {
   cursor: pointer;
 }
 
-.form-buttons .btn-huy {
+.btn-huy {
   border: 1px solid #e2e8f0;
   background: white;
   color: #64748b;
 }
 
-.form-buttons .btn-luu {
+.btn-huy:hover {
+  background: #f8fafc;
+}
+
+.btn-luu {
   border: none;
   background: #2563eb;
   color: white;
 }
 
-.form-buttons .btn-luu:hover {
+.btn-luu:hover {
   background: #1d4ed8;
 }
 
+/* XEM JD */
+
+.modal-xem-box {
+  max-width: 720px;
+}
+
+.modal-xem-header {
+  display: block;
+}
+
+.xem-header-noi-dung {
+  padding-right: 35px;
+}
+
+.xem-header-noi-dung h2 {
+  margin-top: 3px;
+  margin-bottom: 10px;
+  font-size: 20px;
+  color: #0f172a;
+}
+
+.xem-thong-tin-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 20px 24px 5px;
+}
+
+.xem-thong-tin-item {
+  padding: 13px 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.xem-thong-tin-item span {
+  display: block;
+  margin-bottom: 5px;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.xem-thong-tin-item strong {
+  color: #334155;
+  font-size: 12px;
+}
+
+.xem-section {
+  margin: 18px 24px 0;
+}
+
+.xem-section h3 {
+  margin: 0 0 8px;
+  color: #334155;
+  font-size: 12px;
+}
+
+.xem-text {
+  min-height: 50px;
+  padding: 13px 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.xem-footer {
+  padding: 20px 24px 24px;
+}
+
+/* CONFIRM */
+
+.confirm-box {
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+}
+
 .confirm-box h2 {
-  margin-top: 0;
-  font-size: 18px;
+  margin: 0 0 10px;
+  font-size: 17px;
 }
 
 .confirm-box p {
-  margin: 12px 0 20px;
+  margin: 0;
   color: #64748b;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
+}
+
+.confirm-box .form-buttons {
+  margin-top: 20px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+  .noi-dung {
+    padding: 28px 24px;
+  }
+}
+
+@media (max-width: 750px) {
+  .khung {
+    display: block;
+  }
+
+  .menu {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .menu-list {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .menu-list a {
+    white-space: nowrap;
+  }
+
+  .noi-dung {
+    padding: 25px 20px;
+  }
+
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tim-kiem {
+    max-width: none;
+  }
+
+  .bo-loc {
+    width: 100%;
+  }
+
+  .loc-trang-thai {
+    flex: 1;
+  }
+}
+
+@media (max-width: 550px) {
+  .noi-dung {
+    padding: 20px 15px;
+  }
+
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .nguoi-dung-info,
+  .mui-ten {
+    display: none;
+  }
+
+  .bo-loc {
+    flex-direction: column;
+  }
+
+  .loc-trang-thai,
+  .btn-them {
+    width: 100%;
+  }
+
+  .modal {
+    padding: 10px;
+  }
+
+  .modal-box {
+    max-height: calc(100vh - 20px);
+  }
+}
+
+/* Nút xác nhận trong popup */
+#modalXacNhan .btn-xac-nhan {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  opacity: 1 !important;
+  font-weight: 500 !important;
+}
+
+#modalXacNhan .btn-xac-nhan:hover {
+  background: #1d4ed8 !important;
+}
+
+#modalXacNhan .btn-xac-nhan:focus,
+#modalXacNhan .btn-xac-nhan:active {
+  background: #1d4ed8 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* ACTION */
+
+td.thao-tac {
+  min-width: 310px;
+  white-space: nowrap;
+}
+
+.thao-tac {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.thao-tac button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: auto;
+  height: 28px;
+  padding: 0 8px;
+  margin: 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+/* Xem */
+.thao-tac .btn-xem {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.thao-tac .btn-xem:hover {
+  background: #bae6fd;
+}
+
+/* Sửa */
+.thao-tac .btn-sua {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.thao-tac .btn-sua:hover {
+  background: #fde68a;
+}
+
+/* Gửi duyệt */
+.thao-tac .btn-gui-duyet,
+.thao-tac .btn-duyet {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.thao-tac .btn-gui-duyet:hover,
+.thao-tac .btn-duyet:hover {
+  background: #bfdbfe;
+}
+
+/* Từ chối */
+.thao-tac .btn-tu-choi {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.thao-tac .btn-tu-choi:hover {
+  background: #fecaca;
+}
+
+/* Hủy */
+.thao-tac .btn-huy {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.thao-tac .btn-huy:hover {
+  background: #e2e8f0;
+}
+
+/* Xóa */
+.thao-tac .btn-xoa {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.thao-tac .btn-xoa:hover {
+  background: #fecaca;
 }
