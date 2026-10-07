@@ -59,7 +59,8 @@ router.get(
           dt.ngay_ket_thuc,
           dt.ngay_tao,
           dt.${ngayCapNhatField} AS ngay_cap_nhat,
-          nd.ho_ten AS nguoi_tao_ten
+          nd.ho_ten AS nguoi_tao_ten,
+          (SELECT COUNT(*) FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien
         FROM dot_tuyen dt
         LEFT JOIN nguoi_dung nd ON nd.id = dt.${tenNguoiTaoField}
         ORDER BY dt.id DESC

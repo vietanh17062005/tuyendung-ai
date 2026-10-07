@@ -6,7 +6,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Đợt tuyển dụng - Recruitment Hub</title>
+  <title>Quản lý đợt tuyển dụng</title>
 
   <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css" />
   <link rel="stylesheet" href="/account/account.css" />
@@ -18,22 +18,20 @@
 
     <aside class="menu">
       <div class="logo">
-        <div class="logo-icon">RH</div>
+        <div class="logo-icon">✦</div>
 
         <div>
-          <div class="logo-title">Hệ thống tuyển dụng nhân sự</div>
+          <div class="logo-title">Tuyển dụng thông minh</div>
 
-          <div class="logo-subtitle">AI Recruitment System</div>
+          <div class="logo-subtitle">Hệ thống quản lý nhân sự</div>
         </div>
       </div>
 
       <nav class="menu-list">
-        <a href="/dashboard/dashboard.html"><span>▦</span>Dashboard</a>
+        <a href="/dashboard/dashboard.html"><span>▦</span>Tổng quan</a>
         <a href="/dot-tuyen/dot-tuyen.html" class="active"><span>▤</span>Đợt tuyển dụng</a>
         <a href="/ung-vien/ung-vien.html"><span>♙</span>Ứng viên</a>
-        <a href="/cv/cv.html"><span>▣</span>CV</a>
-        <a href="#"><span>◷</span>Phỏng vấn</a>
-        <a href="#"><span>▥</span>Báo cáo</a>
+        <a href="/cv/cv.html"><span>▣</span>Hồ sơ</a>
         <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung"><span>♙</span>Người dùng</a>
       </nav>
     </aside>
@@ -49,64 +47,114 @@
           <h1>Đợt tuyển dụng</h1>
         </div>
 
-        <div class="tai-khoan" id="taiKhoan">
-          <div class="tai-khoan-thong-tin">
-            <div class="avatar" id="avatar">A</div>
-            <div class="nguoi-dung-info">
-              <strong id="tenNguoiDung">Admin</strong>
-              <span id="vaiTro">Quản trị viên</span>
-            </div>
-          </div>
+        <div class="topbar-actions">
+          <label class="tim-kiem tim-kiem-topbar">
+            <span aria-hidden="true">⌕</span>
+            <input type="search" id="timKiemToanCuc" placeholder="Tìm đợt tuyển dụng, bản mô tả..." aria-label="Tìm đợt tuyển dụng hoặc bản mô tả công việc" />
+          </label>
 
-          <span class="mui-ten">▾</span>
-
-          <div class="menu-tai-khoan" id="menuTaiKhoan">
-            <div class="tai-khoan-header">
-              <strong id="tenMenuTaiKhoan">Admin</strong>
-              <span id="emailMenuTaiKhoan">admin@gmail.com</span>
+          <div class="tai-khoan" id="taiKhoan">
+            <div class="tai-khoan-thong-tin">
+              <div class="avatar" id="avatar">A</div>
+              <div class="nguoi-dung-info">
+                <strong id="tenNguoiDung">Quản trị viên</strong>
+                <span id="vaiTro">Quản trị viên</span>
+              </div>
             </div>
 
-            <button type="button" id="btnThongTin">
-              <span>👤</span>Thông tin tài khoản
-            </button>
-            <button type="button" id="btnDoiMatKhau"><span>🔑</span>Đổi mật khẩu</button>
+            <span class="mui-ten">▾</span>
 
-            <div class="duong-ke"></div>
+            <div class="menu-tai-khoan" id="menuTaiKhoan">
+              <div class="tai-khoan-header">
+                <strong id="tenMenuTaiKhoan">Quản trị viên</strong>
+                <span id="emailMenuTaiKhoan">admin@gmail.com</span>
+              </div>
 
-            <button type="button" id="btnDangXuat" class="btn-dang-xuat">
-              <span>↪</span>Đăng xuất
-            </button>
+              <button type="button" id="btnThongTin">
+                <span>👤</span>Thông tin tài khoản
+              </button>
+              <button type="button" id="btnDoiMatKhau"><span>🔑</span>Đổi mật khẩu</button>
+
+              <div class="duong-ke"></div>
+
+              <button type="button" id="btnDangXuat" class="btn-dang-xuat">
+                <span>↪</span>Đăng xuất
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      <!-- TOOLBAR -->
-
-      <section class="toolbar">
-        <div class="tim-kiem">
-          <span>⌕</span><input type="text" id="oTimKiem" placeholder="Tìm kiếm đợt tuyển dụng..." />
+      <section class="loi-chao">
+        <div class="loi-chao-noi-dung">
+          <h2>Quản lý chiến dịch tuyển dụng</h2>
+          <p>Theo dõi các đợt tuyển dụng, bản mô tả công việc và tiến độ tìm kiếm ứng viên tại một nơi.</p>
         </div>
+        <div class="hanh-dong-dau-trang">
+          <button id="btnChonDotTaoJD" class="btn-tao-jd-nhanh">✦ Soạn bản mô tả bằng AI</button>
+          <button id="btnThem" class="btn-them nut-tao-dot">＋ Tạo đợt tuyển dụng</button>
+        </div>
+      </section>
 
-        <div class="bo-loc">
-          <select id="locTrangThai">
+      <section class="the thong-ke-dot">
+        <article class="the-item the-dot-mo">
+          <div class="the-dau-the"><span class="the-icon">◉</span><span class="the-label">Đang tuyển</span></div>
+          <strong id="thongKeDangTuyen">0</strong>
+          <div class="the-phu"><span class="the-trang-thai">Đang tiếp nhận hồ sơ</span></div>
+        </article>
+        <article class="the-item the-tam-dung">
+          <div class="the-dau-the"><span class="the-icon">Ⅱ</span><span class="the-label">Tạm dừng</span></div>
+          <strong id="thongKeTamDung">0</strong>
+          <div class="the-phu"><span class="the-trang-thai">Chiến dịch đang tạm ngưng</span></div>
+        </article>
+        <article class="the-item the-ket-thuc">
+          <div class="the-dau-the"><span class="the-icon">✓</span><span class="the-label">Đã kết thúc</span></div>
+          <strong id="thongKeKetThuc">0</strong>
+          <div class="the-phu"><span class="the-trang-thai">Chiến dịch đã đóng</span></div>
+        </article>
+        <article class="the-item the-jd-tao">
+          <div class="the-dau-the"><span class="the-icon">✦</span><span class="the-label">Bản mô tả đã tạo</span></div>
+          <strong id="thongKeJD">0</strong>
+          <div class="the-phu"><span class="the-trang-thai">Gắn với chiến dịch</span></div>
+        </article>
+      </section>
+
+      <section class="goi-y-dot">
+        <span class="goi-y-dot-icon">✦</span>
+        <div>
+          <strong>Soạn bản mô tả nhanh với AI</strong>
+          <p>Chọn một đợt tuyển dụng trong danh sách để làm rõ yêu cầu, tạo bản mô tả và bộ tiêu chí đánh giá với AI.</p>
+        </div>
+        <span class="goi-y-dot-badge">Trợ lý tuyển dụng</span>
+      </section>
+
+      <!-- TABLE -->
+
+      <section class="table-container">
+        <div class="table-controls">
+          <div class="tab-trang-thai" role="tablist" aria-label="Lọc đợt tuyển dụng">
+            <button type="button" class="tab-trang-thai-nut active" data-status="">Tất cả <span id="demTatCa">0</span></button>
+            <button type="button" class="tab-trang-thai-nut" data-status="dang_tuyen">Đang tuyển <span id="demDangTuyen">0</span></button>
+            <button type="button" class="tab-trang-thai-nut" data-status="tam_dung">Tạm dừng <span id="demTamDung">0</span></button>
+            <button type="button" class="tab-trang-thai-nut" data-status="ket_thuc">Đã kết thúc <span id="demKetThuc">0</span></button>
+          </div>
+          <label class="tim-kiem tim-kiem-bang">
+            <span aria-hidden="true">⌕</span>
+            <input type="search" id="oTimKiem" placeholder="Tìm tên đợt tuyển dụng..." aria-label="Tìm tên đợt tuyển dụng" />
+          </label>
+          <p id="tongSo" class="so-ket-qua">0 đợt tuyển dụng</p>
+          <select id="locTrangThai" class="loc-an" aria-label="Lọc theo trạng thái">
             <option value="">Tất cả trạng thái</option>
             <option value="nhap">Nháp</option>
             <option value="dang_tuyen">Đang tuyển</option>
             <option value="tam_dung">Tạm dừng</option>
             <option value="ket_thuc">Kết thúc</option>
           </select>
-
-          <button id="btnThem" class="btn-them">+ Thêm đợt tuyển dụng</button>
         </div>
-      </section>
-
-      <!-- TABLE -->
-
-      <section class="table-container">
         <div class="table-header">
           <div>
             <h2>Danh sách đợt tuyển dụng</h2>
-            <p id="tongSo">0 đợt tuyển dụng</p>
+            <p>Theo dõi ứng viên, bản mô tả và trạng thái từng chiến dịch.</p>
           </div>
         </div>
 
@@ -114,19 +162,12 @@
           <table>
             <thead>
               <tr>
-                <th>STT</th>
-
                 <th>Tên đợt tuyển dụng</th>
-
-                <th>Mô tả</th>
+                <th>Ứng viên</th>
+                <th>Bản mô tả</th>
 
                 <th>Trạng thái</th>
-
-                <th>Người tạo</th>
-
-                <th>Ngày bắt đầu</th>
-
-                <th>Ngày kết thúc</th>
+                <th>Thời gian</th>
 
                 <th id="cotThaoTac">Thao tác</th>
               </tr>
@@ -244,21 +285,29 @@
       <form id="form">
         <input type="hidden" id="id" />
 
+        <div class="form-section-heading">
+          <span class="form-section-number">01</span>
+          <div>
+            <strong>Thông tin chiến dịch</strong>
+            <p>Thiết lập tên, thời hạn và trạng thái của đợt tuyển dụng.</p>
+          </div>
+        </div>
+
         <div class="form-group">
-          <label>Tên đợt tuyển dụng <span>*</span></label>
+          <label for="ten">Tên đợt tuyển dụng <span>*</span></label>
 
           <input type="text" id="ten" placeholder="Ví dụ: Tuyển dụng nhân viên CNTT 2026" required />
         </div>
 
         <div class="form-group">
-          <label>Mô tả</label>
+          <label for="moTa">Mô tả chiến dịch</label>
 
           <textarea id="moTa" rows="4" placeholder="Mô tả ngắn về đợt tuyển dụng..."></textarea>
         </div>
 
         <div class="form-row">
           <div class="form-group date-group">
-            <label>Ngày bắt đầu <span>*</span></label>
+            <label for="ngayBatDau">Ngày bắt đầu <span>*</span></label>
 
             <div class="date-control">
               <input type="text" id="ngayBatDau" inputmode="numeric" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
@@ -271,7 +320,7 @@
           </div>
 
           <div class="form-group date-group">
-            <label>Ngày kết thúc <span>*</span></label>
+            <label for="ngayKetThuc">Ngày kết thúc <span>*</span></label>
 
             <div class="date-control">
               <input type="text" id="ngayKetThuc" inputmode="numeric" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
@@ -286,7 +335,7 @@
         </div>
 
         <div class="form-group">
-          <label>Trạng thái</label>
+          <label for="trangThai">Trạng thái chiến dịch</label>
 
           <select id="trangThai">
             <option value="nhap">Nháp</option>
@@ -297,18 +346,18 @@
         </div>
 
         <section id="jdThongTin" class="jd-thong-tin" hidden>
-          <h3>Job Description đã tạo</h3>
+          <h3>Bản mô tả công việc đã tạo</h3>
           <div id="jdThongTinNoiDung"></div>
         </section>
 
         <section id="jdChinhSua" class="jd-chinh-sua" hidden>
           <div class="jd-chinh-sua-tieu-de">
-            <h3>Chỉnh sửa JD</h3>
-            <span>Thay đổi nội dung JD và rubric đã tạo</span>
+            <h3>Chỉnh sửa bản mô tả</h3>
+            <span>Thay đổi nội dung và bộ tiêu chí đánh giá</span>
           </div>
 
           <div class="form-group">
-            <label for="jdSuaTieuDe">Tiêu đề JD</label>
+            <label for="jdSuaTieuDe">Tiêu đề bản mô tả</label>
             <input type="text" id="jdSuaTieuDe" maxlength="200" />
           </div>
 
@@ -328,7 +377,7 @@
           </div>
 
           <div class="jd-ai-tieu-de">
-            <strong>Tiêu chí chấm điểm (rubric)</strong>
+            <strong>Bộ tiêu chí chấm điểm</strong>
             <button type="button" class="btn-them-tieu-chi" id="btnThemTieuChiSua">
               + Thêm tiêu chí
             </button>
@@ -341,7 +390,7 @@
 
         <div class="modal-footer">
           <button type="button" class="btn-huy" id="btnHuy">Hủy</button>
-          <button type="button" class="btn-luu-jd" id="btnLuuVaTaoJD">Lưu &amp; tạo JD</button>
+          <button type="button" class="btn-luu-jd" id="btnLuuVaTaoJD">Lưu &amp; tạo bản mô tả</button>
           <button type="submit" class="btn-luu">Lưu đợt tuyển dụng</button>
         </div>
       </form>
@@ -354,7 +403,7 @@
     <div class="modal-box jd-ai-box">
       <div class="modal-header">
         <div>
-          <h2>Soạn JD bằng AI</h2>
+          <h2>Soạn bản mô tả bằng AI</h2>
 
           <p id="jdTenDot">-</p>
         </div>
@@ -374,15 +423,15 @@
         <!-- BƯỚC 1 -->
 
         <div class="jd-buoc hien" id="jdBuoc1">
-          <label class="jd-nhan" for="jdTemplate">Bắt đầu từ mẫu JD</label>
+          <label class="jd-nhan" for="jdTemplate">Bắt đầu từ mẫu có sẵn</label>
 
           <select id="jdTemplate">
             <option value="">Tự mô tả ý tưởng</option>
-            <option value="backend">Backend Engineer</option>
-            <option value="frontend">Frontend Engineer</option>
-            <option value="fullstack">Fullstack Engineer</option>
-            <option value="qa">QA Engineer</option>
-            <option value="data">Data Analyst</option>
+            <option value="backend">Kỹ sư Backend</option>
+            <option value="frontend">Kỹ sư Frontend</option>
+            <option value="fullstack">Kỹ sư Fullstack</option>
+            <option value="qa">Kỹ sư Kiểm thử</option>
+            <option value="data">Chuyên viên Phân tích dữ liệu</option>
           </select>
 
           <label class="jd-nhan" for="jdYTuong">Mô tả thô / ý tưởng ban đầu</label>
@@ -390,11 +439,11 @@
           <textarea id="jdYTuong" rows="5" maxlength="3000"
             placeholder="Ví dụ: Tuyển 2 backend Java, 3 năm kinh nghiệm, làm hệ thống thanh toán"></textarea>
 
-          <label class="jd-nhan" for="jdNgonNgu">Ngôn ngữ của JD</label>
+          <label class="jd-nhan" for="jdNgonNgu">Ngôn ngữ bản mô tả</label>
 
           <select id="jdNgonNgu">
             <option value="vi">Tiếng Việt</option>
-            <option value="en">English</option>
+            <option value="en">Tiếng Anh</option>
           </select>
 
           <div class="modal-footer">
@@ -441,11 +490,11 @@
           <textarea id="jdQuyenLoi" rows="4"></textarea>
 
           <div class="jd-ai-tieu-de">
-            <strong>Tiêu chí chấm điểm (rubric)</strong>
+            <strong>Bộ tiêu chí chấm điểm</strong>
           </div>
 
           <p class="jd-ai-huong-dan">
-            Rubric do AI suy ra từ JD, dùng cho bước phân tích CV. Bạn có thể sửa tên, mô tả, trọng số, thêm hoặc xóa
+            Bộ tiêu chí do AI đề xuất dựa trên bản mô tả, dùng để phân tích hồ sơ. Bạn có thể sửa tên, mô tả, trọng số, thêm hoặc xóa
             tiêu chí.
           </p>
 
@@ -460,7 +509,7 @@
           <div class="modal-footer">
             <button type="button" class="btn-huy" id="btnJDQuayLai2">← Quay lại câu hỏi</button>
             <button type="button" class="btn-huy" id="btnJDSoanLai">Soạn lại</button>
-            <button type="button" class="btn-luu" id="btnJDLuu">Lưu JD nháp</button>
+            <button type="button" class="btn-luu" id="btnJDLuu">Lưu bản mô tả nháp</button>
           </div>
         </div>
       </div>
@@ -473,12 +522,33 @@
     <div class="modal-box xac-nhan-box">
       <div class="xac-nhan-icon">!</div>
 
-      <h2>Xóa đợt tuyển dụng?</h2>
+      <p class="xac-nhan-nhan">XÁC NHẬN XÓA</p>
+      <h2>Xóa chiến dịch tuyển dụng?</h2>
       <p id="noiDungXacNhan">Bạn có chắc chắn muốn xóa đợt tuyển dụng này?</p>
 
       <div class="modal-footer">
         <button class="btn-huy" id="btnKhongXoa">Hủy</button>
-        <button class="btn-xoa-confirm" id="btnXacNhanXoa">Xóa</button>
+        <button class="btn-xoa-confirm" id="btnXacNhanXoa">Xóa chiến dịch</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="modalChonJD">
+    <div class="modal-box chon-jd-box">
+      <div class="modal-header">
+        <div>
+          <h2>Chọn đợt tuyển dụng</h2>
+          <p>Chọn chiến dịch cần tạo bản mô tả công việc.</p>
+        </div>
+        <button type="button" class="btn-dong" id="btnDongChonJD" aria-label="Đóng">×</button>
+      </div>
+      <div class="chon-jd-noi-dung">
+        <label for="dotTuyenJDChon">Đợt tuyển dụng</label>
+        <select id="dotTuyenJDChon"></select>
+        <div class="modal-footer">
+          <button type="button" class="btn-huy" id="btnHuyChonJD">Hủy</button>
+          <button type="button" class="btn-luu" id="btnTiepTucJD">Tiếp tục</button>
+        </div>
       </div>
     </div>
   </div>

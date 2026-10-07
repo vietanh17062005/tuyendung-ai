@@ -154,6 +154,9 @@ function hienThiTrangThai(value) {
     dang_tuyen: "Đang tuyển",
     tam_dung: "Tạm dừng",
     ket_thuc: "Kết thúc",
+    da_dong: "Kết thúc",
+    dong: "Kết thúc",
+    closed: "Kết thúc",
   };
 
   return map[value] || value || "-";
@@ -248,6 +251,7 @@ async function taiDuLieu() {
       };
     });
 
+    capNhatThongKeDotTuyen();
     hienThiDanhSach();
   } catch (error) {
     console.error(error);
@@ -266,6 +270,30 @@ async function taiDuLieu() {
     $("khongCoDuLieu").textContent =
       error.message || "Không thể tải dữ liệu.";
   }
+}
+
+function capNhatThongKeDotTuyen() {
+  const so = (value) => Number(value || 0).toLocaleString("vi-VN");
+  const dangTuyen = danhSachDotTuyen.filter((dot) => dot?.trang_thai === "dang_tuyen").length;
+  const tamDung = danhSachDotTuyen.filter((dot) => dot?.trang_thai === "tam_dung").length;
+  const ketThuc = danhSachDotTuyen.filter((dot) =>
+    ["ket_thuc", "da_dong", "dong", "closed"].includes(String(dot?.trang_thai || "").toLowerCase())
+  ).length;
+
+  $("thongKeDangTuyen").textContent = so(dangTuyen);
+  $("thongKeTamDung").textContent = so(tamDung);
+  $("thongKeKetThuc").textContent = so(ketThuc);
+  $("thongKeJD").textContent = so(danhSachJD.length);
+  $("demTatCa").textContent = so(danhSachDotTuyen.length);
+  $("demDangTuyen").textContent = so(dangTuyen);
+  $("demTamDung").textContent = so(tamDung);
+  $("demKetThuc").textContent = so(ketThuc);
+}
+
+function laDotDaDong(dot) {
+  return ["ket_thuc", "da_dong", "dong", "closed"].includes(
+    String(dot?.trang_thai || "").toLowerCase()
+  );
 }
 
 function hienThiDanhSach() {
@@ -288,17 +316,18 @@ function hienThiDanhSach() {
 
     const dungTuKhoa = !tuKhoa || text.includes(tuKhoa);
     const dungTrangThai =
-      !trangThai || dot?.trang_thai === trangThai;
+      !trangThai ||
+      (trangThai === "ket_thuc" ? laDotDaDong(dot) : dot?.trang_thai === trangThai);
 
     return dungTuKhoa && dungTrangThai;
   });
+  danhSachLoc.sort((a, b) => Number(laDotDaDong(a.dot)) - Number(laDotDaDong(b.dot)));
 
   const tbody = $("danhSach");
 
   tbody.innerHTML = "";
 
-  $("tongSo").textContent =
-    `${danhSachLoc.length} đợt tuyển dụng`;
+  $("tongSo").textContent = `Hiển thị ${danhSachLoc.length} / ${danhSachDotTuyen.length} đợt tuyển dụng`;
 
   if (!danhSachLoc.length) {
     $("khongCoDuLieu").style.display = "block";
@@ -318,24 +347,28 @@ function hienThiDanhSach() {
     const ngayBatDau = dinhDangNgay(dot?.ngay_bat_dau);
     const ngayKetThuc = dinhDangNgay(dot?.ngay_ket_thuc);
 
-    const nguoiTao =
-      dot?.nguoi_tao_ten ||
-      dot?.nguoi_tao ||
-      "-";
-
     const trangThai = dot?.trang_thai || "nhap";
+    const thoiGian = [ngayBatDau, ngayKetThuc].filter((ngay) => ngay !== "-").join(" – ") || "-";
+    const soUngVien = Number(dot?.so_ung_vien) || 0;
+    const soJD = item.jds?.length || (item.jd ? 1 : 0);
 
     const row = document.createElement("tr");
 
     row.innerHTML = `
-      <td>${index + 1}</td>
-
       <td>
-        <div class="ten-dot">${escapeHTML(tenDot)}</div>
+        <div class="chien-dich-ten">
+          <span class="chien-dich-so-thu-tu">${index + 1}</span>
+          <span class="chien-dich-thong-tin">
+            <strong class="ten-dot">${escapeHTML(tenDot)}</strong>
+            <span class="mo-ta-bang">${escapeHTML(dot?.mo_ta || "Chưa có mô tả")}</span>
+          </span>
+        </div>
       </td>
 
+      <td><span class="so-ung-vien-dot">♙ ${escapeHTML(soUngVien.toLocaleString("vi-VN"))}</span></td>
+
       <td>
-        <div class="mo-ta-bang">${escapeHTML(dot?.mo_ta || "-")}</div>
+        <span class="nhan-jd ${soJD ? "co-jd" : "chua-jd"}">${soJD ? `✦ ${soJD} bản mô tả` : "Chưa có bản mô tả"}</span>
       </td>
 
       <td>
@@ -344,30 +377,20 @@ function hienThiDanhSach() {
         </span>
       </td>
 
-      <td>
-        ${escapeHTML(nguoiTao)}
-      </td>
-
-      <td>
-        ${escapeHTML(ngayBatDau)}
-      </td>
-
-      <td>
-        ${escapeHTML(ngayKetThuc)}
-      </td>
+      <td><span class="thoi-gian-dot">${escapeHTML(thoiGian)}</span></td>
 
       <td>
         <div class="action-group">
           ${coQuyenTaoJD()
-            ? `<button
+        ? `<button
                 type="button"
                 class="btn-tao-jd"
                 data-action="tao-jd"
                 data-id="${dot.id}"
               >
-                ✦ Tạo JD
+                ✦ Tạo bản mô tả
               </button>`
-            : ""}
+        : ""}
           <button
             type="button"
             class="btn-xem"
@@ -439,6 +462,9 @@ function moFormMoi() {
   dongModal();
 
   $("tieuDeModal").textContent = "Thêm đợt tuyển dụng";
+  $("tieuDeModal").nextElementSibling.textContent =
+    "Tạo chiến dịch mới để bắt đầu quy trình tuyển dụng.";
+  $("form").querySelector('[type="submit"]').textContent = "Tạo chiến dịch";
   $("trangThai").value = "nhap";
 
   moModal();
@@ -450,6 +476,9 @@ function moFormSua(item) {
   dangSua = item;
 
   $("tieuDeModal").textContent = "Sửa đợt tuyển dụng";
+  $("tieuDeModal").nextElementSibling.textContent =
+    "Cập nhật thông tin chiến dịch và bản mô tả công việc.";
+  $("form").querySelector('[type="submit"]').textContent = "Lưu thay đổi";
 
   const dot = item.dot;
   $("id").value = dot.id || "";
@@ -485,6 +514,8 @@ function moFormXem(item) {
   dangXem = true;
 
   $("tieuDeModal").textContent = "Xem thông tin tuyển dụng";
+  $("tieuDeModal").nextElementSibling.textContent =
+    "Thông tin chiến dịch và bản mô tả công việc đã tạo.";
 
   const dot = item.dot;
   $("id").value = dot.id || "";
@@ -517,13 +548,14 @@ function hienThiThongTinJD(item) {
   const container = $("jdThongTinNoiDung");
   container.replaceChildren();
 
-  const jds = item.jds?.length ? item.jds : (item.jd ? [item.jd] : []);
+  const jdHienTai = item.jd || item.jds?.[0] || null;
+  const jds = jdHienTai ? [jdHienTai] : [];
   $("jdThongTin").hidden = false;
 
   if (!jds.length) {
     const empty = document.createElement("p");
     empty.className = "jd-chua-co";
-    empty.textContent = "Đợt tuyển dụng này chưa có JD. Dùng nút “Tạo JD” trong danh sách để bắt đầu.";
+    empty.textContent = "Đợt tuyển dụng này chưa có bản mô tả. Dùng nút “Tạo bản mô tả” trong danh sách để bắt đầu.";
     container.appendChild(empty);
     return;
   }
@@ -533,7 +565,7 @@ function hienThiThongTinJD(item) {
     card.className = "jd-thong-tin-card";
 
     const title = document.createElement("h4");
-    title.textContent = jd.tieu_de || "JD chưa có tiêu đề";
+    title.textContent = jd.tieu_de || "Bản mô tả chưa có tiêu đề";
     card.appendChild(title);
 
     const status = document.createElement("span");
@@ -551,7 +583,7 @@ function hienThiThongTinJD(item) {
       rubric.className = "jd-thong-tin-muc";
 
       const rubricTitle = document.createElement("strong");
-      rubricTitle.textContent = "Rubric chấm điểm";
+      rubricTitle.textContent = "Bộ tiêu chí chấm điểm";
       rubric.appendChild(rubricTitle);
 
       const list = document.createElement("ul");
@@ -951,6 +983,7 @@ async function luuTuyenDung(event) {
   }
 
   const button = $("form").querySelector('[type="submit"]');
+  const nhanNutLuu = button.textContent;
   button.disabled = true;
   button.textContent = "Đang lưu...";
   $("thongBao").className = "thong-bao hien dang-xu-ly";
@@ -962,11 +995,11 @@ async function luuTuyenDung(event) {
     if (dangSua?.jd?.id) {
       jdTieuDe = $("jdSuaTieuDe").value.trim();
       if (!jdTieuDe) {
-        throw new Error("Vui lòng nhập tiêu đề JD.");
+        throw new Error("Vui lòng nhập tiêu đề bản mô tả.");
       }
       rubric = layDanhSachTieuChiSua();
       if (!rubric.length || capNhatTongTrongSoSua() !== 100) {
-        throw new Error("Rubric phải có ít nhất một tiêu chí và tổng trọng số bằng 100%.");
+        throw new Error("Bộ tiêu chí cần có ít nhất một mục và tổng trọng số bằng 100%.");
       }
     }
 
@@ -986,12 +1019,12 @@ async function luuTuyenDung(event) {
           }),
         });
       } catch (error) {
-        throw new Error(`Đợt tuyển dụng đã lưu nhưng JD chưa cập nhật được: ${error.message}`);
+        throw new Error(`Đợt tuyển dụng đã lưu nhưng bản mô tả chưa cập nhật được: ${error.message}`);
       }
     }
     $("thongBao").className = "thong-bao hien thanh-cong";
     $("thongBao").textContent = dangSua?.jd?.id
-      ? "Đã cập nhật đợt tuyển dụng và JD."
+      ? "Đã cập nhật đợt tuyển dụng và bản mô tả."
       : "Lưu đợt tuyển dụng thành công.";
     await taiDuLieu();
     dongModal();
@@ -1001,7 +1034,7 @@ async function luuTuyenDung(event) {
     $("thongBao").textContent = error.message || "Không thể lưu đợt tuyển dụng.";
   } finally {
     button.disabled = false;
-    button.textContent = "Lưu đợt tuyển dụng";
+    button.textContent = nhanNutLuu;
   }
 }
 
@@ -1029,7 +1062,7 @@ async function luuVaTaoJD() {
     $("thongBao").textContent = error.message || "Không thể lưu đợt tuyển dụng.";
   } finally {
     button.disabled = false;
-    button.textContent = "Lưu & tạo JD";
+    button.textContent = "Lưu & tạo bản mô tả";
   }
 }
 
@@ -1205,8 +1238,8 @@ async function soanJDTheoWizard(boQuaCauHoi = false) {
   button.disabled = true;
   $("thongBaoJD").className = "thong-bao hien dang-xu-ly";
   $("thongBaoJD").textContent = boQuaCauHoi
-    ? "Đang soạn JD, có thể nhập tay nếu AI chưa phản hồi..."
-    : "AI đang soạn JD và rubric...";
+    ? "Đang soạn bản mô tả, có thể nhập tay nếu AI chưa phản hồi..."
+    : "AI đang soạn bản mô tả và bộ tiêu chí...";
 
   try {
     const hoiDap = boQuaCauHoi ? [] : thuThapTraLoiJD();
@@ -1238,7 +1271,7 @@ async function soanJDTheoWizard(boQuaCauHoi = false) {
         `AI chưa soạn được JD (${error.message || "lỗi kết nối"}). Bạn có thể tiếp tục nhập và chỉnh sửa nội dung bên dưới.`;
     } else {
       $("thongBaoJD").className = "thong-bao hien";
-      $("thongBaoJD").textContent = error.message || "Không soạn được JD.";
+      $("thongBaoJD").textContent = error.message || "Không soạn được bản mô tả.";
     }
   } finally {
     button.disabled = false;
@@ -1263,7 +1296,7 @@ async function luuJDWizard() {
   const tieuDe = $("jdTieuDe").value.trim();
   if (!dotTuyenJDId || !tieuDe) {
     $("thongBaoJD").className = "thong-bao hien";
-    $("thongBaoJD").textContent = "Vui lòng nhập tiêu đề JD.";
+    $("thongBaoJD").textContent = "Vui lòng nhập tiêu đề bản mô tả.";
     return;
   }
 
@@ -1271,7 +1304,7 @@ async function luuJDWizard() {
   const tong = tieuChi.reduce((sum, item) => sum + item.trong_so, 0);
   if (tong !== 100) {
     $("thongBaoJD").className = "thong-bao hien";
-    $("thongBaoJD").textContent = `Tổng trọng số rubric phải bằng 100% (hiện tại ${tong}%).`;
+    $("thongBaoJD").textContent = `Tổng trọng số bộ tiêu chí phải bằng 100% (hiện tại ${tong}%).`;
     return;
   }
 
@@ -1283,7 +1316,7 @@ async function luuJDWizard() {
       body: JSON.stringify({
         dot_tuyen_id: dotTuyenJDId,
         tieu_de: tieuDe,
-        mo_ta: [ $("jdGioiThieu").value.trim(), $("jdMoTaCV").value.trim() ].filter(Boolean).join("\n\n"),
+        mo_ta: [$("jdGioiThieu").value.trim(), $("jdMoTaCV").value.trim()].filter(Boolean).join("\n\n"),
         yeu_cau: [
           $("jdYeuCauBB").value.trim() && `Bắt buộc:\n${$("jdYeuCauBB").value.trim()}`,
           $("jdYeuCauUT").value.trim() && `Ưu tiên:\n${$("jdYeuCauUT").value.trim()}`,
@@ -1293,7 +1326,7 @@ async function luuJDWizard() {
       }),
     });
     const jdId = result?.data?.id || result?.id;
-    if (!jdId) throw new Error("Đã lưu JD nhưng máy chủ không trả về ID.");
+    if (!jdId) throw new Error("Đã lưu bản mô tả nhưng máy chủ không trả về mã nhận diện.");
 
     await api(`${API}/jd/ai/luu`, {
       method: "POST",
@@ -1305,10 +1338,10 @@ async function luuJDWizard() {
     });
     await taiDuLieu();
     dongWizardJD();
-    alert("Đã lưu JD nháp thành công.");
+    alert("Đã lưu bản mô tả nháp thành công.");
   } catch (error) {
     $("thongBaoJD").className = "thong-bao hien";
-    $("thongBaoJD").textContent = error.message || "Không lưu được JD.";
+    $("thongBaoJD").textContent = error.message || "Không lưu được bản mô tả.";
   } finally {
     button.disabled = false;
   }
@@ -1323,7 +1356,7 @@ function moXacNhanXoa(item) {
     "đợt tuyển dụng này";
 
   $("noiDungXacNhan").textContent =
-    `Bạn có chắc chắn muốn xóa "${tenDot}" và JD liên quan không?`;
+    `Bạn có chắc chắn muốn xóa "${tenDot}" cùng các bản mô tả công việc liên quan không? Hành động này không thể hoàn tác.`;
 
   $("modalXacNhan").classList.add("hien");
 }
@@ -1361,16 +1394,16 @@ async function xacNhanXoa() {
 
     await taiDuLieu();
 
-    alert("Xóa tuyển dụng thành công.");
+    alert("Đã xóa chiến dịch tuyển dụng thành công.");
   } catch (error) {
     console.error(error);
 
     alert(
-      error.message || "Không thể xóa tuyển dụng."
+      error.message || "Không thể xóa chiến dịch tuyển dụng."
     );
   } finally {
     button.disabled = false;
-    button.textContent = "Xóa";
+    button.textContent = "Xóa chiến dịch";
   }
 }
 
@@ -1512,6 +1545,33 @@ function ganSuKien() {
   $("jdTemplate").addEventListener("change", chonMauJD);
   $("btnThemTieuChi").addEventListener("click", () => themTieuChi());
   $("btnThemTieuChiSua").addEventListener("click", () => themTieuChiSua());
+  $("btnChonDotTaoJD").addEventListener("click", () => {
+    if (!danhSachDotTuyen.length) {
+      moFormMoi();
+      return;
+    }
+
+    const select = $("dotTuyenJDChon");
+    select.replaceChildren();
+    danhSachDotTuyen.forEach((dot) => {
+      const option = document.createElement("option");
+      option.value = dot.id;
+      option.textContent = `${dot.ten_dot || dot.ten || "Đợt tuyển dụng"} · ${hienThiTrangThai(dot.trang_thai)}`;
+      select.appendChild(option);
+    });
+    $("modalChonJD").classList.add("hien");
+  });
+
+  const dongModalChonJD = () => $("modalChonJD").classList.remove("hien");
+  $("btnDongChonJD").addEventListener("click", dongModalChonJD);
+  $("btnHuyChonJD").addEventListener("click", dongModalChonJD);
+  $("btnTiepTucJD").addEventListener("click", () => {
+    const dot = danhSachDotTuyen.find((item) => Number(item.id) === Number($("dotTuyenJDChon").value));
+    if (!dot) return;
+    dotTuyenJDId = dot.id;
+    dongModalChonJD();
+    moWizardJD({ dot });
+  });
 
   $("danhSach").addEventListener(
     "click",
@@ -1520,13 +1580,32 @@ function ganSuKien() {
 
   $("oTimKiem").addEventListener(
     "input",
-    hienThiDanhSach
+    (event) => {
+      $("timKiemToanCuc").value = event.target.value;
+      hienThiDanhSach();
+    }
   );
+
+  $("timKiemToanCuc").addEventListener("input", (event) => {
+    $("oTimKiem").value = event.target.value;
+    hienThiDanhSach();
+  });
 
   $("locTrangThai").addEventListener(
     "change",
     hienThiDanhSach
   );
+
+  document.querySelector(".tab-trang-thai").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-status]");
+    if (!button) return;
+    $("locTrangThai").value = button.dataset.status;
+    document.querySelectorAll(".tab-trang-thai-nut").forEach((tab) => {
+      tab.classList.toggle("active", tab === button);
+      tab.setAttribute("aria-selected", tab === button ? "true" : "false");
+    });
+    hienThiDanhSach();
+  });
 
   $("btnKhongXoa").addEventListener(
     "click",
@@ -1559,6 +1638,9 @@ function ganSuKien() {
   $("modalJD").addEventListener("click", (event) => {
     if (event.target === $("modalJD")) dongWizardJD();
   });
+  $("modalChonJD").addEventListener("click", (event) => {
+    if (event.target === $("modalChonJD")) $("modalChonJD").classList.remove("hien");
+  });
 
   ganDatePicker(
     "ngayBatDau",
@@ -1587,4 +1669,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   await taiDuLieu();
+
+  const thaoTac = new URLSearchParams(window.location.search).get("tao");
+  if (thaoTac === "1" && coQuyenQuanLy()) {
+    moFormMoi();
+    window.history.replaceState(null, "", window.location.pathname);
+  }
 });

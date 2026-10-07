@@ -648,27 +648,72 @@ app.get(
         "SELECT COUNT(*) AS so_luong FROM ung_vien",
       );
 
+      const [dotDangTuyen] = await db.query(
+        "SELECT COUNT(*) AS so_luong FROM dot_tuyen WHERE trang_thai = 'dang_tuyen'",
+      );
+
+      const [cotPhongVan] = await db.query("SHOW COLUMNS FROM phong_van");
+      const truongPhongVan = cotPhongVan.map((cot) => cot.Field);
+      const truongThoiGianPV = truongPhongVan.includes("bat_dau")
+        ? "bat_dau"
+        : "thoi_gian";
+      const truongNguoiPhongVan = truongPhongVan.includes("nguoi_phong_van")
+        ? "nguoi_phong_van"
+        : "nguoi_phong_van_id";
+
       const [phongVan] = await db.query(
-        "SELECT COUNT(*) AS so_luong FROM phong_van",
+        `SELECT COUNT(*) AS so_luong
+         FROM phong_van
+         WHERE ${truongThoiGianPV} >= NOW()
+           AND trang_thai NOT IN ('huy', 'da_huy', 'cancelled')`,
       );
 
       const [daTuyen] = await db.query(`
         SELECT COUNT(*) AS so_luong
-        FROM quyet_dinh
-        WHERE ket_qua = 'hired'
+        FROM ung_vien
+        WHERE trang_thai = 'da_tuyen'
+      `);
+
+      const [trangThaiUngVien] = await db.query(`
+        SELECT trang_thai, COUNT(*) AS so_luong
+        FROM ung_vien
+        GROUP BY trang_thai
+      `);
+
+      const [phongVanSapToi] = await db.query(`
+        SELECT pv.id, pv.${truongThoiGianPV} AS bat_dau, pv.hinh_thuc, pv.dia_diem,
+               uv.ho_ten AS ten_ung_vien, nd.ho_ten AS ten_nguoi_phong_van
+        FROM phong_van pv
+        JOIN ung_vien uv ON uv.id = pv.ung_vien_id
+        LEFT JOIN nguoi_dung nd ON nd.id = pv.${truongNguoiPhongVan}
+        WHERE pv.${truongThoiGianPV} >= NOW()
+          AND pv.trang_thai NOT IN ('huy', 'da_huy', 'cancelled')
+        ORDER BY pv.${truongThoiGianPV} ASC
+        LIMIT 5
+      `);
+
+      const [ungVienMoi] = await db.query(`
+        SELECT id, ho_ten, trang_thai, ngay_tao
+        FROM ung_vien
+        ORDER BY ngay_tao DESC, id DESC
+        LIMIT 4
       `);
 
       res.json({
         so_dot_tuyen: dotTuyen[0].so_luong,
+        so_dot_dang_tuyen: dotDangTuyen[0].so_luong,
         so_ung_vien: ungVien[0].so_luong,
         so_phong_van: phongVan[0].so_luong,
         so_da_tuyen: daTuyen[0].so_luong,
+        ung_vien_theo_trang_thai: trangThaiUngVien,
+        phong_van_sap_toi: phongVanSapToi,
+        ung_vien_moi: ungVienMoi,
       });
     } catch (error) {
       console.error(error);
 
       res.status(500).json({
-        message: "Khong lay duoc du lieu Dashboard",
+        message: "Không thể lấy dữ liệu tổng quan.",
       });
     }
   },

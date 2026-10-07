@@ -137,17 +137,224 @@ async function layDuLieuDashboard() {
       return;
     }
 
-    document.getElementById("soDotTuyen").textContent = data.so_dot_tuyen;
+    document.getElementById("soDotDangTuyen").textContent = dinhDangSo(data.so_dot_dang_tuyen);
+    document.getElementById("soUngVien").textContent = dinhDangSo(data.so_ung_vien);
+    document.getElementById("soPhongVan").textContent = dinhDangSo(data.so_phong_van);
+    document.getElementById("soDaTuyen").textContent = dinhDangSo(data.so_da_tuyen);
 
-    document.getElementById("soUngVien").textContent = data.so_ung_vien;
+    const tongUngVien = Number(data.so_ung_vien) || 0;
+    const tongDaTuyen = Number(data.so_da_tuyen) || 0;
+    document.getElementById("tyLeTuyen").textContent = `${
+      tongUngVien ? Math.round((tongDaTuyen / tongUngVien) * 100) : 0
+    }%`;
 
-    document.getElementById("soPhongVan").textContent = data.so_phong_van;
-
-    document.getElementById("soDaTuyen").textContent = data.so_da_tuyen;
+    hienThiPheuTuyenDung(data);
+    hienThiPhongVanSapToi(data.phong_van_sap_toi || []);
+    hienThiUngVienMoi(data.ung_vien_moi || []);
   } catch (error) {
     console.error(error);
+    hienThiLoiDashboard();
   }
 }
+
+function dinhDangSo(value) {
+  return (Number(value) || 0).toLocaleString("vi-VN");
+}
+
+function taoTrangThaiUngVienMap(data) {
+  return Object.fromEntries(
+    (data.ung_vien_theo_trang_thai || []).map((item) => [
+      String(item.trang_thai || "").toLowerCase(),
+      Number(item.so_luong) || 0,
+    ]),
+  );
+}
+
+function hienThiPheuTuyenDung(data) {
+  const container = document.getElementById("pheuTuyenDung");
+  const trangThai = taoTrangThaiUngVienMap(data);
+  const tongUngVien = Number(data.so_ung_vien) || 0;
+  const cacBuoc = [
+    { ten: "Đã tiếp nhận", trangThai: null, mau: "dam" },
+    {
+      ten: "Đã sàng lọc",
+      trangThai: ["da_phan_tich", "da_chon", "da_lien_he", "da_xep_lich", "da_phong_van", "offer", "da_tuyen"],
+      mau: "dam",
+    },
+    { ten: "Đã phỏng vấn", trangThai: ["da_phong_van", "offer", "da_tuyen"], mau: "vua" },
+    { ten: "Đã gửi đề nghị", trangThai: ["offer", "da_tuyen"], mau: "nhat" },
+    { ten: "Đã tuyển", trangThai: ["da_tuyen"], mau: "sang" },
+  ];
+  let buocTruoc = tongUngVien;
+
+  container.replaceChildren();
+  if (tongUngVien === 0) {
+    container.appendChild(taoThongBaoTrong("Chưa có dữ liệu ứng viên để hiển thị."));
+    return;
+  }
+
+  cacBuoc.forEach((buoc, index) => {
+    const soLuong = buoc.trangThai
+      ? buoc.trangThai.reduce((tong, trangThaiUngVien) => tong + (trangThai[trangThaiUngVien] || 0), 0)
+      : tongUngVien;
+    const tiLe = index === 0 ? 100 : buocTruoc ? Math.round((soLuong / buocTruoc) * 100) : 0;
+    const hang = document.createElement("div");
+    const ten = document.createElement("span");
+    const thanh = document.createElement("div");
+    const giaTri = document.createElement("strong");
+    const phanTram = document.createElement("span");
+    const doRong = Math.max(8, Math.round((soLuong / tongUngVien) * 100));
+
+    hang.className = "pheu-hang";
+    ten.className = "pheu-ten";
+    ten.textContent = buoc.ten;
+    thanh.className = `pheu-thanh pheu-thanh-${buoc.mau}`;
+    thanh.style.width = `${doRong}%`;
+    thanh.textContent = dinhDangSo(soLuong);
+    giaTri.className = "pheu-so";
+    giaTri.textContent = dinhDangSo(soLuong);
+    phanTram.className = "pheu-ti-le";
+    phanTram.textContent = index === 0 ? "tổng số" : `${tiLe}% chuyển đổi`;
+    hang.append(ten, thanh, giaTri, phanTram);
+    container.appendChild(hang);
+    buocTruoc = soLuong;
+  });
+}
+
+function hienThiPhongVanSapToi(dsPhongVan) {
+  const container = document.getElementById("danhSachPhongVan");
+  container.replaceChildren();
+  if (!dsPhongVan.length) {
+    container.appendChild(taoThongBaoTrong("Hiện chưa có lịch phỏng vấn sắp tới."));
+    return;
+  }
+
+  dsPhongVan.forEach((lich) => {
+    const hang = document.createElement("article");
+    const avatarUngVien = document.createElement("span");
+    const thongTin = document.createElement("div");
+    const ten = document.createElement("strong");
+    const thoiGian = document.createElement("span");
+    const hinhThuc = document.createElement("span");
+    const ngay = new Date(lich.bat_dau);
+    const ngayGio = Number.isNaN(ngay.getTime())
+      ? "Chưa xác định thời gian"
+      : `${ngay.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} · ${ngay.toLocaleDateString("vi-VN")}`;
+
+    hang.className = "phong-van-item";
+    avatarUngVien.className = "avatar-ung-vien";
+    avatarUngVien.textContent = layChuVietTat(lich.ten_ung_vien);
+    thongTin.className = "phong-van-thong-tin";
+    ten.textContent = lich.ten_ung_vien || "Ứng viên";
+    thoiGian.textContent = `${ngayGio}${lich.ten_nguoi_phong_van ? ` · ${lich.ten_nguoi_phong_van}` : ""}`;
+    hinhThuc.className = "nhan-hinh-thuc";
+    hinhThuc.textContent = layTenHinhThuc(lich.hinh_thuc);
+    thongTin.append(ten, thoiGian);
+    hang.append(avatarUngVien, thongTin, hinhThuc);
+    container.appendChild(hang);
+  });
+}
+
+function hienThiUngVienMoi(dsUngVien) {
+  const container = document.getElementById("danhSachUngVienMoi");
+  container.replaceChildren();
+  if (!dsUngVien.length) {
+    container.appendChild(taoThongBaoTrong("Chưa có hồ sơ ứng viên mới."));
+    return;
+  }
+
+  dsUngVien.forEach((ungVien) => {
+    const the = document.createElement("article");
+    const avatarUngVien = document.createElement("span");
+    const thongTin = document.createElement("div");
+    const ten = document.createElement("strong");
+    const trangThai = document.createElement("span");
+    const ngayTao = document.createElement("span");
+    const ngay = new Date(ungVien.ngay_tao);
+
+    the.className = "ung-vien-moi-item";
+    avatarUngVien.className = "avatar-ung-vien";
+    avatarUngVien.textContent = layChuVietTat(ungVien.ho_ten);
+    thongTin.className = "ung-vien-moi-thong-tin";
+    ten.textContent = ungVien.ho_ten || "Ứng viên";
+    trangThai.className = `nhan-trang-thai trang-thai-${String(ungVien.trang_thai || "moi").toLowerCase()}`;
+    trangThai.textContent = layTenTrangThaiUngVien(ungVien.trang_thai);
+    ngayTao.className = "ung-vien-moi-ngay";
+    ngayTao.textContent = Number.isNaN(ngay.getTime()) ? "" : ngay.toLocaleDateString("vi-VN");
+    thongTin.append(ten, trangThai);
+    the.append(avatarUngVien, thongTin, ngayTao);
+    container.appendChild(the);
+  });
+}
+
+function layChuVietTat(ten) {
+  return String(ten || "?")
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((tu) => tu.charAt(0).toLocaleUpperCase("vi-VN"))
+    .join("");
+}
+
+function layTenTrangThaiUngVien(trangThai) {
+  const tenTrangThai = {
+    moi: "Mới tiếp nhận",
+    da_phan_tich: "Đã phân tích",
+    da_chon: "Đã chọn",
+    da_lien_he: "Đã liên hệ",
+    da_xep_lich: "Đã xếp lịch",
+    da_phong_van: "Đã phỏng vấn",
+    offer: "Đã gửi đề nghị",
+    da_tuyen: "Đã tuyển",
+    tu_choi: "Không phù hợp",
+    talent_pool: "Nguồn tiềm năng",
+  };
+  return tenTrangThai[String(trangThai || "").toLowerCase()] || "Chưa cập nhật";
+}
+
+function layTenHinhThuc(hinhThuc) {
+  const tenHinhThuc = {
+    online: "Trực tuyến",
+    onsite: "Tại văn phòng",
+    offline: "Trực tiếp",
+    remote: "Từ xa",
+    hybrid: "Kết hợp",
+  };
+  return tenHinhThuc[String(hinhThuc || "").toLowerCase()] || hinhThuc || "Đã lên lịch";
+}
+
+function taoThongBaoTrong(noiDung) {
+  const thongBao = document.createElement("p");
+  thongBao.className = "trang-thai-trong";
+  thongBao.textContent = noiDung;
+  return thongBao;
+}
+
+function hienThiLoiDashboard() {
+  document.getElementById("pheuTuyenDung").replaceChildren(
+    taoThongBaoTrong("Không thể tải dữ liệu phễu tuyển dụng."),
+  );
+  document.getElementById("danhSachPhongVan").replaceChildren(
+    taoThongBaoTrong("Không thể tải lịch phỏng vấn."),
+  );
+  document.getElementById("danhSachUngVienMoi").replaceChildren(
+    taoThongBaoTrong("Không thể tải danh sách ứng viên."),
+  );
+}
+
+function locDanhSachTongQuan(tuKhoa) {
+  const tuKhoaChuanHoa = tuKhoa.trim().toLocaleLowerCase("vi");
+  document.querySelectorAll(".phong-van-item").forEach((item) => {
+    item.hidden = Boolean(tuKhoaChuanHoa) && !item.textContent.toLocaleLowerCase("vi").includes(tuKhoaChuanHoa);
+  });
+  document.querySelectorAll(".ung-vien-moi-item").forEach((item) => {
+    item.hidden = Boolean(tuKhoaChuanHoa) && !item.textContent.toLocaleLowerCase("vi").includes(tuKhoaChuanHoa);
+  });
+}
+
+document.getElementById("timKiemTongQuan").addEventListener("input", (event) => {
+  locDanhSachTongQuan(event.target.value);
+});
 
 /* Quyền */
 
