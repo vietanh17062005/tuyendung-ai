@@ -599,9 +599,9 @@ td:nth-child(7) {
 }
 
 .combined-box {
-  width: min(1100px, calc(100vw - 40px));
-  max-width: 1100px;
-  max-height: calc(100vh - 32px);
+  width: min(1200px, calc(100vw - 40px));
+  max-width: 1200px;
+  max-height: calc(100vh - 28px);
   overflow-y: auto;
 }
 
@@ -636,9 +636,7 @@ td:nth-child(7) {
 }
 
 .modal-header-ai {
-  background: linear-gradient(135deg,
-      #ffffff 0%,
-      #f8fbff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
 }
 
 .btn-dong {
@@ -726,9 +724,7 @@ td:nth-child(7) {
   padding: 0 16px;
   border: 1px solid #ddd6fe;
   border-radius: 9px;
-  background: linear-gradient(135deg,
-      #f5f3ff,
-      #faf5ff);
+  background: linear-gradient(135deg, #f5f3ff, #faf5ff);
   color: #7e22ce;
   font-size: 11px;
   font-weight: 800;
@@ -838,8 +834,7 @@ td:nth-child(7) {
 .form-group textarea:focus,
 .form-group select:focus {
   border-color: #2563eb;
-  box-shadow:
-    0 0 0 3px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
 }
 
 .form-group input:disabled,
@@ -884,7 +879,7 @@ td:nth-child(7) {
 
 .criteria-card {
   margin-top: 12px;
-  padding: 21px;
+  padding: 22px;
   border: 1px solid #e4e7ec;
   border-radius: 13px;
   background: #fcfcfd;
@@ -931,11 +926,14 @@ td:nth-child(7) {
   cursor: not-allowed;
 }
 
-.criteria-labels {
+.criteria-labels,
+.tieu-chi-hang {
   display: grid;
-  grid-template-columns:
-    minmax(240px, 1.25fr) 130px minmax(320px, 2fr) 42px;
-  gap: 12px;
+  grid-template-columns: minmax(260px, 1.2fr) 130px minmax(400px, 2fr) 44px;
+  gap: 14px;
+}
+
+.criteria-labels {
   padding: 0 0 8px;
   color: #98a2b3;
   font-size: 9px;
@@ -944,10 +942,6 @@ td:nth-child(7) {
 }
 
 .tieu-chi-hang {
-  display: grid;
-  grid-template-columns:
-    minmax(240px, 1.25fr) 130px minmax(320px, 2fr) 42px;
-  gap: 12px;
   align-items: start;
   margin-bottom: 10px;
 }
@@ -965,11 +959,11 @@ td:nth-child(7) {
 }
 
 .tieu-chi-hang input {
-  height: 40px;
+  height: 42px;
 }
 
 .tieu-chi-hang textarea {
-  min-height: 40px;
+  min-height: 42px;
   resize: vertical;
   line-height: 1.45;
 }
@@ -977,8 +971,7 @@ td:nth-child(7) {
 .tieu-chi-hang input:focus,
 .tieu-chi-hang textarea:focus {
   border-color: #7c3aed;
-  box-shadow:
-    0 0 0 3px rgba(124, 58, 237, 0.07);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.07);
 }
 
 .tieu-chi-hang .o-trong-so {
@@ -986,8 +979,8 @@ td:nth-child(7) {
 }
 
 .btn-xoa-tieu-chi {
-  width: 42px;
-  height: 40px;
+  width: 44px;
+  height: 42px;
   border: 1px solid #fee2e2;
   border-radius: 8px;
   background: #fff7f7;
@@ -1174,13 +1167,12 @@ td:nth-child(7) {
   }
 
   .combined-box {
-    width: min(1050px, calc(100vw - 30px));
+    width: min(1100px, calc(100vw - 30px));
   }
 
   .criteria-labels,
   .tieu-chi-hang {
-    grid-template-columns:
-      minmax(200px, 1.2fr) 115px minmax(260px, 2fr) 40px;
+    grid-template-columns: minmax(230px, 1.2fr) 120px minmax(330px, 2fr) 42px;
   }
 }
 
@@ -1213,7 +1205,7 @@ td:nth-child(7) {
 
   .criteria-labels,
   .tieu-chi-hang {
-    min-width: 780px;
+    min-width: 850px;
   }
 }
 
@@ -1277,7 +1269,7 @@ td:nth-child(7) {
 
   .criteria-labels,
   .tieu-chi-hang {
-    min-width: 720px;
+    min-width: 850px;
   }
 
   .modal-footer {
