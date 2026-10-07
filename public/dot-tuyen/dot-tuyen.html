@@ -3,7 +3,6 @@
 
 <head>
   <meta charset="UTF-8" />
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Đợt tuyển dụng - Recruitment Hub</title>
@@ -14,7 +13,6 @@
 
 <body>
   <div class="khung">
-    <!-- SIDEBAR -->
 
     <aside class="menu">
       <div class="logo">
@@ -22,37 +20,72 @@
 
         <div>
           <div class="logo-title">Hệ thống tuyển dụng nhân sự</div>
-
           <div class="logo-subtitle">AI Recruitment System</div>
         </div>
       </div>
 
       <nav class="menu-list">
-        <a href="/dashboard/dashboard.html"><span>▦</span>Dashboard</a>
-        <a href="/dot-tuyen/dot-tuyen.html" class="active"><span>▤</span>Đợt tuyển dụng</a>
-        <a href="/jd/jd.html"><span>▤</span>JD tuyển dụng</a>
-        <a href="/ung-vien/ung-vien.html"><span>♙</span>Ứng viên</a>
-        <a href="/cv/cv.html"><span>▣</span>CV</a>
-        <a href="#"><span>◷</span>Phỏng vấn</a>
-        <a href="#"><span>▥</span>Báo cáo</a>
-        <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung"><span>♙</span>Người dùng</a>
+        <a href="/dashboard/dashboard.html">
+          <span>▦</span>
+          Dashboard
+        </a>
+
+        <a href="/dot-tuyen/dot-tuyen.html" class="active">
+          <span>▤</span>
+          Đợt tuyển dụng
+        </a>
+
+        <a href="/jd/jd.html">
+          <span>▤</span>
+          JD tuyển dụng
+        </a>
+
+        <a href="/ung-vien/ung-vien.html">
+          <span>♙</span>
+          Ứng viên
+        </a>
+
+        <a href="/cv/cv.html">
+          <span>▣</span>
+          CV
+        </a>
+
+        <a href="#">
+          <span>◷</span>
+          Phỏng vấn
+        </a>
+
+        <a href="#">
+          <span>▥</span>
+          Báo cáo
+        </a>
+
+        <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung">
+          <span>♙</span>
+          Người dùng
+        </a>
       </nav>
     </aside>
 
-    <!-- MAIN -->
-
     <main class="noi-dung">
-      <!-- TOPBAR -->
 
       <header class="topbar">
         <div>
-          <p class="tieu-de-nho">QUẢN LÝ TUYỂN DỤNG</p>
+          <p class="tieu-de-nho">
+            QUẢN LÝ TUYỂN DỤNG
+          </p>
+
           <h1>Đợt tuyển dụng</h1>
+
+          <p class="mo-ta-trang">
+            Quản lý đợt tuyển dụng và JD trên cùng một quy trình.
+          </p>
         </div>
 
         <div class="tai-khoan" id="taiKhoan">
           <div class="tai-khoan-thong-tin">
             <div class="avatar" id="avatar">A</div>
+
             <div class="nguoi-dung-info">
               <strong id="tenNguoiDung">Admin</strong>
               <span id="vaiTro">Quản trị viên</span>
@@ -64,28 +97,37 @@
           <div class="menu-tai-khoan" id="menuTaiKhoan">
             <div class="tai-khoan-header">
               <strong id="tenMenuTaiKhoan">Admin</strong>
-              <span id="emailMenuTaiKhoan">admin@gmail.com</span>
+
+              <span id="emailMenuTaiKhoan">
+                admin@gmail.com
+              </span>
             </div>
 
             <button type="button" id="btnThongTin">
-              <span>👤</span>Thông tin tài khoản
+              <span>👤</span>
+              Thông tin tài khoản
             </button>
-            <button type="button" id="btnDoiMatKhau"><span>🔑</span>Đổi mật khẩu</button>
+
+            <button type="button" id="btnDoiMatKhau">
+              <span>🔑</span>
+              Đổi mật khẩu
+            </button>
 
             <div class="duong-ke"></div>
 
             <button type="button" id="btnDangXuat" class="btn-dang-xuat">
-              <span>↪</span>Đăng xuất
+              <span>↪</span>
+              Đăng xuất
             </button>
           </div>
         </div>
       </header>
 
-      <!-- TOOLBAR -->
-
       <section class="toolbar">
         <div class="tim-kiem">
-          <span>⌕</span><input type="text" id="oTimKiem" placeholder="Tìm kiếm đợt tuyển dụng..." />
+          <span>⌕</span>
+
+          <input type="text" id="oTimKiem" placeholder="Tìm kiếm đợt tuyển dụng hoặc JD..." />
         </div>
 
         <div class="bo-loc">
@@ -97,17 +139,25 @@
             <option value="ket_thuc">Kết thúc</option>
           </select>
 
-          <button id="btnThem" class="btn-them">+ Thêm đợt tuyển dụng</button>
+          <button type="button" id="btnThem" class="btn-them">
+            + Thêm đợt tuyển dụng
+          </button>
         </div>
       </section>
 
-      <!-- TABLE -->
-
       <section class="table-container">
+
         <div class="table-header">
           <div>
-            <h2>Danh sách đợt tuyển dụng</h2>
-            <p id="tongSo">0 đợt tuyển dụng</p>
+            <h2>Danh sách tuyển dụng</h2>
+
+            <p id="tongSo">
+              0 đợt tuyển dụng
+            </p>
+          </div>
+
+          <div class="table-note">
+            Đợt tuyển dụng và JD được quản lý cùng nhau
           </div>
         </div>
 
@@ -116,20 +166,12 @@
             <thead>
               <tr>
                 <th>STT</th>
-
-                <th>Tên đợt tuyển dụng</th>
-
-                <th>Mô tả</th>
-
+                <th>Đợt tuyển dụng</th>
+                <th>JD</th>
                 <th>Trạng thái</th>
-
+                <th>Thời gian</th>
                 <th>Người tạo</th>
-
-                <th>Ngày bắt đầu</th>
-
-                <th>Ngày kết thúc</th>
-
-                <th id="cotThaoTac">Thao tác</th>
+                <th>Thao tác</th>
               </tr>
             </thead>
 
@@ -140,38 +182,46 @@
         <div class="khong-co-du-lieu" id="khongCoDuLieu">
           Không tìm thấy đợt tuyển dụng nào.
         </div>
+
       </section>
     </main>
   </div>
 
-  <!-- MODAL THÔNG TIN TÀI KHOẢN -->
-
   <div class="modal" id="modalThongTin">
-    <div class="modal-box">
+    <div class="modal-box account-box">
+
       <div class="modal-header">
         <div>
           <h2>Thông tin tài khoản</h2>
           <p>Cập nhật thông tin cá nhân</p>
         </div>
 
-        <button type="button" class="btn-dong" id="btnDongThongTin">×</button>
+        <button type="button" class="btn-dong" id="btnDongThongTin">
+          ×
+        </button>
       </div>
 
       <form id="formThongTin">
         <div class="form-group">
-          <label for="taiKhoanHoTen">Họ và tên</label>
+          <label for="taiKhoanHoTen">
+            Họ và tên
+          </label>
 
           <input type="text" id="taiKhoanHoTen" placeholder="Nhập họ và tên" required />
         </div>
 
         <div class="form-group">
-          <label for="taiKhoanEmail">Email</label>
+          <label for="taiKhoanEmail">
+            Email
+          </label>
 
           <input type="email" id="taiKhoanEmail" placeholder="Nhập email" required />
         </div>
 
         <div class="form-group">
-          <label for="taiKhoanVaiTro">Vai trò</label>
+          <label for="taiKhoanVaiTro">
+            Vai trò
+          </label>
 
           <input type="text" id="taiKhoanVaiTro" readonly />
         </div>
@@ -179,147 +229,370 @@
         <div class="thong-bao" id="thongBaoThongTin"></div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-huy" id="btnHuyThongTin">Hủy</button>
-          <button type="submit" class="btn-luu">Lưu thay đổi</button>
+          <button type="button" class="btn-huy" id="btnHuyThongTin">
+            Hủy
+          </button>
+
+          <button type="submit" class="btn-luu">
+            Lưu thay đổi
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL ĐỔI MẬT KHẨU -->
-
   <div class="modal" id="modalMatKhau">
-    <div class="modal-box">
+    <div class="modal-box account-box">
+
       <div class="modal-header">
         <div>
           <h2>Đổi mật khẩu</h2>
           <p>Cập nhật mật khẩu đăng nhập</p>
         </div>
 
-        <button type="button" class="btn-dong" id="btnDongMatKhau">×</button>
+        <button type="button" class="btn-dong" id="btnDongMatKhau">
+          ×
+        </button>
       </div>
 
       <form id="formMatKhau">
         <div class="form-group">
-          <label for="matKhauCu">Mật khẩu hiện tại</label>
+          <label for="matKhauCu">
+            Mật khẩu hiện tại
+          </label>
 
-          <input type="password" id="matKhauCu" placeholder="Nhập mật khẩu hiện tại" required />
+          <input type="password" id="matKhauCu" required />
         </div>
 
         <div class="form-group">
-          <label for="matKhauMoi">Mật khẩu mới</label>
+          <label for="matKhauMoi">
+            Mật khẩu mới
+          </label>
 
-          <input type="password" id="matKhauMoi" placeholder="Nhập mật khẩu mới" minlength="6" required />
+          <input type="password" id="matKhauMoi" minlength="6" required />
         </div>
 
         <div class="form-group">
-          <label for="xacNhanMatKhau">Xác nhận mật khẩu mới</label>
+          <label for="xacNhanMatKhau">
+            Xác nhận mật khẩu mới
+          </label>
 
-          <input type="password" id="xacNhanMatKhau" placeholder="Nhập lại mật khẩu mới" minlength="6" required />
+          <input type="password" id="xacNhanMatKhau" minlength="6" required />
         </div>
 
         <div class="thong-bao" id="thongBaoMatKhau"></div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-huy" id="btnHuyMatKhau">Hủy</button>
-          <button type="submit" class="btn-luu">Đổi mật khẩu</button>
+          <button type="button" class="btn-huy" id="btnHuyMatKhau">
+            Hủy
+          </button>
+
+          <button type="submit" class="btn-luu">
+            Đổi mật khẩu
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL THÊM / SỬA -->
-
   <div class="modal" id="modal">
-    <div class="modal-box">
-      <div class="modal-header">
-        <div>
-          <h2 id="tieuDeModal">Thêm đợt tuyển dụng</h2>
 
-          <p>Nhập thông tin đợt tuyển dụng</p>
+    <div class="modal-box combined-box">
+
+      <div class="modal-header modal-header-ai">
+
+        <div>
+          <div class="modal-kicker">
+            TẠO TUYỂN DỤNG
+          </div>
+
+          <h2 id="tieuDeModal">
+            Thêm đợt tuyển dụng
+          </h2>
+
+          <p>
+            Tạo đợt tuyển dụng và JD trong cùng một biểu mẫu.
+          </p>
         </div>
 
-        <button class="btn-dong" id="btnDong">×</button>
+        <button type="button" class="btn-dong" id="btnDong">
+          ×
+        </button>
       </div>
 
       <form id="form">
+
         <input type="hidden" id="id" />
 
-        <div class="form-group">
-          <label>Tên đợt tuyển dụng <span>*</span></label>
+        <section class="form-section">
 
-          <input type="text" id="ten" placeholder="Ví dụ: Tuyển dụng nhân viên CNTT 2026" required />
-        </div>
+          <div class="section-heading">
+            <div class="section-number">
+              01
+            </div>
 
-        <div class="form-group">
-          <label>Mô tả</label>
+            <div>
+              <h3>Thông tin đợt tuyển dụng</h3>
 
-          <textarea id="moTa" rows="4" placeholder="Mô tả ngắn về đợt tuyển dụng..."></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group date-group">
-            <label>Ngày bắt đầu <span>*</span></label>
-
-            <div class="date-control">
-              <input type="text" id="ngayBatDau" inputmode="numeric" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
-                placeholder="dd/mm/yyyy" title="Nhập ngày theo dạng dd/mm/yyyy" autocomplete="off" required />
-              <button type="button" class="date-picker-button" id="btnPickerNgayBatDau" aria-label="Chọn ngày bắt đầu">
-                ▦
-              </button>
-              <input type="date" class="date-native-picker" id="pickerNgayBatDau" tabindex="-1" aria-hidden="true" />
+              <p>
+                Thông tin chung của chiến dịch tuyển dụng
+              </p>
             </div>
           </div>
 
-          <div class="form-group date-group">
-            <label>Ngày kết thúc <span>*</span></label>
+          <div class="form-group">
+            <label for="ten">
+              Tên đợt tuyển dụng
+              <span>*</span>
+            </label>
 
-            <div class="date-control">
-              <input type="text" id="ngayKetThuc" inputmode="numeric" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
-                placeholder="dd/mm/yyyy" title="Nhập ngày theo dạng dd/mm/yyyy" autocomplete="off" required />
-              <button type="button" class="date-picker-button" id="btnPickerNgayKetThuc"
-                aria-label="Chọn ngày kết thúc">
-                ▦
-              </button>
-              <input type="date" class="date-native-picker" id="pickerNgayKetThuc" tabindex="-1" aria-hidden="true" />
-            </div>
+            <input type="text" id="ten" placeholder="Ví dụ: Tuyển dụng lập trình viên Backend 2026" required />
           </div>
-        </div>
 
-        <div class="form-group">
-          <label>Trạng thái</label>
+          <div class="form-group">
+            <label for="moTa">
+              Mô tả đợt tuyển dụng
+            </label>
 
-          <select id="trangThai">
-            <option value="nhap">Nháp</option>
-            <option value="dang_tuyen">Đang tuyển</option>
-            <option value="tam_dung">Tạm dừng</option>
-            <option value="ket_thuc">Kết thúc</option>
-          </select>
-        </div>
+            <textarea id="moTa" rows="3" placeholder="Mô tả mục tiêu hoặc nhu cầu tuyển dụng..."></textarea>
+          </div>
+
+          <div class="form-row">
+
+            <div class="form-group">
+              <label for="ngayBatDau">
+                Ngày bắt đầu
+                <span>*</span>
+              </label>
+
+              <div class="date-control">
+
+                <input type="text" id="ngayBatDau" inputmode="numeric" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+                  placeholder="dd/mm/yyyy" autocomplete="off" required />
+
+                <button type="button" class="date-picker-button" id="btnPickerNgayBatDau">
+                  ▦
+                </button>
+
+                <input type="date" class="date-native-picker" id="pickerNgayBatDau" tabindex="-1" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="ngayKetThuc">
+                Ngày kết thúc
+                <span>*</span>
+              </label>
+
+              <div class="date-control">
+
+                <input type="text" id="ngayKetThuc" inputmode="numeric" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+                  placeholder="dd/mm/yyyy" autocomplete="off" required />
+
+                <button type="button" class="date-picker-button" id="btnPickerNgayKetThuc">
+                  ▦
+                </button>
+
+                <input type="date" class="date-native-picker" id="pickerNgayKetThuc" tabindex="-1" />
+              </div>
+            </div>
+
+          </div>
+
+          <div class="form-group">
+            <label for="trangThai">
+              Trạng thái
+            </label>
+
+            <select id="trangThai">
+              <option value="nhap">Nháp</option>
+              <option value="dang_tuyen">Đang tuyển</option>
+              <option value="tam_dung">Tạm dừng</option>
+              <option value="ket_thuc">Kết thúc</option>
+            </select>
+          </div>
+
+        </section>
+
+        <section class="form-section jd-section">
+
+          <div class="section-heading jd-heading">
+
+            <div class="section-number ai-number">
+              02
+            </div>
+
+            <div class="heading-content">
+              <h3>Job Description</h3>
+
+              <p>
+                Nội dung JD có thể được AI tạo và chỉnh sửa thủ công.
+              </p>
+            </div>
+
+            <button type="button" class="btn-ai" id="btnGoiYAI">
+              <span>✦</span>
+              Gợi ý bằng AI
+            </button>
+
+          </div>
+
+          <div class="ai-hint">
+
+            <div class="ai-hint-icon">
+              ✦
+            </div>
+
+            <div>
+              <strong>
+                AI chỉ đưa ra gợi ý
+              </strong>
+
+              <span>
+                Bạn có thể sửa, xóa hoặc ghi đè toàn bộ nội dung trước khi lưu.
+              </span>
+            </div>
+
+          </div>
+
+          <div class="form-group">
+            <label for="tieuDe">
+              Tiêu đề JD
+              <span>*</span>
+            </label>
+
+            <input type="text" id="tieuDe" placeholder="Ví dụ: Lập trình viên Backend Java" required />
+          </div>
+
+          <div class="form-group">
+            <label for="jdMoTa">
+              Mô tả công việc
+            </label>
+
+            <textarea id="jdMoTa" rows="7" placeholder="Các nhiệm vụ chính..."></textarea>
+          </div>
+
+          <div class="form-row jd-text-row">
+
+            <div class="form-group">
+              <label for="jdYeuCau">
+                Yêu cầu ứng viên
+              </label>
+
+              <textarea id="jdYeuCau" rows="8" placeholder="Kinh nghiệm, kỹ năng, kiến thức..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="jdQuyenLoi">
+                Quyền lợi
+              </label>
+
+              <textarea id="jdQuyenLoi" rows="8" placeholder="Lương, thưởng, bảo hiểm, môi trường..."></textarea>
+            </div>
+
+          </div>
+
+          <div class="form-group">
+            <label for="jdGhiChu">
+              Ghi chú cho AI
+            </label>
+
+            <textarea id="jdGhiChu" rows="3" maxlength="1500"
+              placeholder="Ví dụ: ưu tiên ứng viên có Spring Boot, làm việc tại Hà Nội, chấp nhận sinh viên mới tốt nghiệp..."></textarea>
+          </div>
+
+          <div class="criteria-card">
+
+            <div class="criteria-header">
+
+              <div>
+                <h3>Tiêu chí đánh giá</h3>
+
+                <p>
+                  Chia trọng số cho các tiêu chí dùng để đánh giá CV.
+                </p>
+              </div>
+
+              <button type="button" class="btn-them-tieu-chi" id="btnThemTieuChi">
+                + Thêm tiêu chí
+              </button>
+
+            </div>
+
+            <div class="criteria-labels">
+              <span>Tiêu chí</span>
+              <span>Trọng số</span>
+              <span>Mô tả đánh giá</span>
+              <span></span>
+            </div>
+
+            <div id="danhSachTieuChi" class="danh-sach-tieu-chi"></div>
+
+            <div class="criteria-empty">
+              AI sẽ tự tạo tiêu chí sau khi bạn bấm
+              <strong>Gợi ý bằng AI</strong>.
+            </div>
+
+            <div class="criteria-footer">
+
+              <div id="thongBaoTieuChi" class="criteria-error"></div>
+
+              <div id="tongTrongSo" class="tong-trong-so">
+                Tổng: 0%
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
 
         <div class="thong-bao" id="thongBao"></div>
 
         <div class="modal-footer">
-          <button type="button" class="btn-huy" id="btnHuy">Hủy</button>
-          <button type="submit" class="btn-luu">Lưu đợt tuyển dụng</button>
+
+          <button type="button" class="btn-huy" id="btnHuy">
+            Hủy
+          </button>
+
+          <button type="submit" class="btn-luu" id="btnLuu">
+            Lưu tuyển dụng
+          </button>
+
         </div>
+
       </form>
     </div>
   </div>
 
-  <!-- MODAL XÁC NHẬN -->
-
   <div class="modal" id="modalXacNhan">
-    <div class="modal-box xac-nhan-box">
-      <div class="xac-nhan-icon">!</div>
 
-      <h2>Xóa đợt tuyển dụng?</h2>
-      <p id="noiDungXacNhan">Bạn có chắc chắn muốn xóa đợt tuyển dụng này?</p>
+    <div class="modal-box xac-nhan-box">
+
+      <div class="xac-nhan-icon">
+        !
+      </div>
+
+      <h2>
+        Xóa đợt tuyển dụng?
+      </h2>
+
+      <p id="noiDungXacNhan">
+        Bạn có chắc chắn muốn xóa đợt tuyển dụng này?
+      </p>
 
       <div class="modal-footer">
-        <button class="btn-huy" id="btnKhongXoa">Hủy</button>
-        <button class="btn-xoa-confirm" id="btnXacNhanXoa">Xóa</button>
+
+        <button type="button" class="btn-huy" id="btnKhongXoa">
+          Hủy
+        </button>
+
+        <button type="button" class="btn-xoa-confirm" id="btnXacNhanXoa">
+          Xóa
+        </button>
+
       </div>
+
     </div>
   </div>
 
