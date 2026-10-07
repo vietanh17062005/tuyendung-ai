@@ -6,6 +6,9 @@ let danhSachGop = [];
 let dangSua = null;
 let dangXoa = null;
 let dangXem = false;
+let dotTuyenJDId = null;
+let yTuongJD = "";
+let cauHoiJD = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -20,6 +23,7 @@ function layToken() {
 function layNguoiDung() {
   try {
     return JSON.parse(
+      localStorage.getItem("nguoi_dung") ||
       localStorage.getItem("nguoiDung") ||
       localStorage.getItem("user") ||
       "null"
@@ -44,19 +48,11 @@ function layVaiTro() {
 }
 
 function coQuyenQuanLy() {
-  const vaiTro = String(
-    nguoiDung?.vai_tro || "",
-  ).trim().toLowerCase();
-
-  return ["admin", "manager"].includes(vaiTro);
+  return ["admin", "manager"].includes(layVaiTro());
 }
 
 function coQuyenTaoJD() {
-  const vaiTro = String(
-    nguoiDung?.vai_tro || "",
-  ).trim().toLowerCase();
-
-  return ["admin", "manager", "hr"].includes(vaiTro);
+  return ["admin", "manager", "hr"].includes(layVaiTro());
 }
 
 function taoHeaders() {
@@ -108,26 +104,30 @@ function escapeHTML(value) {
 function dinhDangNgay(value) {
   if (!value) return "-";
 
+  const dateText = String(value);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
+    const [, year, month, day] = dateText.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    return `${day}/${month}/${year}`;
+  }
+
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return String(value);
   }
 
-  return date.toLocaleDateString("vi-VN");
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Asia/Ho_Chi_Minh",
+  });
 }
 
 function dinhDangNgayInput(value) {
   if (!value) return "";
 
-  const text = String(value).slice(0, 10);
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-    const [year, month, day] = text.split("-");
-    return `${day}/${month}/${year}`;
-  }
-
-  return text;
+  return dinhDangNgay(value) === "-" ? "" : dinhDangNgay(value);
 }
 
 function ngaySangISO(value) {
@@ -242,6 +242,9 @@ async function taiDuLieu() {
       return {
         dot,
         jd: jd || null,
+        jds: danhSachJD.filter(
+          (item) => Number(item.dot_tuyen_id) === Number(dot.id)
+        ),
       };
     });
 
@@ -306,16 +309,11 @@ function hienThiDanhSach() {
 
   danhSachLoc.forEach((item, index) => {
     const dot = item.dot;
-    const jd = item.jd;
 
     const tenDot =
       dot?.ten_dot ||
       dot?.ten ||
       "-";
-
-    const tenJD =
-      jd?.tieu_de ||
-      "Chưa có JD";
 
     const ngayBatDau = dinhDangNgay(dot?.ngay_bat_dau);
     const ngayKetThuc = dinhDangNgay(dot?.ngay_ket_thuc);
@@ -333,31 +331,11 @@ function hienThiDanhSach() {
       <td>${index + 1}</td>
 
       <td>
-        <div class="ten-dot">
-          ${escapeHTML(tenDot)}
-        </div>
-
-        ${dot?.mo_ta
-        ? `<div class="mo-ta-bang">${escapeHTML(dot.mo_ta)}</div>`
-        : ""
-      }
+        <div class="ten-dot">${escapeHTML(tenDot)}</div>
       </td>
 
       <td>
-        <div class="jd-ten">
-          ${escapeHTML(tenJD)}
-        </div>
-
-        ${jd
-        ? `<div class="mo-ta-bang">
-                ${escapeHTML(
-          jd.trang_thai
-            ? hienThiTrangThaiJD(jd.trang_thai)
-            : ""
-        )}
-              </div>`
-        : ""
-      }
+        <div class="mo-ta-bang">${escapeHTML(dot?.mo_ta || "-")}</div>
       </td>
 
       <td>
@@ -367,18 +345,29 @@ function hienThiDanhSach() {
       </td>
 
       <td>
-        <div class="thoi-gian">
-          <span>Bắt đầu: ${escapeHTML(ngayBatDau)}</span>
-          <span>Kết thúc: ${escapeHTML(ngayKetThuc)}</span>
-        </div>
-      </td>
-
-      <td>
         ${escapeHTML(nguoiTao)}
       </td>
 
       <td>
+        ${escapeHTML(ngayBatDau)}
+      </td>
+
+      <td>
+        ${escapeHTML(ngayKetThuc)}
+      </td>
+
+      <td>
         <div class="action-group">
+          ${coQuyenTaoJD()
+            ? `<button
+                type="button"
+                class="btn-tao-jd"
+                data-action="tao-jd"
+                data-id="${dot.id}"
+              >
+                ✦ Tạo JD
+              </button>`
+            : ""}
           <button
             type="button"
             class="btn-xem"
@@ -431,12 +420,17 @@ function dongModal() {
   $("id").value = "";
 
   $("danhSachTieuChi").innerHTML = "";
-  $("thongBaoTieuChi").textContent = "";
+  if ($("thongBaoTieuChi")) $("thongBaoTieuChi").textContent = "";
   $("tongTrongSo").textContent = "Tổng: 0%";
   $("tongTrongSo").classList.remove("lech");
 
   $("thongBao").className = "thong-bao";
   $("thongBao").textContent = "";
+  $("jdThongTin").hidden = true;
+  $("jdThongTinNoiDung").replaceChildren();
+  $("jdChinhSua").hidden = true;
+  $("danhSachTieuChiSua").replaceChildren();
+  $("tongTrongSoSua").textContent = "Tổng: 0%";
 
   moKhoaForm();
 }
@@ -458,8 +452,6 @@ function moFormSua(item) {
   $("tieuDeModal").textContent = "Sửa đợt tuyển dụng";
 
   const dot = item.dot;
-  const jd = item.jd;
-
   $("id").value = dot.id || "";
   $("ten").value = dot.ten_dot || dot.ten || "";
   $("moTa").value = dot.mo_ta || "";
@@ -467,23 +459,22 @@ function moFormSua(item) {
   $("ngayKetThuc").value = dinhDangNgayInput(dot.ngay_ket_thuc);
   $("trangThai").value = dot.trang_thai || "nhap";
 
-  $("tieuDe").value = jd?.tieu_de || "";
-  $("jdMoTa").value = jd?.mo_ta || "";
-  $("jdYeuCau").value = jd?.yeu_cau || "";
-  $("jdQuyenLoi").value = jd?.quyen_loi || "";
-  $("jdGhiChu").value = "";
-
-  const tieuChi = parseTieuChi(jd?.tieu_chi);
-
-  tieuChi.forEach((item) => {
-    themTieuChi(
-      item?.ten || "",
-      item?.trong_so ?? 0,
-      item?.mo_ta || ""
-    );
-  });
-
-  capNhatTongTrongSo();
+  if (item.jd) {
+    $("jdChinhSua").hidden = false;
+    $("jdSuaTieuDe").value = item.jd.tieu_de || "";
+    $("jdSuaMoTa").value = item.jd.mo_ta || "";
+    $("jdSuaYeuCau").value = item.jd.yeu_cau || "";
+    $("jdSuaQuyenLoi").value = item.jd.quyen_loi || "";
+    $("danhSachTieuChiSua").replaceChildren();
+    parseTieuChi(item.jd.tieu_chi).forEach((criterion) => {
+      themTieuChiSua(
+        criterion.ten || "",
+        criterion.trong_so ?? 0,
+        criterion.mo_ta || ""
+      );
+    });
+    capNhatTongTrongSoSua();
+  }
 
   moModal();
 }
@@ -496,8 +487,6 @@ function moFormXem(item) {
   $("tieuDeModal").textContent = "Xem thông tin tuyển dụng";
 
   const dot = item.dot;
-  const jd = item.jd;
-
   $("id").value = dot.id || "";
   $("ten").value = dot.ten_dot || dot.ten || "";
   $("moTa").value = dot.mo_ta || "";
@@ -505,24 +494,79 @@ function moFormXem(item) {
   $("ngayKetThuc").value = dinhDangNgayInput(dot.ngay_ket_thuc);
   $("trangThai").value = dot.trang_thai || "nhap";
 
-  $("tieuDe").value = jd?.tieu_de || "";
-  $("jdMoTa").value = jd?.mo_ta || "";
-  $("jdYeuCau").value = jd?.yeu_cau || "";
-  $("jdQuyenLoi").value = jd?.quyen_loi || "";
-
-  const tieuChi = parseTieuChi(jd?.tieu_chi);
-
-  tieuChi.forEach((item) => {
-    themTieuChi(
-      item?.ten || "",
-      item?.trong_so ?? 0,
-      item?.mo_ta || ""
-    );
-  });
-
-  capNhatTongTrongSo();
+  hienThiThongTinJD(item);
   khoaFormXem();
   moModal();
+}
+
+function themMucThongTinJD(container, label, value) {
+  const section = document.createElement("div");
+  section.className = "jd-thong-tin-muc";
+
+  const title = document.createElement("strong");
+  title.textContent = label;
+
+  const content = document.createElement("p");
+  content.textContent = value || "Chưa có thông tin.";
+
+  section.append(title, content);
+  container.appendChild(section);
+}
+
+function hienThiThongTinJD(item) {
+  const container = $("jdThongTinNoiDung");
+  container.replaceChildren();
+
+  const jds = item.jds?.length ? item.jds : (item.jd ? [item.jd] : []);
+  $("jdThongTin").hidden = false;
+
+  if (!jds.length) {
+    const empty = document.createElement("p");
+    empty.className = "jd-chua-co";
+    empty.textContent = "Đợt tuyển dụng này chưa có JD. Dùng nút “Tạo JD” trong danh sách để bắt đầu.";
+    container.appendChild(empty);
+    return;
+  }
+
+  jds.forEach((jd) => {
+    const card = document.createElement("article");
+    card.className = "jd-thong-tin-card";
+
+    const title = document.createElement("h4");
+    title.textContent = jd.tieu_de || "JD chưa có tiêu đề";
+    card.appendChild(title);
+
+    const status = document.createElement("span");
+    status.className = `jd-trang-thai ${layClassTrangThai(jd.trang_thai)}`;
+    status.textContent = hienThiTrangThaiJD(jd.trang_thai);
+    card.appendChild(status);
+
+    themMucThongTinJD(card, "Giới thiệu & mô tả công việc", jd.mo_ta);
+    themMucThongTinJD(card, "Yêu cầu", jd.yeu_cau);
+    themMucThongTinJD(card, "Quyền lợi", jd.quyen_loi);
+
+    const criteria = Array.isArray(jd.tieu_chi) ? jd.tieu_chi : parseTieuChi(jd.tieu_chi);
+    if (criteria.length) {
+      const rubric = document.createElement("div");
+      rubric.className = "jd-thong-tin-muc";
+
+      const rubricTitle = document.createElement("strong");
+      rubricTitle.textContent = "Rubric chấm điểm";
+      rubric.appendChild(rubricTitle);
+
+      const list = document.createElement("ul");
+      criteria.forEach((criterion) => {
+        const entry = document.createElement("li");
+        const description = criterion.mo_ta ? ` — ${criterion.mo_ta}` : "";
+        entry.textContent = `${criterion.ten || "Tiêu chí"} (${Number(criterion.trong_so) || 0}%)${description}`;
+        list.appendChild(entry);
+      });
+      rubric.appendChild(list);
+      card.appendChild(rubric);
+    }
+
+    container.appendChild(card);
+  });
 }
 
 function khoaFormXem() {
@@ -534,9 +578,8 @@ function khoaFormXem() {
     field.disabled = true;
   });
 
-  $("btnGoiYAI").disabled = true;
-  $("btnThemTieuChi").disabled = true;
-  $("btnLuu").style.display = "none";
+  $("btnLuuVaTaoJD").style.display = "none";
+  $("form").querySelector('[type="submit"]').style.display = "none";
   $("btnHuy").textContent = "Đóng";
 }
 
@@ -549,9 +592,8 @@ function moKhoaForm() {
     field.disabled = false;
   });
 
-  $("btnGoiYAI").disabled = false;
-  $("btnThemTieuChi").disabled = false;
-  $("btnLuu").style.display = "";
+  $("btnLuuVaTaoJD").style.display = "";
+  $("form").querySelector('[type="submit"]').style.display = "";
   $("btnHuy").textContent = "Hủy";
 }
 
@@ -609,6 +651,49 @@ function themTieuChi(ten = "", trongSo = "", moTa = "") {
   capNhatTongTrongSo();
 }
 
+function themTieuChiSua(ten = "", trongSo = "", moTa = "") {
+  const row = document.createElement("div");
+  row.className = "tieu-chi-hang tieu-chi-sua";
+  row.innerHTML = `
+    <input type="text" class="o-ten-tieu-chi" placeholder="Tên tiêu chí" value="${escapeHTML(ten)}" />
+    <label class="trong-so-control">
+      <input type="number" class="o-trong-so" min="0" max="100" step="1" placeholder="0" value="${escapeHTML(trongSo)}" />
+      <span>%</span>
+    </label>
+    <textarea class="o-mo-ta-tieu-chi" rows="2" placeholder="Mô tả cách đánh giá">${escapeHTML(moTa)}</textarea>
+    <button type="button" class="btn-xoa-tieu-chi" title="Xóa tiêu chí" aria-label="Xóa tiêu chí">×</button>
+  `;
+
+  $("danhSachTieuChiSua").appendChild(row);
+  row.querySelector(".o-trong-so").addEventListener("input", capNhatTongTrongSoSua);
+  row.querySelector(".btn-xoa-tieu-chi").addEventListener("click", () => {
+    row.remove();
+    capNhatTongTrongSoSua();
+  });
+  capNhatTongTrongSoSua();
+}
+
+function layDanhSachTieuChiSua() {
+  return Array.from($("danhSachTieuChiSua").querySelectorAll(".tieu-chi-hang"))
+    .map((row) => ({
+      ten: row.querySelector(".o-ten-tieu-chi").value.trim(),
+      trong_so: Number(row.querySelector(".o-trong-so").value || 0),
+      mo_ta: row.querySelector(".o-mo-ta-tieu-chi").value.trim(),
+    }))
+    .filter((item) => item.ten);
+}
+
+function capNhatTongTrongSoSua() {
+  const total = layDanhSachTieuChiSua().reduce(
+    (sum, item) => sum + item.trong_so,
+    0
+  );
+  const label = $("tongTrongSoSua");
+  label.textContent = `Tổng trọng số: ${total}%`;
+  label.classList.toggle("lech", total !== 100);
+  return total;
+}
+
 function capNhatTongTrongSo() {
   const rows = document.querySelectorAll(".tieu-chi-hang");
 
@@ -628,11 +713,13 @@ function capNhatTongTrongSo() {
 
   if (tong > 100) {
     $("tongTrongSo").classList.add("lech");
-    $("thongBaoTieuChi").textContent =
-      `Tổng trọng số đang vượt ${tong - 100}%. Tối đa là 100%.`;
+    if ($("thongBaoTieuChi")) {
+      $("thongBaoTieuChi").textContent =
+        `Tổng trọng số đang vượt ${tong - 100}%. Tối đa là 100%.`;
+    }
   } else {
     $("tongTrongSo").classList.remove("lech");
-    $("thongBaoTieuChi").textContent = "";
+    if ($("thongBaoTieuChi")) $("thongBaoTieuChi").textContent = "";
   }
 
   return tong;
@@ -756,7 +843,6 @@ async function goiYAI() {
 
 function kiemTraForm() {
   const ten = $("ten").value.trim();
-  const tieuDe = $("tieuDe").value.trim();
 
   if (!ten) {
     alert("Vui lòng nhập tên đợt tuyển dụng.");
@@ -814,76 +900,13 @@ function kiemTraForm() {
     return false;
   }
 
-  if (!tieuDe) {
-    alert("Vui lòng nhập tiêu đề JD.");
-    $("tieuDe").focus();
-    return false;
-  }
-
-  const tong = capNhatTongTrongSo();
-
-  if (tong > 100) {
-    alert(
-      `Tổng trọng số đang là ${tong}%. Tối đa chỉ được 100%.`
-    );
-
-    return false;
-  }
-
-  const tieuChi = layDanhSachTieuChi();
-
-  const tongTieuChi = tieuChi.reduce(
-    (sum, item) => sum + Number(item.trong_so || 0),
-    0
-  );
-
-  if (tongTieuChi > 100) {
-    alert(
-      `Tổng trọng số tiêu chí đang là ${tongTieuChi}%. Tối đa chỉ được 100%.`
-    );
-
-    return false;
-  }
-
-  for (const item of tieuChi) {
-    if (
-      !Number.isFinite(Number(item.trong_so)) ||
-      Number(item.trong_so) < 0 ||
-      Number(item.trong_so) > 100
-    ) {
-      alert(
-        `Trọng số của tiêu chí "${item.ten}" phải từ 0% đến 100%.`
-      );
-
-      return false;
-    }
-  }
-
   return true;
 }
 
-async function luuTuyenDung(event) {
-  event.preventDefault();
-
-  if (dangXem) {
-    dongModal();
-    return;
-  }
-
+async function luuDotTuyen() {
   if (!kiemTraForm()) {
-    return;
+    return false;
   }
-
-  const button = $("btnLuu");
-
-  button.disabled = true;
-  button.textContent = "Đang lưu...";
-
-  $("thongBao").className =
-    "thong-bao hien dang-xu-ly";
-
-  $("thongBao").textContent =
-    "Đang lưu thông tin tuyển dụng...";
 
   const dotPayload = {
     ten_dot: $("ten").value.trim(),
@@ -898,96 +921,396 @@ async function luuTuyenDung(event) {
     ),
   };
 
-  const jdPayload = {
-    tieu_de: $("tieuDe").value.trim(),
-    mo_ta: $("jdMoTa").value.trim(),
-    yeu_cau: $("jdYeuCau").value.trim(),
-    quyen_loi: $("jdQuyenLoi").value.trim(),
-    tieu_chi: layDanhSachTieuChi(),
-    trang_thai: dangSua?.jd?.trang_thai || "nhap",
-  };
+  if (dangSua?.dot?.id) {
+    await api(`${API}/dot-tuyen/${dangSua.dot.id}`, {
+      method: "PUT",
+      body: JSON.stringify(dotPayload),
+    });
+    return dangSua.dot.id;
+  }
+
+  const result = await api(`${API}/dot-tuyen`, {
+    method: "POST",
+    body: JSON.stringify(dotPayload),
+  });
+  const dotId = result?.data?.id || result?.id || result?.insertId;
+
+  if (!dotId) {
+    throw new Error("Không lấy được ID đợt tuyển dụng sau khi lưu.");
+  }
+
+  return dotId;
+}
+
+async function luuTuyenDung(event) {
+  event.preventDefault();
+
+  if (dangXem) {
+    dongModal();
+    return;
+  }
+
+  const button = $("form").querySelector('[type="submit"]');
+  button.disabled = true;
+  button.textContent = "Đang lưu...";
+  $("thongBao").className = "thong-bao hien dang-xu-ly";
+  $("thongBao").textContent = "Đang lưu đợt tuyển dụng...";
 
   try {
-    let dotId;
-
-    if (dangSua?.dot?.id) {
-      const result = await api(
-        `${API}/dot-tuyen/${dangSua.dot.id}`,
-        {
-          method: "PUT",
-          body: JSON.stringify(dotPayload),
-        }
-      );
-
-      dotId =
-        result?.data?.id ||
-        result?.id ||
-        dangSua.dot.id;
-    } else {
-      const result = await api(
-        `${API}/dot-tuyen`,
-        {
-          method: "POST",
-          body: JSON.stringify(dotPayload),
-        }
-      );
-
-      dotId =
-        result?.data?.id ||
-        result?.id ||
-        result?.insertId;
-    }
-
-    if (!dotId) {
-      throw new Error(
-        "Không lấy được ID đợt tuyển dụng sau khi lưu."
-      );
-    }
-
+    let rubric = null;
+    let jdTieuDe = "";
     if (dangSua?.jd?.id) {
-      await api(`${API}/jd/${dangSua.jd.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          ...jdPayload,
-          dot_tuyen_id: dotId,
-        }),
-      });
-    } else {
-      await api(`${API}/jd`, {
-        method: "POST",
-        body: JSON.stringify({
-          ...jdPayload,
-          dot_tuyen_id: dotId,
-        }),
-      });
+      jdTieuDe = $("jdSuaTieuDe").value.trim();
+      if (!jdTieuDe) {
+        throw new Error("Vui lòng nhập tiêu đề JD.");
+      }
+      rubric = layDanhSachTieuChiSua();
+      if (!rubric.length || capNhatTongTrongSoSua() !== 100) {
+        throw new Error("Rubric phải có ít nhất một tiêu chí và tổng trọng số bằng 100%.");
+      }
     }
 
-    $("thongBao").className =
-      "thong-bao hien thanh-cong";
-
-    $("thongBao").textContent =
-      dangSua
-        ? "Cập nhật tuyển dụng thành công."
-        : "Tạo đợt tuyển dụng và JD thành công.";
-
+    const dotId = await luuDotTuyen();
+    if (!dotId) return;
+    if (dangSua?.jd?.id) {
+      try {
+        await api(`${API}/jd/${dangSua.jd.id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            dot_tuyen_id: dotId,
+            tieu_de: jdTieuDe,
+            mo_ta: $("jdSuaMoTa").value.trim(),
+            yeu_cau: $("jdSuaYeuCau").value.trim(),
+            quyen_loi: $("jdSuaQuyenLoi").value.trim(),
+            tieu_chi: rubric,
+          }),
+        });
+      } catch (error) {
+        throw new Error(`Đợt tuyển dụng đã lưu nhưng JD chưa cập nhật được: ${error.message}`);
+      }
+    }
+    $("thongBao").className = "thong-bao hien thanh-cong";
+    $("thongBao").textContent = dangSua?.jd?.id
+      ? "Đã cập nhật đợt tuyển dụng và JD."
+      : "Lưu đợt tuyển dụng thành công.";
     await taiDuLieu();
-
-    setTimeout(() => {
-      dongModal();
-    }, 400);
+    dongModal();
   } catch (error) {
     console.error(error);
-
     $("thongBao").className = "thong-bao hien";
-    $("thongBao").textContent =
-      error.message || "Không thể lưu dữ liệu.";
-
-    alert(
-      error.message || "Không thể lưu dữ liệu."
-    );
+    $("thongBao").textContent = error.message || "Không thể lưu đợt tuyển dụng.";
   } finally {
     button.disabled = false;
-    button.textContent = "Lưu tuyển dụng";
+    button.textContent = "Lưu đợt tuyển dụng";
+  }
+}
+
+async function luuVaTaoJD() {
+  if (dangXem) return;
+
+  const button = $("btnLuuVaTaoJD");
+  button.disabled = true;
+  button.textContent = "Đang lưu...";
+
+  try {
+    dotTuyenJDId = await luuDotTuyen();
+    if (!dotTuyenJDId) return;
+    await taiDuLieu();
+    if (!dangSua?.dot?.id) {
+      $("ten").value = danhSachDotTuyen.find(
+        (item) => Number(item.id) === Number(dotTuyenJDId)
+      )?.ten_dot || $("ten").value;
+    }
+    dongModal();
+    moWizardJD();
+  } catch (error) {
+    console.error(error);
+    $("thongBao").className = "thong-bao hien";
+    $("thongBao").textContent = error.message || "Không thể lưu đợt tuyển dụng.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Lưu & tạo JD";
+  }
+}
+
+function chuyenBuocJD(buoc) {
+  [1, 2, 3].forEach((numero) => {
+    $(`jdBuoc${numero}`).classList.toggle("hien", numero === buoc);
+    $(`jdChiBao`).children[numero - 1]?.classList.toggle("dang", numero === buoc);
+  });
+  $("thongBaoJD").className = "thong-bao";
+  $("thongBaoJD").textContent = "";
+}
+
+function moWizardJD(item = null) {
+  yTuongJD = "";
+  cauHoiJD = [];
+  const dot = item?.dot || danhSachDotTuyen.find(
+    (entry) => Number(entry.id) === Number(dotTuyenJDId)
+  );
+  if (dot?.id) dotTuyenJDId = dot.id;
+  $("jdTenDot").textContent =
+    dot?.ten_dot || dot?.ten || $("ten").value.trim() || "-";
+  $("jdYTuong").value = dot
+    ? [dot.ten_dot || dot.ten, dot.mo_ta].filter(Boolean).join("\n")
+    : "";
+  $("jdTemplate").value = "";
+  $("jdNgonNgu").value = "vi";
+  $("khungCauHoi").innerHTML = "";
+  $("modalJD").classList.add("hien");
+  chuyenBuocJD(1);
+}
+
+function dongWizardJD() {
+  $("modalJD").classList.remove("hien");
+}
+
+function thuThapTraLoiJD() {
+  return Array.from($("khungCauHoi").querySelectorAll("[data-cau-hoi]")).map((el) => {
+    const cauHoi = cauHoiJD.find((item) => item.id === el.dataset.cauHoi);
+    const inputs = Array.from(el.querySelectorAll("input, textarea"));
+    const daChon = inputs.filter((input) => input.type === "checkbox" || input.type === "radio")
+      .filter((input) => input.checked)
+      .map((input) => input.value);
+    const text = inputs.find((input) => input.type === "text" || input.tagName === "TEXTAREA")?.value.trim();
+
+    return {
+      ...cauHoi,
+      tra_loi: daChon.length ? daChon.join(", ") : (text || ""),
+    };
+  });
+}
+
+function hienThiCauHoiJD(cauHoi) {
+  cauHoiJD = cauHoi;
+  $("khungCauHoi").innerHTML = "";
+  const groups = new Map();
+  cauHoi.forEach((question) => {
+    const group = question.nhom || "Thông tin bổ sung";
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(question);
+  });
+
+  let questionNumber = 0;
+  groups.forEach((questions, groupName) => {
+    const group = document.createElement("section");
+    group.className = "nhom-cau-hoi";
+    group.innerHTML = `
+      <div class="nhom-cau-hoi-tieu-de">
+        <span class="nhom-cau-hoi-icon">✦</span>
+        <h3>${escapeHTML(groupName)}</h3>
+        <span class="nhom-cau-hoi-so">${questions.length} câu</span>
+      </div>
+    `;
+
+    questions.forEach((question) => {
+      const number = ++questionNumber;
+      const card = document.createElement("article");
+      card.className = "cau-hoi-card";
+      card.dataset.cauHoi = question.id;
+      const choices = Array.isArray(question.lua_chon) ? question.lua_chon : [];
+      const type = question.loai === "chon_nhieu" ? "checkbox" : "radio";
+
+      card.innerHTML = `
+        <div class="cau-hoi-noi-dung">
+          <span class="cau-hoi-so">${number}</span>
+          <p>${escapeHTML(question.noi_dung)}</p>
+          <span class="cau-hoi-loai">${question.loai === "chon_nhieu" ? "Chọn nhiều" : question.loai === "nhap" ? "Tự nhập" : "Chọn một"}</span>
+        </div>
+        ${question.loai === "nhap"
+          ? `<textarea class="cau-hoi-tu-nhap" rows="2" placeholder="Nhập câu trả lời của bạn"></textarea>`
+          : `<div class="lua-chon">
+              ${choices.map((choice) => `
+                <label class="lua-chon-item">
+                  <input type="${type}" name="jd-cau-${number}" value="${escapeHTML(choice)}">
+                  <span>${escapeHTML(choice)}</span>
+                </label>
+              `).join("")}
+            </div>
+            <input class="cau-hoi-tu-nhap" type="text" placeholder="Hoặc nhập câu trả lời khác">`}
+      `;
+      group.appendChild(card);
+    });
+    $("khungCauHoi").appendChild(group);
+  });
+}
+
+async function goiAIHoiCau() {
+  const yTuong = $("jdYTuong").value.trim();
+  if (!yTuong) {
+    $("jdYTuong").focus();
+    $("thongBaoJD").className = "thong-bao hien";
+    $("thongBaoJD").textContent = "Vui lòng nhập ý tưởng vị trí cần tuyển.";
+    return;
+  }
+
+  yTuongJD = yTuong;
+  await taoCauHoiJD();
+}
+
+async function taoCauHoiJD() {
+  const button = $("btnJDHoiAI");
+  button.disabled = true;
+  $("thongBaoJD").className = "thong-bao hien dang-xu-ly";
+  $("thongBaoJD").textContent = "AI đang tạo câu hỏi làm rõ...";
+
+  try {
+    const result = await api(`${API}/jd/ai/cau-hoi`, {
+      method: "POST",
+      body: JSON.stringify({
+        y_tuong: yTuongJD,
+        dot_tuyen_id: dotTuyenJDId,
+        template: $("jdTemplate").value || null,
+      }),
+    });
+    hienThiCauHoiJD(result?.data?.cau_hoi || []);
+    chuyenBuocJD(2);
+  } catch (error) {
+    $("thongBaoJD").className = "thong-bao hien";
+    $("thongBaoJD").textContent = error.message || "Không tạo được câu hỏi làm rõ.";
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function chuanBiJDDeNhapTay(yTuong) {
+  const firstLine = yTuong
+    .split(/[\n.!?]/)
+    .map((line) => line.trim())
+    .find(Boolean);
+
+  $("jdTieuDe").value = firstLine?.slice(0, 200) || "";
+  $("jdGioiThieu").value = "";
+  $("jdMoTaCV").value = yTuong;
+  $("jdYeuCauBB").value = "";
+  $("jdYeuCauUT").value = "";
+  $("jdQuyenLoi").value = "";
+  $("danhSachTieuChi").innerHTML = "";
+  themTieuChi("Kỹ năng liên quan đến vị trí", 50, "Mức độ đáp ứng kỹ năng trong mô tả tuyển dụng");
+  themTieuChi("Kinh nghiệm liên quan", 30, "Mức độ phù hợp của kinh nghiệm với công việc");
+  themTieuChi("Năng lực và phối hợp", 20, "Năng lực giải quyết vấn đề và phối hợp công việc");
+}
+
+async function soanJDTheoWizard(boQuaCauHoi = false) {
+  if (!yTuongJD.trim()) {
+    yTuongJD = $("jdYTuong").value.trim();
+  }
+  if (!yTuongJD) {
+    chuyenBuocJD(1);
+    $("jdYTuong").focus();
+    return;
+  }
+
+  const button = boQuaCauHoi ? $("btnJDBoQua") : $("btnJDSoan");
+  button.disabled = true;
+  $("thongBaoJD").className = "thong-bao hien dang-xu-ly";
+  $("thongBaoJD").textContent = boQuaCauHoi
+    ? "Đang soạn JD, có thể nhập tay nếu AI chưa phản hồi..."
+    : "AI đang soạn JD và rubric...";
+
+  try {
+    const hoiDap = boQuaCauHoi ? [] : thuThapTraLoiJD();
+    const result = await api(`${API}/jd/ai/soan`, {
+      method: "POST",
+      body: JSON.stringify({
+        y_tuong: yTuongJD,
+        hoi_dap: hoiDap,
+        ngon_ngu: $("jdNgonNgu").value,
+        dot_tuyen_id: dotTuyenJDId,
+      }),
+    });
+    const jd = result?.data || {};
+    $("jdTieuDe").value = jd.tieu_de || "";
+    $("jdGioiThieu").value = jd.gioi_thieu || "";
+    $("jdMoTaCV").value = jd.mo_ta_cong_viec || "";
+    $("jdYeuCauBB").value = jd.yeu_cau_bat_buoc || "";
+    $("jdYeuCauUT").value = jd.yeu_cau_uu_tien || "";
+    $("jdQuyenLoi").value = jd.quyen_loi || "";
+    $("danhSachTieuChi").innerHTML = "";
+    (jd.tieu_chi || []).forEach((item) => themTieuChi(item.ten, item.trong_so, item.mo_ta));
+    chuyenBuocJD(3);
+  } catch (error) {
+    if (boQuaCauHoi) {
+      chuanBiJDDeNhapTay(yTuongJD);
+      chuyenBuocJD(3);
+      $("thongBaoJD").className = "thong-bao hien";
+      $("thongBaoJD").textContent =
+        `AI chưa soạn được JD (${error.message || "lỗi kết nối"}). Bạn có thể tiếp tục nhập và chỉnh sửa nội dung bên dưới.`;
+    } else {
+      $("thongBaoJD").className = "thong-bao hien";
+      $("thongBaoJD").textContent = error.message || "Không soạn được JD.";
+    }
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function chonMauJD() {
+  const templates = {
+    backend: "Tuyển backend developer phụ trách thiết kế, phát triển và duy trì API, dịch vụ backend và tích hợp dữ liệu.",
+    frontend: "Tuyển frontend developer xây dựng giao diện web, tối ưu trải nghiệm người dùng và phối hợp với backend.",
+    fullstack: "Tuyển fullstack developer phát triển cả giao diện frontend và dịch vụ backend cho sản phẩm web.",
+    qa: "Tuyển QA Engineer kiểm thử chức năng, xây dựng test case và cải thiện chất lượng phần mềm.",
+    data: "Tuyển Data Analyst phân tích dữ liệu, xây dựng báo cáo và cung cấp thông tin hỗ trợ quyết định.",
+  };
+  const templateId = $("jdTemplate").value;
+  if (templateId && templates[templateId]) {
+    $("jdYTuong").value = templates[templateId];
+  }
+}
+
+async function luuJDWizard() {
+  const tieuDe = $("jdTieuDe").value.trim();
+  if (!dotTuyenJDId || !tieuDe) {
+    $("thongBaoJD").className = "thong-bao hien";
+    $("thongBaoJD").textContent = "Vui lòng nhập tiêu đề JD.";
+    return;
+  }
+
+  const tieuChi = layDanhSachTieuChi();
+  const tong = tieuChi.reduce((sum, item) => sum + item.trong_so, 0);
+  if (tong !== 100) {
+    $("thongBaoJD").className = "thong-bao hien";
+    $("thongBaoJD").textContent = `Tổng trọng số rubric phải bằng 100% (hiện tại ${tong}%).`;
+    return;
+  }
+
+  const button = $("btnJDLuu");
+  button.disabled = true;
+  try {
+    const result = await api(`${API}/jd`, {
+      method: "POST",
+      body: JSON.stringify({
+        dot_tuyen_id: dotTuyenJDId,
+        tieu_de: tieuDe,
+        mo_ta: [ $("jdGioiThieu").value.trim(), $("jdMoTaCV").value.trim() ].filter(Boolean).join("\n\n"),
+        yeu_cau: [
+          $("jdYeuCauBB").value.trim() && `Bắt buộc:\n${$("jdYeuCauBB").value.trim()}`,
+          $("jdYeuCauUT").value.trim() && `Ưu tiên:\n${$("jdYeuCauUT").value.trim()}`,
+        ].filter(Boolean).join("\n\n"),
+        quyen_loi: $("jdQuyenLoi").value.trim(),
+        tieu_chi: tieuChi,
+      }),
+    });
+    const jdId = result?.data?.id || result?.id;
+    if (!jdId) throw new Error("Đã lưu JD nhưng máy chủ không trả về ID.");
+
+    await api(`${API}/jd/ai/luu`, {
+      method: "POST",
+      body: JSON.stringify({
+        jd_id: jdId,
+        y_tuong: yTuongJD,
+        hoi_dap: thuThapTraLoiJD(),
+      }),
+    });
+    await taiDuLieu();
+    dongWizardJD();
+    alert("Đã lưu JD nháp thành công.");
+  } catch (error) {
+    $("thongBaoJD").className = "thong-bao hien";
+    $("thongBaoJD").textContent = error.message || "Không lưu được JD.";
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -1070,6 +1393,12 @@ function xuLyClickDanhSach(event) {
 
   if (action === "xem") {
     moFormXem(item);
+    return;
+  }
+
+  if (action === "tao-jd") {
+    dotTuyenJDId = item.dot.id;
+    moWizardJD(item);
     return;
   }
 
@@ -1170,17 +1499,19 @@ function ganSuKien() {
     luuTuyenDung
   );
 
-  $("btnGoiYAI").addEventListener(
-    "click",
-    goiYAI
-  );
-
-  $("btnThemTieuChi").addEventListener(
-    "click",
-    () => {
-      themTieuChi();
-    }
-  );
+  $("btnLuuVaTaoJD").addEventListener("click", luuVaTaoJD);
+  $("btnDongJD").addEventListener("click", dongWizardJD);
+  $("btnJDHuy").addEventListener("click", dongWizardJD);
+  $("btnJDHoiAI").addEventListener("click", goiAIHoiCau);
+  $("btnJDBoQua").addEventListener("click", () => soanJDTheoWizard(true));
+  $("btnJDQuayLai1").addEventListener("click", () => chuyenBuocJD(1));
+  $("btnJDSoan").addEventListener("click", soanJDTheoWizard);
+  $("btnJDQuayLai2").addEventListener("click", () => chuyenBuocJD(2));
+  $("btnJDSoanLai").addEventListener("click", soanJDTheoWizard);
+  $("btnJDLuu").addEventListener("click", luuJDWizard);
+  $("jdTemplate").addEventListener("change", chonMauJD);
+  $("btnThemTieuChi").addEventListener("click", () => themTieuChi());
+  $("btnThemTieuChiSua").addEventListener("click", () => themTieuChiSua());
 
   $("danhSach").addEventListener(
     "click",
@@ -1224,6 +1555,10 @@ function ganSuKien() {
       }
     }
   );
+
+  $("modalJD").addEventListener("click", (event) => {
+    if (event.target === $("modalJD")) dongWizardJD();
+  });
 
   ganDatePicker(
     "ngayBatDau",

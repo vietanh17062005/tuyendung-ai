@@ -21,14 +21,39 @@ const {
 
 const app = express();
 
+async function khoiTaoBangLichSuJD() {
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS jd_lich_su_ai (
+      id INT NOT NULL AUTO_INCREMENT,
+      jd_id INT NOT NULL,
+      y_tuong TEXT NULL,
+      hoi_dap JSON NULL,
+      ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_jd_lich_su_ai_jd_id (jd_id),
+      CONSTRAINT fk_jd_lich_su_ai_jd
+        FOREIGN KEY (jd_id) REFERENCES jd (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+}
+
+khoiTaoBangLichSuJD().catch(function (error) {
+  console.error("Khởi tạo bảng lịch sử JD AI thất bại:", error);
+});
+
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
 const GEMINI_MODELS = [
-  "gemini-3.8-flash",
-  "gemini-3.7-flash",
-];
+  process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash",
+].filter(function (value, index, array) {
+  return value && array.indexOf(value) === index;
+});
 
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
@@ -132,6 +157,98 @@ async function goiGemini(options) {
   throw loiCuoi;
 }
 
+function lamSachTieuChi(danhSach) {
+  if (!Array.isArray(danhSach)) {
+    return [];
+  }
+
+  return danhSach
+    .map(function (item) {
+      return {
+        ten:
+          typeof item?.ten === "string"
+            ? item.ten.trim()
+            : "",
+        mo_ta:
+          typeof item?.mo_ta === "string"
+            ? item.mo_ta.trim()
+            : "",
+        trong_so: Math.max(
+          0,
+          Math.min(
+            100,
+            Number(item?.trong_so) || 0,
+          ),
+        ),
+      };
+    })
+    .filter(function (item) {
+      return item.ten;
+    });
+}
+
+function chuanHoaTongTrongSo(danhSach) {
+  if (!danhSach.length) {
+    return [];
+  }
+
+  let tong = danhSach.reduce(function (sum, item) {
+    return sum + item.trong_so;
+  }, 0);
+
+  if (tong === 100) {
+    return danhSach;
+  }
+
+  if (tong <= 0) {
+    const moi = Math.floor(100 / danhSach.length);
+    const conLai = 100 - moi * danhSach.length;
+
+    return danhSach.map(function (item, index) {
+      return {
+        ...item,
+        trong_so: moi + (index < conLai ? 1 : 0),
+      };
+    });
+  }
+
+  const ketQua = danhSach.map(function (item) {
+    return {
+      ...item,
+      trong_so: Math.floor(
+        (item.trong_so / tong) * 100,
+      ),
+    };
+  });
+
+  let tongMoi = ketQua.reduce(function (sum, item) {
+    return sum + item.trong_so;
+  }, 0);
+
+  let index = 0;
+
+  while (tongMoi < 100) {
+    ketQua[index % ketQua.length].trong_so += 1;
+    tongMoi += 1;
+    index += 1;
+  }
+
+  index = 0;
+
+  while (tongMoi > 100) {
+    const viTri = index % ketQua.length;
+
+    if (ketQua[viTri].trong_so > 0) {
+      ketQua[viTri].trong_so -= 1;
+      tongMoi -= 1;
+    }
+
+    index += 1;
+  }
+
+  return ketQua;
+}
+
 app.get("/", function (req, res) {
   res.sendFile(
     path.join(__dirname, "public", "login", "login.html"),
@@ -188,52 +305,46 @@ app.post(
       } = req.body || {};
 
       const thongTin = `
-Tên đợt tuyển dụng:
-${ten_dot || "Chưa cung cấp"}
+THÔNG TIN ĐỢT TUYỂN DỤNG:
+- Tên đợt tuyển dụng: ${ten_dot || "Chưa cung cấp"}
+- Mô tả đợt tuyển dụng: ${mo_ta_dot || "Chưa cung cấp"}
 
-Mô tả đợt tuyển dụng:
-${mo_ta_dot || "Chưa cung cấp"}
+THÔNG TIN JD HIỆN TẠI:
+- Tiêu đề: ${tieu_de || "Chưa cung cấp"}
+- Mô tả công việc: ${mo_ta || "Chưa cung cấp"}
+- Yêu cầu: ${yeu_cau || "Chưa cung cấp"}
+- Quyền lợi: ${quyen_loi || "Chưa cung cấp"}
 
-Tiêu đề JD hiện tại:
-${tieu_de || "Chưa cung cấp"}
-
-Mô tả công việc hiện tại:
-${mo_ta || "Chưa cung cấp"}
-
-Yêu cầu hiện tại:
-${yeu_cau || "Chưa cung cấp"}
-
-Quyền lợi hiện tại:
-${quyen_loi || "Chưa cung cấp"}
-
-Ghi chú thêm của người dùng:
+GHI CHÚ:
 ${ghi_chu || "Không có"}
 `;
 
       const prompt = `
 Bạn là chuyên gia tuyển dụng và xây dựng Job Description tại Việt Nam.
 
-Hãy hỗ trợ người dùng xây dựng một JD chuyên nghiệp dựa trên thông tin bên dưới.
+Hãy xây dựng hoặc cải thiện JD dựa trên thông tin người dùng cung cấp.
 
 ${thongTin}
 
 YÊU CẦU:
-1. Nếu thông tin hiện tại đã có thì cải thiện nó.
-2. Nếu thiếu thông tin thì tự đề xuất nội dung hợp lý.
-3. Viết bằng tiếng Việt, rõ ràng và thực tế.
-4. Không đưa tuổi, giới tính, ngoại hình, quê quán hoặc các yếu tố phân biệt đối xử vào tiêu chí tuyển dụng.
-5. Tạo từ 3 đến 5 tiêu chí đánh giá.
-6. Tổng trọng số tiêu chí phải đúng 100%.
-7. Trọng số phải là số nguyên từ 0 đến 100.
-8. Tiêu chí phải phù hợp với vị trí tuyển dụng.
-9. Người dùng được quyền sửa lại toàn bộ nội dung AI tạo ra.
+1. Nếu người dùng đã nhập nội dung thì ưu tiên giữ đúng ý và cải thiện cách trình bày.
+2. Nếu nội dung còn thiếu thì đề xuất nội dung phù hợp với vị trí tuyển dụng.
+3. Viết toàn bộ bằng tiếng Việt.
+4. Nội dung phải chuyên nghiệp, thực tế và có thể sử dụng trong tuyển dụng.
+5. Không tự bịa tên công ty, địa chỉ, mức lương hoặc thông tin không được cung cấp.
+6. Không đưa tuổi, giới tính, ngoại hình, quê quán hoặc các yếu tố phân biệt đối xử vào tiêu chí tuyển dụng.
+7. Tạo từ 3 đến 6 tiêu chí đánh giá.
+8. Tổng trọng số của tất cả tiêu chí phải đúng 100%.
+9. Trọng số phải là số nguyên từ 0 đến 100.
+10. Các tiêu chí phải liên quan trực tiếp đến vị trí tuyển dụng.
+11. Người dùng sẽ được phép sửa toàn bộ kết quả AI.
 
 Mỗi tiêu chí gồm:
 - ten
 - mo_ta
 - trong_so
 
-Trả về đúng JSON theo schema được cung cấp.
+Chỉ trả về JSON theo schema được cung cấp.
 `;
 
       const response = await goiGemini({
@@ -292,11 +403,16 @@ Trả về đúng JSON theo schema được cung cấp.
       let ketQua;
 
       try {
-        ketQua = JSON.parse(response.text);
+        const text =
+          typeof response?.text === "string"
+            ? response.text
+            : "";
+
+        ketQua = JSON.parse(text);
       } catch (error) {
         console.error(
           "Gemini trả về JSON không hợp lệ:",
-          response.text,
+          response?.text,
         );
 
         return res.status(500).json({
@@ -305,33 +421,31 @@ Trả về đúng JSON theo schema được cung cấp.
         });
       }
 
-      if (!Array.isArray(ketQua.tieu_chi)) {
-        ketQua.tieu_chi = [];
-      }
+      ketQua.tieu_de =
+        typeof ketQua.tieu_de === "string"
+          ? ketQua.tieu_de.trim()
+          : String(tieu_de || "").trim();
 
-      ketQua.tieu_chi = ketQua.tieu_chi
-        .map(function (item) {
-          return {
-            ten:
-              typeof item.ten === "string"
-                ? item.ten.trim()
-                : "",
-            mo_ta:
-              typeof item.mo_ta === "string"
-                ? item.mo_ta.trim()
-                : "",
-            trong_so:
-              Number(item.trong_so) || 0,
-          };
-        })
-        .filter(function (item) {
-          return (
-            item.ten &&
-            item.trong_so >= 0
-          );
-        });
+      ketQua.mo_ta =
+        typeof ketQua.mo_ta === "string"
+          ? ketQua.mo_ta.trim()
+          : "";
 
-      let tong = ketQua.tieu_chi.reduce(
+      ketQua.yeu_cau =
+        typeof ketQua.yeu_cau === "string"
+          ? ketQua.yeu_cau.trim()
+          : "";
+
+      ketQua.quyen_loi =
+        typeof ketQua.quyen_loi === "string"
+          ? ketQua.quyen_loi.trim()
+          : "";
+
+      ketQua.tieu_chi = chuanHoaTongTrongSo(
+        lamSachTieuChi(ketQua.tieu_chi),
+      );
+
+      const tong = ketQua.tieu_chi.reduce(
         function (sum, item) {
           return sum + item.trong_so;
         },
@@ -339,34 +453,12 @@ Trả về đúng JSON theo schema được cung cấp.
       );
 
       if (
-        tong !== 100 &&
-        ketQua.tieu_chi.length > 0
+        ketQua.tieu_chi.length > 0 &&
+        tong !== 100
       ) {
-        const chenhlech = 100 - tong;
-        const viTriCuoi =
-          ketQua.tieu_chi.length - 1;
-
-        ketQua.tieu_chi[viTriCuoi].trong_so +=
-          chenhlech;
-
-        if (
-          ketQua.tieu_chi[viTriCuoi].trong_so < 0
-        ) {
-          ketQua.tieu_chi[viTriCuoi].trong_so = 0;
-        }
-      }
-
-      tong = ketQua.tieu_chi.reduce(
-        function (sum, item) {
-          return sum + item.trong_so;
-        },
-        0,
-      );
-
-      if (tong > 100) {
         return res.status(500).json({
           message:
-            "AI tạo tiêu chí có tổng trọng số vượt quá 100%",
+            "AI không tạo được tiêu chí có tổng trọng số bằng 100%",
         });
       }
 
@@ -480,11 +572,16 @@ Trả về đúng JSON theo schema được cung cấp.
       let result;
 
       try {
-        result = JSON.parse(response.text);
+        const text =
+          typeof response?.text === "string"
+            ? response.text
+            : "";
+
+        result = JSON.parse(text);
       } catch (error) {
         console.error(
           "Gemini trả về JSON không hợp lệ:",
-          response.text,
+          response?.text,
         );
 
         return res.status(500).json({
@@ -509,9 +606,7 @@ Trả về đúng JSON theo schema được cung cấp.
         result.weaknesses = [];
       }
 
-      if (
-        typeof result.summary !== "string"
-      ) {
+      if (typeof result.summary !== "string") {
         result.summary = "";
       }
 
@@ -614,8 +709,7 @@ if (process.env.NODE_ENV !== "production") {
     process.env.PORT || 3000,
     function () {
       console.log(
-        `Server dang chay tai http://localhost:${process.env.PORT || 3000
-        }`,
+        `Server dang chay tai http://localhost:${process.env.PORT || 3000}`,
       );
     },
   );
