@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
+const { put, del } = require("@vercel/blob");
 
 const db = require("../database/db");
 
@@ -12,34 +13,46 @@ const {
 
 const router = express.Router();
 
+const dangChayTrenVercel =
+    process.env.VERCEL === "1";
+
 const thuMucUpload = path.join(
     process.cwd(),
     "uploads",
     "cv",
 );
 
-if (!fs.existsSync(thuMucUpload)) {
-    fs.mkdirSync(thuMucUpload, {
-        recursive: true,
+// =====================================================
+// MULTER
+// =====================================================
+
+const storage = dangChayTrenVercel
+    ? multer.memoryStorage()
+    : multer.diskStorage({
+        destination: function (req, file, cb) {
+            if (!fs.existsSync(thuMucUpload)) {
+                fs.mkdirSync(thuMucUpload, {
+                    recursive: true,
+                });
+            }
+
+            cb(null, thuMucUpload);
+        },
+
+        filename: function (req, file, cb) {
+            const tenGoc = path
+                .basename(file.originalname)
+                .replace(
+                    /[^a-zA-Z0-9._-]/g,
+                    "_",
+                );
+
+            cb(
+                null,
+                `${Date.now()}_${tenGoc}`,
+            );
+        },
     });
-}
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, thuMucUpload);
-    },
-
-    filename: function (req, file, cb) {
-        const tenGoc = path
-            .basename(file.originalname)
-            .replace(/[^a-zA-Z0-9._-]/g, "_");
-
-        cb(
-            null,
-            `${Date.now()}_${tenGoc}`,
-        );
-    },
-});
 
 const fileFilter = function (req, file, cb) {
     const duoiFile = path
@@ -73,6 +86,10 @@ const upload = multer({
         fileSize: 10 * 1024 * 1024,
     },
 });
+
+// =====================================================
+// HÀM HỖ TRỢ
+// =====================================================
 
 function layMimeType(loaiFile, tenFile) {
     if (loaiFile) {
@@ -109,6 +126,74 @@ function layDuoiFile(tenFile) {
         .pop()
         .toLowerCase();
 }
+
+function taoTenFile(tenFileGoc) {
+    const tenGoc = path
+        .basename(tenFileGoc || "CV")
+        .replace(
+            /[^a-zA-Z0-9._-]/g,
+            "_",
+        );
+
+    return `${Date.now()}_${tenGoc}`;
+}
+
+function laUrlBlob(duongDan) {
+    return (
+        typeof duongDan === "string" &&
+        /^https?:\/\//i.test(duongDan)
+    );
+}
+
+async function xoaFileCV(duongDan) {
+    if (!duongDan) {
+        return;
+    }
+
+    try {
+        // CV được lưu trên Vercel Blob
+        if (laUrlBlob(duongDan)) {
+            await del(duongDan);
+            return;
+        }
+
+        // CV được lưu local
+        const duongDanFile = path.resolve(
+            process.cwd(),
+            duongDan,
+        );
+
+        const thuMucGoc = path.resolve(
+            process.cwd(),
+            "uploads",
+            "cv",
+        );
+
+        const duongDanChuan =
+            path.normalize(duongDanFile);
+
+        const thuMucChuan =
+            path.normalize(thuMucGoc);
+
+        if (
+            duongDanChuan.startsWith(
+                thuMucChuan + path.sep,
+            ) &&
+            fs.existsSync(duongDanFile)
+        ) {
+            fs.unlinkSync(duongDanFile);
+        }
+    } catch (error) {
+        console.error(
+            "Lỗi xóa file CV:",
+            error,
+        );
+    }
+}
+
+// =====================================================
+// LẤY DANH SÁCH CV
+// =====================================================
 
 router.get(
     "/",
@@ -156,6 +241,10 @@ router.get(
     },
 );
 
+// =====================================================
+// UPLOAD CV
+// =====================================================
+
 router.post(
     "/upload",
     kiemTraDangNhap,
@@ -167,6 +256,7 @@ router.post(
     upload.single("file"),
     async function (req, res) {
         let connection;
+        let duongDanDaLuu = null;
 
         try {
             const ungVienId =
@@ -178,12 +268,6 @@ router.post(
                     : 0;
 
             if (!ungVienId) {
-                if (req.file) {
-                    fs.unlinkSync(
-                        req.file.path,
-                    );
-                }
-
                 return res.status(400).json({
                     message:
                         "Chưa chọn ứng viên",
@@ -197,6 +281,7 @@ router.post(
                 });
             }
 
+            // Kiểm tra ứng viên
             const [ungVienRows] =
                 await db.query(
                     `
@@ -211,9 +296,15 @@ router.post(
             if (
                 ungVienRows.length === 0
             ) {
-                fs.unlinkSync(
-                    req.file.path,
-                );
+                if (
+                    !dangChayTrenVercel &&
+                    req.file.path &&
+                    fs.existsSync(req.file.path)
+                ) {
+                    fs.unlinkSync(
+                        req.file.path,
+                    );
+                }
 
                 return res.status(404).json({
                     message:
@@ -223,15 +314,6 @@ router.post(
 
             const tenFile =
                 req.file.originalname;
-
-            const duongDan =
-                path
-                    .relative(
-                        process.cwd(),
-                        req.file.path,
-                    )
-                    .split(path.sep)
-                    .join("/");
 
             const loaiFile =
                 req.file.mimetype ||
@@ -243,25 +325,54 @@ router.post(
             const kichThuoc =
                 req.file.size;
 
-            connection =
-                await db.getConnection();
+            // =================================================
+            // LƯU FILE
+            // =================================================
 
-            await connection.beginTransaction();
+            const tenBlob = taoTenFile(tenFile);
 
-            if (laBanChinh === 1) {
-                await connection.query(
-                    `
+            const blob = await put(
+                `cv/${tenBlob}`,
+                req.file.buffer,
+                {
+                    access: "public",
+                },
+            );
+
+            duongDanDaLuu =
+                blob.url;
+        } else {
+            // Local -> uploads/cv
+            duongDanDaLuu =
+                path
+                    .relative(
+                        process.cwd(),
+                        req.file.path,
+                    )
+                    .split(path.sep)
+                    .join("/");
+        }
+
+        connection =
+            await db.getConnection();
+
+        await connection.beginTransaction();
+
+        // Nếu CV mới là bản chính
+        if (laBanChinh === 1) {
+            await connection.query(
+                `
                     UPDATE cv
                     SET la_ban_chinh = 0
                     WHERE ung_vien_id = ?
                     `,
-                    [ungVienId],
-                );
-            }
+                [ungVienId],
+            );
+        }
 
-            const [result] =
-                await connection.query(
-                    `
+        const [result] =
+            await connection.query(
+                `
                     INSERT INTO cv (
                         ung_vien_id,
                         ten_file,
@@ -276,94 +387,122 @@ router.post(
                         ?, ?, ?, ?, ?, NULL, ?, NOW()
                     )
                     `,
-                    [
-                        ungVienId,
-                        tenFile,
-                        duongDan,
-                        loaiFile,
-                        kichThuoc,
-                        laBanChinh,
-                    ],
-                );
-
-            await connection.commit();
-
-            res.status(201).json({
-                message:
-                    "Tải CV thành công",
-                id: result.insertId,
-            });
-        } catch (error) {
-            if (connection) {
-                await connection.rollback();
-            }
-
-            if (req.file) {
-                try {
-                    if (
-                        fs.existsSync(
-                            req.file.path,
-                        )
-                    ) {
-                        fs.unlinkSync(
-                            req.file.path,
-                        );
-                    }
-                } catch (fileError) {
-                    console.error(
-                        "Lỗi xóa file sau khi upload thất bại:",
-                        fileError,
-                    );
-                }
-            }
-
-            console.error(
-                "Lỗi upload CV:",
-                error,
+                [
+                    ungVienId,
+                    tenFile,
+                    duongDanDaLuu,
+                    loaiFile,
+                    kichThuoc,
+                    laBanChinh,
+                ],
             );
 
-            if (
-                error instanceof multer.MulterError
-            ) {
-                if (
-                    error.code ===
-                    "LIMIT_FILE_SIZE"
-                ) {
-                    return res.status(400).json({
-                        message:
-                            "File CV không được vượt quá 10MB",
-                    });
-                }
+        await connection.commit();
 
-                return res.status(400).json({
-                    message:
-                        "Upload file thất bại",
-                });
-            }
-
-            if (
-                error.message &&
-                error.message.includes(
-                    "Chỉ cho phép file",
-                )
-            ) {
-                return res.status(400).json({
-                    message:
-                        error.message,
-                });
-            }
-
-            res.status(500).json({
-                message:
-                    "Không thể lưu thông tin CV",
-            });
-        } finally {
-            if (connection) {
-                connection.release();
+        res.status(201).json({
+            message:
+                "Tải CV thành công",
+            id: result.insertId,
+            duong_dan:
+                duongDanDaLuu,
+        });
+    } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error(
+                    "Lỗi rollback:",
+                    rollbackError,
+                );
             }
         }
+
+        // Nếu upload Blob thành công nhưng DB lỗi
+        if (
+            duongDanDaLuu &&
+            laUrlBlob(duongDanDaLuu)
+        ) {
+            await xoaFileCV(
+                duongDanDaLuu,
+            );
+        }
+
+        // Nếu local upload thành công nhưng DB lỗi
+        if (
+            !dangChayTrenVercel &&
+            req.file &&
+            req.file.path
+        ) {
+            try {
+                if (
+                    fs.existsSync(
+                        req.file.path,
+                    )
+                ) {
+                    fs.unlinkSync(
+                        req.file.path,
+                    );
+                }
+            } catch (fileError) {
+                console.error(
+                    "Lỗi xóa file sau khi upload thất bại:",
+                    fileError,
+                );
+            }
+        }
+
+        console.error(
+            "Lỗi upload CV:",
+            error,
+        );
+
+        if (
+            error instanceof multer.MulterError
+        ) {
+            if (
+                error.code ===
+                "LIMIT_FILE_SIZE"
+            ) {
+                return res.status(400).json({
+                    message:
+                        "File CV không được vượt quá 10MB",
+                });
+            }
+
+            return res.status(400).json({
+                message:
+                    "Upload file thất bại",
+            });
+        }
+
+        if (
+            error.message &&
+            error.message.includes(
+                "Chỉ cho phép file",
+            )
+        ) {
+            return res.status(400).json({
+                message:
+                    error.message,
+            });
+        }
+
+        res.status(500).json({
+            message:
+                "Không thể lưu thông tin CV",
+        });
+    } finally {
+    if (connection) {
+        connection.release();
+    }
+}
     },
 );
+
+// =====================================================
+// TẢI CV
+// =====================================================
 
 router.get(
     "/:id/tai-xuong",
@@ -412,6 +551,20 @@ router.get(
                         "CV chưa có file lưu trữ",
                 });
             }
+
+            // =================================================
+            // VERCEL BLOB
+            // =================================================
+
+            if (laUrlBlob(cv.duong_dan)) {
+                return res.redirect(
+                    cv.duong_dan,
+                );
+            }
+
+            // =================================================
+            // FILE LOCAL
+            // =================================================
 
             const duongDanFile =
                 path.resolve(
@@ -530,6 +683,10 @@ router.get(
     },
 );
 
+// =====================================================
+// CHI TIẾT CV
+// =====================================================
+
 router.get(
     "/:id",
     kiemTraDangNhap,
@@ -596,6 +753,10 @@ router.get(
         }
     },
 );
+
+// =====================================================
+// ĐẶT CV BẢN CHÍNH
+// =====================================================
 
 router.put(
     "/:id/dat-ban-chinh",
@@ -694,6 +855,10 @@ router.put(
     },
 );
 
+// =====================================================
+// XÓA CV
+// =====================================================
+
 router.delete(
     "/:id",
     kiemTraDangNhap,
@@ -745,51 +910,11 @@ router.delete(
                 [id],
             );
 
+            // Xóa file vật lý / Blob
             if (duongDan) {
-                const duongDanFile =
-                    path.resolve(
-                        process.cwd(),
-                        duongDan,
-                    );
-
-                const thuMucGoc =
-                    path.resolve(
-                        process.cwd(),
-                        "uploads",
-                        "cv",
-                    );
-
-                const duongDanChuan =
-                    path.normalize(
-                        duongDanFile,
-                    );
-
-                const thuMucChuan =
-                    path.normalize(
-                        thuMucGoc,
-                    );
-
-                if (
-                    duongDanChuan.startsWith(
-                        thuMucChuan +
-                        path.sep,
-                    ) &&
-                    fs.existsSync(
-                        duongDanFile,
-                    )
-                ) {
-                    fs.unlink(
-                        duongDanFile,
-                        function (error) {
-                            if (error) {
-                                console.error(
-                                    "Lỗi xóa file CV:",
-                                    error,
-                                );
-                            }
-                        },
-                    );
-                }
+                await xoaFileCV(
+                    duongDan,
+                );
             }
 
             res.json({
