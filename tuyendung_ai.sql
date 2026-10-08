@@ -539,6 +539,20 @@ ALTER TABLE `thong_bao`
 --
 ALTER TABLE `ung_vien`
   ADD CONSTRAINT `fk_ung_vien_dot_tuyen` FOREIGN KEY (`dot_tuyen_id`) REFERENCES `dot_tuyen` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE TABLE `ung_vien_review` (
+  `ung_vien_id` bigint unsigned NOT NULL,
+  `ghi_chu_noi_bo` text DEFAULT NULL,
+  `muc_luong_mong_muon` varchar(100) DEFAULT NULL,
+  `diem_ghi_de` tinyint unsigned DEFAULT NULL,
+  `de_xuat_ghi_de` varchar(40) DEFAULT NULL,
+  `ly_do_ghi_de` text DEFAULT NULL,
+  `nguoi_ghi_de_id` bigint unsigned DEFAULT NULL,
+  `ngay_ghi_de` datetime DEFAULT NULL,
+  `lich_su_lien_he` longtext DEFAULT NULL,
+  `ngay_cap_nhat` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`ung_vien_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

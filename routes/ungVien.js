@@ -15,6 +15,27 @@ const {
 } = require("../middleware/auth");
 
 const router = express.Router();
+let cotNguoiPhongVanPromise;
+
+async function layCotNguoiPhongVan() {
+    if (!cotNguoiPhongVanPromise) {
+        cotNguoiPhongVanPromise = db.query("SHOW COLUMNS FROM phong_van")
+            .then(([rows]) => {
+                const columns = new Set(rows.map((row) => row.Field));
+                const column = ["nguoi_phong_van_id", "nguoi_phong_van"]
+                    .find((field) => columns.has(field));
+                if (!column) {
+                    throw new Error("Không xác định được cột người phỏng vấn được phân công.");
+                }
+                return column;
+            })
+            .catch((error) => {
+                cotNguoiPhongVanPromise = null;
+                throw error;
+            });
+    }
+    return cotNguoiPhongVanPromise;
+}
 
 const thuMucCV = process.env.VERCEL
     ? path.join("/tmp", "tuyendung-ai", "cv")
@@ -935,6 +956,17 @@ router.get(
                         .dot_tuyen_id
                 );
             }
+            if (req.nguoiDung?.vai_tro === "interviewer") {
+                const assignmentColumn = await layCotNguoiPhongVan();
+                dieuKien.push(`
+                    EXISTS (
+                        SELECT 1 FROM phong_van pv
+                        WHERE pv.ung_vien_id = uv.id
+                            AND pv.${assignmentColumn} = ?
+                    )
+                `);
+                thamSo.push(Number(req.nguoiDung.id));
+            }
 
             if (
                 req.query.trang_thai &&
@@ -1040,6 +1072,9 @@ router.get(
         res
     ) {
         try {
+            const assignmentColumn = req.nguoiDung?.vai_tro === "interviewer"
+                ? await layCotNguoiPhongVan()
+                : null;
             const [rows] =
                 await db.query(
                     `
@@ -1064,8 +1099,15 @@ router.get(
                             ON uv.dot_tuyen_id = dt.id
 
                         WHERE uv.id = ?
+                            ${assignmentColumn ? `AND EXISTS (
+                                SELECT 1 FROM phong_van pv
+                                WHERE pv.ung_vien_id = uv.id
+                                    AND pv.${assignmentColumn} = ?
+                            )` : ""}
                     `,
-                    [req.params.id]
+                    assignmentColumn
+                        ? [req.params.id, Number(req.nguoiDung.id)]
+                        : [req.params.id]
                 );
 
             if (
@@ -1881,6 +1923,9 @@ router.get(
         res
     ) {
         try {
+            const assignmentColumn = req.nguoiDung?.vai_tro === "interviewer"
+                ? await layCotNguoiPhongVan()
+                : null;
             const [rows] =
                 await db.query(
                     `
@@ -1893,10 +1938,16 @@ router.get(
                         WHERE
                             id = ?
                             AND ung_vien_id = ?
+                            ${assignmentColumn ? `AND EXISTS (
+                                SELECT 1 FROM phong_van pv
+                                WHERE pv.ung_vien_id = cv.ung_vien_id
+                                    AND pv.${assignmentColumn} = ?
+                            )` : ""}
                     `,
                     [
                         req.params.cvId,
-                        req.params.id
+                        req.params.id,
+                        ...(assignmentColumn ? [Number(req.nguoiDung.id)] : [])
                     ]
                 );
 

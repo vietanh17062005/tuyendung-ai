@@ -566,11 +566,22 @@ app.post(
         });
       }
 
+      let cotNguoiPhongVan = null;
+      if (chiXemUngVienDuocPhanCong) {
+        const [phongVanColumns] = await db.query("SHOW COLUMNS FROM phong_van");
+        const names = new Set(phongVanColumns.map((column) => column.Field));
+        cotNguoiPhongVan = ["nguoi_phong_van_id", "nguoi_phong_van"]
+          .find((column) => names.has(column));
+        if (!cotNguoiPhongVan) {
+          throw new Error("Không xác định được cột người phỏng vấn được phân công.");
+        }
+      }
+
       const dieuKienUngVien = chiXemUngVienDuocPhanCong
         ? `EXISTS (
             SELECT 1
             FROM phong_van pv
-            WHERE pv.ung_vien_id = uv.id AND pv.nguoi_phong_van = ?
+            WHERE pv.ung_vien_id = uv.id AND pv.${cotNguoiPhongVan} = ?
           )`
         : "1 = 1";
       const thamSoUngVien = chiXemUngVienDuocPhanCong ? [nguoiDungId] : [];
@@ -606,7 +617,7 @@ app.post(
             SELECT DISTINCT uv.dot_tuyen_id
             FROM phong_van pv
             INNER JOIN ung_vien uv ON uv.id = pv.ung_vien_id
-            WHERE pv.nguoi_phong_van = ?
+            WHERE pv.${cotNguoiPhongVan} = ?
           )`
         : "";
       const thamSoViTri = chiXemUngVienDuocPhanCong ? [nguoiDungId] : [];
@@ -915,6 +926,12 @@ app.get(
     });
   },
 );
+
+app.use("/api", function (req, res) {
+  res.status(404).json({
+    message: `Không tìm thấy API ${req.method} ${req.originalUrl}. Hãy kiểm tra phiên bản máy chủ đang chạy.`,
+  });
+});
 
 app.use(function (error, req, res, next) {
   console.error(error);

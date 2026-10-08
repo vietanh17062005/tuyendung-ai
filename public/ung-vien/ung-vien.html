@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ứng viên - Recruitment Hub</title>
+  <title>CV - Recruitment Hub</title>
   <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css" />
-  <link rel="stylesheet" href="/ung-vien/ung-vien.css" />
+  <link rel="stylesheet" href="/ung-vien/ung-vien.css?v=cv-review-2" />
   <link rel="stylesheet" href="/account/account.css" />
 </head>
 
@@ -23,8 +23,7 @@
       <nav class="menu-list">
         <a href="/dashboard/dashboard.html"><span>▦</span>Dashboard</a>
         <a href="/dot-tuyen/dot-tuyen.html"><span>▤</span>Đợt tuyển dụng</a>
-        <a href="/ung-vien/ung-vien.html" class="active"><span>♙</span>Ứng viên</a>
-        <a href="/cv/cv.html"><span>▣</span>CV</a>
+        <a href="/cv/cv.html" class="active"><span>▣</span>CV</a>
         <a href="#"><span>◷</span>Phỏng vấn</a>
         <a href="#"><span>▥</span>Báo cáo</a>
         <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung"><span>♙</span>Người dùng</a>
@@ -35,30 +34,36 @@
       <header class="topbar">
         <div>
           <p class="tieu-de-nho">QUẢN LÝ TUYỂN DỤNG</p>
-          <h1>Ứng viên</h1>
+          <h1>CV</h1>
         </div>
-        <div class="tai-khoan" id="taiKhoan">
-          <div class="tai-khoan-thong-tin">
-            <div class="avatar" id="avatar">A</div>
-            <div class="nguoi-dung-info">
-              <strong id="tenNguoiDung">Tài khoản</strong>
-              <span id="vaiTro">Nhân sự</span>
-            </div>
+        <div class="topbar-actions">
+          <button class="nut-ai" id="btnMoHoiAI" type="button">✦ Hỏi AI</button>
+          <div class="candidate-notification-wrap">
+            <button class="nut-chuong" id="btnThongBaoUngVien" type="button" aria-label="Thông báo ứng viên">
+              🔔<span id="soThongBaoUngVien" hidden></span>
+            </button>
+            <section class="candidate-notification-list" id="danhSachThongBaoUngVien" hidden aria-live="polite">
+            </section>
           </div>
-          <span class="mui-ten">▾</span>
-          <div class="menu-tai-khoan" id="menuTaiKhoan">
-            <div class="tai-khoan-header">
-              <strong id="tenMenuTaiKhoan">Tài khoản</strong>
-              <span id="emailMenuTaiKhoan"></span>
+          <div class="tai-khoan" id="taiKhoan">
+            <div class="tai-khoan-thong-tin">
+              <div class="avatar" id="avatar">A</div>
+              <div class="nguoi-dung-info">
+                <strong id="tenNguoiDung">Tài khoản</strong>
+                <span id="vaiTro">Nhân sự</span>
+              </div>
             </div>
-            <button type="button" id="btnThongTin">
-              <span>👤</span>Thông tin tài khoản
-            </button>
-            <button type="button" id="btnDoiMatKhau"><span>🔑</span>Đổi mật khẩu</button>
-            <div class="duong-ke"></div>
-            <button type="button" id="btnDangXuat" class="btn-dang-xuat">
-              <span>↪</span>Đăng xuất
-            </button>
+            <span class="mui-ten">▾</span>
+            <div class="menu-tai-khoan" id="menuTaiKhoan">
+              <div class="tai-khoan-header">
+                <strong id="tenMenuTaiKhoan">Tài khoản</strong>
+                <span id="emailMenuTaiKhoan"></span>
+              </div>
+              <button type="button" id="btnThongTin"><span>👤</span>Thông tin tài khoản</button>
+              <button type="button" id="btnDoiMatKhau"><span>🔑</span>Đổi mật khẩu</button>
+              <div class="duong-ke"></div>
+              <button type="button" id="btnDangXuat" class="btn-dang-xuat"><span>↪</span>Đăng xuất</button>
+            </div>
           </div>
         </div>
       </header>
@@ -85,35 +90,106 @@
             <option value="tu_choi">Từ chối</option>
             <option value="talent_pool">Talent pool</option>
           </select>
-          <button id="btnThem" class="btn-them">+ Thêm ứng viên</button>
+          <select id="sapXepUngVien" aria-label="Sắp xếp ứng viên">
+            <option value="moi">Mới nhất</option>
+            <option value="diem">Điểm AI cao nhất</option>
+            <option value="kinh_nghiem">Nhiều năm kinh nghiệm</option>
+            <option value="ten">Tên A-Z</option>
+          </select>
+          <input type="search" id="locKyNang" aria-label="Lọc theo kỹ năng" placeholder="Lọc kỹ năng..." />
+          <select id="locDiemAI" aria-label="Lọc theo điểm AI">
+            <option value="">Mọi mức điểm</option>
+            <option value="80">Điểm từ 80</option>
+            <option value="60">Điểm từ 60</option>
+          </select>
+          <input type="number" id="locSoNamKinhNghiem" aria-label="Lọc theo số năm kinh nghiệm" min="0" max="60"
+            placeholder="Kinh nghiệm từ (năm)" />
+          <div class="candidate-view-toggle" role="group" aria-label="Kiểu danh sách">
+            <button type="button" id="btnXemDanhSach" class="active">Danh sách</button>
+            <button type="button" id="btnXemKanban">Kanban</button>
+          </div>
+          <button id="btnThem" class="btn-them">+ Thêm hồ sơ</button>
         </div>
       </section>
 
       <div id="thongBao"></div>
 
-      <section class="table-container">
-        <div class="table-header">
-          <div>
-            <h2>Danh sách ứng viên</h2>
-            <p id="tongSo">0 ứng viên</p>
+      <section class="candidate-review-layout" id="candidateReviewLayout">
+        <aside class="candidate-review-list">
+          <div class="candidate-review-list-heading">
+            <div>
+              <h2>Danh sách hồ sơ CV</h2>
+              <p id="tongSo">0 hồ sơ</p>
+            </div>
+            <span aria-hidden="true">☷</span>
           </div>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>STT</th>
-                <th>Ứng viên</th>
-                <th>Liên hệ</th>
-                <th>Đợt tuyển dụng</th>
-                <th>CV chính</th>
-                <th>Trạng thái</th>
-                <th id="cotThaoTac">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody id="danhSachUngVien"></tbody>
-          </table>
-        </div>
+          <div class="candidate-list-items" id="danhSachUngVien"></div>
+        </aside>
+        <section class="candidate-review-preview" aria-label="Xem trước CV">
+          <div class="candidate-panel-heading">
+            <div>
+              <h2 id="tieuDePreview">CV ứng viên</h2>
+              <p id="metaPreview">Chọn một ứng viên để xem hồ sơ</p>
+            </div>
+            <button type="button" id="btnTaiCVReview" class="btn-cv" hidden>Tải CV</button>
+          </div>
+          <div class="candidate-file-select" id="khungChonFileCV" hidden>
+            <label for="chonFileCVReview">Chọn CV của hồ sơ</label>
+            <select id="chonFileCVReview"></select>
+          </div>
+          <div class="candidate-cv-preview" id="khungPreviewCV">
+            <div class="candidate-empty-state">Chọn ứng viên trong danh sách để xem CV và kết quả phân tích.</div>
+          </div>
+          <div class="candidate-contact-actions" id="hanhDongLienHe" hidden>
+            <button type="button" data-contact-kind="goi_dien">Ghi nhận cuộc gọi</button>
+            <button type="button" data-contact-kind="email">Ghi nhận email</button>
+            <button type="button" data-contact-kind="phong_van">Ghi nhận phỏng vấn</button>
+          </div>
+          <div class="candidate-contact-history" id="lichSuLienHe"></div>
+        </section>
+        <aside class="candidate-review-analysis">
+          <div class="candidate-panel-heading">
+            <div>
+              <h2>Phân tích &amp; đánh giá</h2>
+              <p id="metaPhanTich">AI hỗ trợ quyết định, không tự động loại ứng viên</p>
+            </div>
+            <button type="button" id="btnPhanTichLai" class="btn-sua" hidden>Phân tích lại</button>
+          </div>
+          <div class="form-group candidate-jd-select" id="khungChonJD" hidden>
+            <label for="chonJDReview">JD đối chiếu</label>
+            <select id="chonJDReview"></select>
+          </div>
+          <div class="candidate-analysis-content" id="noiDungPhanTich">
+            <div class="candidate-empty-state">Kết quả AI, kỹ năng, bằng chứng và cảnh báo sẽ hiển thị tại đây.</div>
+          </div>
+          <form id="formGhiChuReview" class="candidate-review-notes" hidden>
+            <h3>Ghi chú nội bộ</h3>
+            <label for="ghiChuNoiBo">Ghi chú (chỉ nhóm tuyển dụng xem)</label>
+            <textarea id="ghiChuNoiBo" rows="3" maxlength="5000"></textarea>
+            <label for="mucLuongMongMuon">Mức lương mong muốn</label>
+            <input id="mucLuongMongMuon" maxlength="100" placeholder="VD: 20-25 triệu/tháng" />
+            <button type="submit" class="btn-luu">Lưu ghi chú</button>
+          </form>
+          <form id="formGhiDeAI" class="candidate-override-form" hidden>
+            <h3>Đánh giá của người phụ trách</h3>
+            <div class="candidate-override-fields">
+              <label>Điểm<input id="diemGhiDe" type="number" min="0" max="100" required /></label>
+              <label>Đề xuất
+                <select id="deXuatGhiDe">
+                  <option value="nen_phong_van">Nên phỏng vấn</option>
+                  <option value="can_nhac">Cân nhắc</option>
+                  <option value="chua_phu_hop">Chưa phù hợp</option>
+                </select>
+              </label>
+            </div>
+            <label for="lyDoGhiDe">Lý do điều chỉnh</label>
+            <textarea id="lyDoGhiDe" rows="2" maxlength="1000" required></textarea>
+            <button type="submit" class="btn-luu">Lưu đánh giá</button>
+            <button type="button" id="btnXoaGhiDe" class="btn-huy">Bỏ đánh giá ghi đè</button>
+            <p id="metaGhiDe"></p>
+          </form>
+        </aside>
+        <section class="candidate-kanban" id="bangKanbanUngVien" hidden></section>
       </section>
     </main>
   </div>
@@ -336,8 +412,28 @@
     </div>
   </div>
 
+  <div class="modal" id="modalHoiAI">
+    <section class="modal-box chatbot-box" role="dialog" aria-modal="true" aria-labelledby="tieuDeChatbotUngVien">
+      <div class="modal-header">
+        <div>
+          <h2 id="tieuDeChatbotUngVien">Trợ lý tuyển dụng AI</h2>
+          <p>Hỏi về hồ sơ ứng viên, dữ liệu tuyển dụng hoặc tiêu chí JD.</p>
+        </div>
+        <button class="btn-dong" id="btnDongHoiAIUngVien" type="button" aria-label="Đóng chat">×</button>
+      </div>
+      <div class="chatbot-tin-nhan" id="chatbotTinNhanUngVien" aria-live="polite"></div>
+      <p class="chatbot-loi" id="loiHoiAIUngVien" role="status"></p>
+      <form class="chatbot-form" id="formHoiAIUngVien">
+        <!-- <label class="an-tren-man-hinh" for="noiDungHoiAIUngVien">Câu hỏi</label> -->
+        <textarea id="noiDungHoiAIUngVien" rows="2" maxlength="2000" placeholder="Nhập câu hỏi của bạn..."
+          required></textarea>
+        <button class="nut-ai" id="btnGuiHoiAIUngVien" type="submit">Gửi câu hỏi</button>
+      </form>
+    </section>
+  </div>
+
   <script src="/account/account.js"></script>
-  <script src="/ung-vien/ung-vien.js"></script>
+  <script src="/ung-vien/ung-vien.js?v=cv-review-2"></script>
 </body>
 
 </html>

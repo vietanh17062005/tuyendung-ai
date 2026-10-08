@@ -5,7 +5,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CV - Recruitment Hub</title>
-
     <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css" />
     <link rel="stylesheet" href="/account/account.css" />
     <link rel="stylesheet" href="/cv/cv.css" />
@@ -16,140 +15,277 @@
         <aside class="menu">
             <div class="logo">
                 <div class="logo-icon">RH</div>
-
                 <div>
                     <div class="logo-title">Hệ thống tuyển dụng nhân sự</div>
                     <div class="logo-subtitle">AI Recruitment System</div>
                 </div>
             </div>
-
             <nav class="menu-list">
-                <a href="/dashboard/dashboard.html">
-                    <span>▦</span>Dashboard
-                </a>
-
-                <a href="/dot-tuyen/dot-tuyen.html">
-                    <span>▤</span>Đợt tuyển dụng
-                </a>
-
-                <a href="/ung-vien/ung-vien.html">
-                    <span>♙</span>Ứng viên
-                </a>
-
-                <a href="/cv/cv.html" class="active">
-                    <span>▣</span>CV
-                </a>
-
-                <a href="#">
-                    <span>◷</span>Phỏng vấn
-                </a>
-
-                <a href="#">
-                    <span>▥</span>Báo cáo
-                </a>
-
-                <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung">
-                    <span>♙</span>Người dùng
-                </a>
+                <a href="/dashboard/dashboard.html"><span>▦</span>Dashboard</a>
+                <a href="/dot-tuyen/dot-tuyen.html"><span>▤</span>Đợt tuyển dụng</a>
+                <a href="/cv/cv.html" class="active"><span>▣</span>CV</a>
+                <a href="#"><span>◷</span>Phỏng vấn</a>
+                <a href="#"><span>▥</span>Báo cáo</a>
+                <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung"><span>♙</span>Người dùng</a>
             </nav>
         </aside>
 
-        <main class="noi-dung">
+        <main class="noi-dung cv-page">
             <header class="topbar">
                 <div>
                     <p class="tieu-de-nho">QUẢN LÝ TUYỂN DỤNG</p>
                     <h1>CV ứng viên</h1>
                 </div>
+                <div class="cv-top-actions">
+                    <button type="button" class="cv-top-btn cv-ai-top-btn" id="btnHoiAI" title="Hỏi AI"><svg
+                            viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 2l1.6 6.4L20 10l-6.4 1.6L12 18l-1.6-6.4L4 10l6.4-1.6L12 2z" />
+                            <path d="M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7L19 15z" />
+                        </svg><span>Hỏi AI</span></button>
+                    <button type="button" class="cv-notification-btn" id="btnThongBaoCV" title="Thông báo"><svg
+                            viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                            <path d="M10 21h4" />
+                        </svg><b id="soThongBaoCV">0</b></button>
+                </div>
 
                 <div class="tai-khoan" id="taiKhoan">
                     <div class="tai-khoan-thong-tin">
                         <div class="avatar" id="avatar">A</div>
-
                         <div class="nguoi-dung-info">
                             <strong id="tenNguoiDung">Tài khoản</strong>
                             <span id="vaiTro">Nhân sự</span>
                         </div>
                     </div>
-
                     <span class="mui-ten">▾</span>
-
                     <div class="menu-tai-khoan" id="menuTaiKhoan">
                         <div class="tai-khoan-header">
                             <strong id="tenMenuTaiKhoan">Tài khoản</strong>
                             <span id="emailMenuTaiKhoan"></span>
                         </div>
-
-                        <button type="button" id="btnThongTin">
-                            <span>👤</span>Thông tin tài khoản
-                        </button>
-
-                        <button type="button" id="btnDoiMatKhau">
-                            <span>🔑</span>Đổi mật khẩu
-                        </button>
-
+                        <button type="button" id="btnThongTin"><span>👤</span>Thông tin tài khoản</button>
+                        <button type="button" id="btnDoiMatKhau"><span>🔑</span>Đổi mật khẩu</button>
                         <div class="duong-ke"></div>
-
-                        <button type="button" id="btnDangXuat" class="btn-dang-xuat">
-                            <span>↪</span>Đăng xuất
-                        </button>
+                        <button type="button" id="btnDangXuat" class="btn-dang-xuat"><span>↪</span>Đăng xuất</button>
                     </div>
                 </div>
             </header>
 
-            <section class="toolbar">
-                <div class="tim-kiem">
+            <section class="cv-toolbar">
+                <div class="cv-search">
                     <span>⌕</span>
-
                     <input type="search" id="oTimKiem" placeholder="Tìm tên ứng viên hoặc tên file CV..." />
                 </div>
-
-                <div class="bo-loc">
-                    <select id="locUngVien" aria-label="Lọc theo ứng viên">
-                        <option value="">Tất cả ứng viên</option>
-                    </select>
-
-                    <select id="locBanChinh" aria-label="Lọc theo bản chính">
-                        <option value="">Tất cả CV</option>
-                        <option value="1">CV bản chính</option>
-                        <option value="0">CV phụ</option>
-                    </select>
-
-                    <button type="button" id="btnTaiCV" class="btn-them">
-                        + Tải CV
-                    </button>
-                </div>
+                <select id="locDotTuyen" aria-label="Lọc theo đợt tuyển dụng">
+                    <option value="">Tất cả đợt tuyển dụng</option>
+                </select>
+                <select id="locTrangThai" aria-label="Lọc theo trạng thái">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="moi">Mới</option>
+                    <option value="da_phan_tich">Đã phân tích</option>
+                    <option value="da_lien_he">Đã liên hệ</option>
+                    <option value="phong_van">Phỏng vấn</option>
+                    <option value="da_tuyen">Đã tuyển</option>
+                    <option value="tu_choi">Từ chối</option>
+                </select>
+                <div id="thongBao" class="cv-toast"></div>
             </section>
 
-            <div id="thongBao"></div>
-
-            <section class="table-container">
-                <div class="table-header">
-                    <div>
-                        <h2>Danh sách CV</h2>
-                        <p id="tongSo">0 CV</p>
+            <section class="cv-workspace">
+                <aside class="cv-list-panel">
+                    <div class="cv-panel-heading">
+                        <div>
+                            <h2>Kho CV</h2>
+                            <p id="tongSo">0 CV</p>
+                        </div>
+                        <button type="button" id="btnThemCV" class="cv-add-btn" title="Thêm CV">+</button>
                     </div>
-                </div>
+                    <div id="danhSachCV" class="cv-list">
+                        <div class="cv-list-loading">Đang tải danh sách CV...</div>
+                    </div>
+                </aside>
 
-                <div class="table-scroll">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>Ứng viên</th>
-                                <th>Tên file</th>
-                                <th>Loại file</th>
-                                <th>Kích thước</th>
-                                <th>Bản chính</th>
-                                <th>Ngày tải lên</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
+                <section class="cv-preview-panel">
+                    <div class="cv-preview-header">
+                        <div class="cv-preview-title">
+                            <div class="cv-preview-icon">PDF</div>
+                            <div>
+                                <h2 id="tenFilePreview">Chưa chọn CV</h2>
+                                <p id="metaCV">Chọn một CV ở danh sách bên trái để xem.</p>
+                            </div>
+                        </div>
+                        <div class="cv-preview-actions">
+                            <div class="cv-zoom-tools" aria-label="Điều chỉnh kích thước CV">
+                                <button type="button" id="btnThuNho" class="cv-tool-btn cv-zoom-btn"
+                                    title="Thu nhỏ">−</button>
+                                <span id="mucZoom" class="cv-zoom-value">100%</span>
+                                <button type="button" id="btnPhongTo" class="cv-tool-btn cv-zoom-btn"
+                                    title="Phóng to">+</button>
+                                <button type="button" id="btnDatLaiZoom" class="cv-tool-btn cv-zoom-btn"
+                                    title="Đặt lại">↺</button>
+                            </div>
+                            <button type="button" id="btnTaiXuong" class="cv-tool-btn">Tải xuống</button>
+                        </div>
+                    </div>
 
-                        <tbody id="danhSachCV"></tbody>
-                    </table>
-                </div>
+                    <div class="cv-preview-subheader">
+                        <div class="cv-candidate-summary">
+                            <strong id="tenUngVienPreview">-</strong>
+                            <span id="emailUngVienPreview">-</span>
+                        </div>
+                        <div class="cv-campaign">
+                            <span>Đợt tuyển dụng</span>
+                            <strong id="dotTuyenPreview">-</strong>
+                        </div>
+                    </div>
+
+                    <div id="cvViewer" class="cv-viewer">
+                        <div class="cv-viewer-empty">
+                            <div class="cv-viewer-icon">▣</div>
+                            <h3>Chưa chọn CV</h3>
+                            <p>Chọn hồ sơ bên trái để xem nội dung CV.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="cv-analysis-panel">
+                    <div class="cv-analysis-header">
+                        <div>
+                            <p class="cv-section-kicker">AI RECRUITMENT</p>
+                            <h2>Phân tích & đánh giá</h2>
+                        </div>
+                        <button type="button" id="btnPhanTich" class="cv-analyze-btn" disabled>Phân tích AI</button>
+                    </div>
+
+                    <div id="phanTichAI" class="cv-analysis-content">
+                        <div class="cv-analysis-empty">
+                            <div class="cv-analysis-empty-icon">✦</div>
+                            <h3>Chưa có kết quả phân tích</h3>
+                            <p>Chọn CV có JD để AI đánh giá mức độ phù hợp.</p>
+                        </div>
+                    </div>
+                </aside>
             </section>
         </main>
+    </div>
+
+    <div id="modalThemCV" class="cv-modal-overlay">
+        <div class="cv-modal-box cv-upload-modal">
+            <div class="cv-modal-header">
+                <div>
+                    <h2>Thêm CV</h2>
+                    <p>Tải file CV và gắn vào hồ sơ ứng viên</p>
+                </div>
+                <button type="button" class="cv-modal-close" id="btnDongThemCV">×</button>
+            </div>
+            <form id="formThemCV">
+                <div class="cv-form-group">
+                    <label for="chonUngVienUpload">Ứng viên</label>
+                    <select id="chonUngVienUpload" required>
+                        <option value="">-- Chọn ứng viên --</option>
+                    </select>
+                </div>
+                <div class="cv-form-group">
+                    <label for="fileCVUpload">Tệp CV</label>
+                    <input type="file" id="fileCVUpload" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required />
+                    <small>PDF, DOC, DOCX, JPG, JPEG, PNG • tối đa 10 MB • mỗi ứng viên chỉ quản lý 1 CV</small>
+                </div>
+                <div id="thongBaoThemCV" class="cv-form-message"></div>
+                <div class="cv-modal-footer">
+                    <button type="button" class="cv-tool-btn" id="btnHuyThemCV">Hủy</button>
+                    <button type="submit" class="cv-tool-btn primary" id="btnLuuThemCV">Tải CV lên</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalHoiAI" class="cv-modal-overlay">
+        <div class="cv-modal-box cv-ai-modal">
+            <div class="cv-modal-header">
+                <div>
+                    <h2>Hỏi AI</h2>
+                    <p>Hỏi nhanh về CV đang được chọn</p>
+                </div>
+                <button type="button" class="cv-modal-close" id="btnDongHoiAI">×</button>
+            </div>
+            <div class="cv-ai-context" id="noiDungContextAI">Chưa chọn CV</div>
+            <textarea id="cauHoiAI" class="cv-ai-question" rows="4"
+                placeholder="Ví dụ: Ứng viên này có phù hợp với vị trí Backend không?"></textarea>
+            <div id="ketQuaHoiAI" class="cv-ai-answer"></div>
+            <div class="cv-modal-footer">
+                <button type="button" class="cv-tool-btn" id="btnHuyHoiAI">Đóng</button>
+                <button type="button" class="cv-tool-btn primary" id="btnGuiHoiAI">Hỏi AI</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalThongBaoCV" class="cv-modal-overlay">
+        <div class="cv-modal-box cv-notification-modal">
+            <div class="cv-modal-header">
+                <div>
+                    <h2>Thông báo</h2>
+                    <p>Các cập nhật liên quan đến tuyển dụng</p>
+                </div>
+                <button type="button" class="cv-modal-close" id="btnDongThongBaoCV">×</button>
+            </div>
+            <div id="danhSachThongBaoCV" class="cv-notification-list">
+                <div class="cv-notification-empty">Chưa có thông báo mới.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalUngVien" class="cv-modal-overlay">
+        <div class="cv-modal-box cv-candidate-modal">
+            <div class="cv-modal-header">
+                <div>
+                    <h2 id="tieuDeModalUngVien">Thông tin ứng viên</h2>
+                    <p>Thông tin hồ sơ ứng viên</p>
+                </div>
+                <button type="button" class="cv-modal-close" id="btnDongUngVien">×</button>
+            </div>
+            <form id="formUngVien" class="cv-candidate-form">
+                <input type="hidden" id="ungVienEditId" />
+                <div class="cv-candidate-grid">
+                    <label><span>Họ và tên</span><input id="ungVienHoTen" required /></label>
+                    <label><span>Email</span><input id="ungVienEmail" type="email" /></label>
+                    <label><span>Số điện thoại</span><input id="ungVienSoDienThoai" /></label>
+                    <label><span>Địa chỉ</span><input id="ungVienDiaChi" /></label>
+                    <label><span>LinkedIn</span><input id="ungVienLinkedin" /></label>
+                    <label><span>GitHub</span><input id="ungVienGithub" /></label>
+                    <label><span>Trạng thái</span><select id="ungVienTrangThai">
+                            <option value="moi">Mới</option>
+                            <option value="da_phan_tich">Đã phân tích</option>
+                            <option value="da_lien_he">Đã liên hệ</option>
+                            <option value="phong_van">Phỏng vấn</option>
+                            <option value="da_tuyen">Đã tuyển</option>
+                            <option value="tu_choi">Từ chối</option>
+                        </select></label>
+                    <label><span>Nguồn</span><input id="ungVienNguon" /></label>
+                </div>
+                <div id="thongBaoUngVien" class="cv-form-message"></div>
+                <div class="cv-modal-footer">
+                    <button type="button" class="cv-tool-btn" id="btnHuyUngVien">Đóng</button>
+                    <button type="submit" class="cv-tool-btn primary" id="btnLuuUngVien">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalXacNhanPhanTich" class="cv-modal-overlay">
+        <div class="cv-modal-box cv-confirm-modal">
+            <div class="cv-modal-header">
+                <div>
+                    <h2>Xác nhận kết quả phân tích</h2>
+                    <p>Kiểm tra và chỉnh sửa đánh giá AI trước khi lưu.</p>
+                </div>
+                <button type="button" class="cv-modal-close" id="btnDongXacNhanPhanTich">×</button>
+            </div>
+            <div id="noiDungXacNhanPhanTich"></div>
+            <div class="cv-modal-footer">
+                <button type="button" class="cv-tool-btn" id="btnHuyXacNhanPhanTich">Hủy</button>
+                <button type="button" class="cv-tool-btn primary" id="btnLuuXacNhanPhanTich">Xác nhận & lưu</button>
+            </div>
+        </div>
     </div>
 
     <div id="modalThongTin" class="modal">
@@ -159,41 +295,25 @@
                     <h2>Thông tin tài khoản</h2>
                     <p>Cập nhật thông tin cá nhân</p>
                 </div>
-
-                <button type="button" class="btn-dong" id="btnDongThongTin">
-                    ×
-                </button>
+                <button type="button" class="btn-dong" id="btnDongThongTin">×</button>
             </div>
-
             <form id="formThongTin">
                 <div class="form-group">
                     <label for="taiKhoanHoTen">Họ và tên</label>
-
                     <input type="text" id="taiKhoanHoTen" placeholder="Nhập họ và tên" required />
                 </div>
-
                 <div class="form-group">
                     <label for="taiKhoanEmail">Email</label>
-
                     <input type="email" id="taiKhoanEmail" placeholder="Nhập email" required />
                 </div>
-
                 <div class="form-group">
                     <label for="taiKhoanVaiTro">Vai trò</label>
-
                     <input type="text" id="taiKhoanVaiTro" readonly />
                 </div>
-
                 <div class="thong-bao" id="thongBaoThongTin"></div>
-
                 <div class="modal-footer">
-                    <button type="button" class="btn-huy" id="btnHuyThongTin">
-                        Hủy
-                    </button>
-
-                    <button type="submit" class="btn-luu">
-                        Lưu thay đổi
-                    </button>
+                    <button type="button" class="btn-huy" id="btnHuyThongTin">Hủy</button>
+                    <button type="submit" class="btn-luu">Lưu thay đổi</button>
                 </div>
             </form>
         </div>
@@ -206,141 +326,28 @@
                     <h2>Đổi mật khẩu</h2>
                     <p>Cập nhật mật khẩu đăng nhập</p>
                 </div>
-
-                <button type="button" class="btn-dong" id="btnDongMatKhau">
-                    ×
-                </button>
+                <button type="button" class="btn-dong" id="btnDongMatKhau">×</button>
             </div>
-
             <form id="formMatKhau">
                 <div class="form-group">
                     <label for="matKhauCu">Mật khẩu hiện tại</label>
-
                     <input type="password" id="matKhauCu" placeholder="Nhập mật khẩu hiện tại" required />
                 </div>
-
                 <div class="form-group">
                     <label for="matKhauMoi">Mật khẩu mới</label>
-
                     <input type="password" id="matKhauMoi" placeholder="Nhập mật khẩu mới" minlength="6" required />
                 </div>
-
                 <div class="form-group">
-                    <label for="xacNhanMatKhau">
-                        Xác nhận mật khẩu mới
-                    </label>
-
+                    <label for="xacNhanMatKhau">Xác nhận mật khẩu mới</label>
                     <input type="password" id="xacNhanMatKhau" placeholder="Nhập lại mật khẩu mới" minlength="6"
                         required />
                 </div>
-
                 <div class="thong-bao" id="thongBaoMatKhau"></div>
-
                 <div class="modal-footer">
-                    <button type="button" class="btn-huy" id="btnHuyMatKhau">
-                        Hủy
-                    </button>
-
-                    <button type="submit" class="btn-luu">
-                        Đổi mật khẩu
-                    </button>
+                    <button type="button" class="btn-huy" id="btnHuyMatKhau">Hủy</button>
+                    <button type="submit" class="btn-luu">Đổi mật khẩu</button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <div id="modalCV" class="cv-modal">
-        <div class="cv-modal-box cv-modal-small">
-            <div class="cv-modal-header">
-                <div>
-                    <h2>Tải CV</h2>
-                    <p>Thêm CV cho ứng viên</p>
-                </div>
-
-                <button type="button" id="btnDongCV" class="cv-btn-close">
-                    ×
-                </button>
-            </div>
-
-            <form id="formCV">
-                <div class="form-group">
-                    <label for="ungVienId">Ứng viên</label>
-
-                    <select id="ungVienId" required>
-                        <option value="">-- Chọn ứng viên --</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="fileCV">Tệp CV</label>
-
-                    <input type="file" id="fileCV" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required />
-
-                    <p class="file-note">
-                        PDF, DOC, DOCX, JPG hoặc PNG. Tối đa 10 MB.
-                    </p>
-                </div>
-
-                <div class="form-group">
-                    <label class="checkbox-row">
-                        <input type="checkbox" id="laBanChinh" />
-                        <span>Đặt làm CV bản chính</span>
-                    </label>
-                </div>
-
-                <div class="cv-modal-buttons">
-                    <button type="button" id="btnHuyCV" class="cv-btn-secondary">
-                        Hủy
-                    </button>
-
-                    <button type="submit" class="cv-btn-primary">
-                        Tải CV
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="modalChiTiet" class="cv-modal">
-        <div class="cv-modal-box cv-detail-box">
-            <div class="cv-modal-header">
-                <div>
-                    <h2>Thông tin CV</h2>
-                    <p id="metaCV"></p>
-                </div>
-
-                <button type="button" id="btnDongChiTiet" class="cv-btn-close">
-                    ×
-                </button>
-            </div>
-
-            <div id="noiDungChiTiet" class="cv-detail-content"></div>
-
-            <div class="cv-modal-footer">
-                <button type="button" id="btnDongChiTietCuoi" class="cv-btn-secondary">
-                    Đóng
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modalXacNhan" class="cv-modal">
-        <div class="cv-confirm-box">
-            <div class="cv-confirm-icon">!</div>
-
-            <h2 id="tieuDeXacNhan">Xóa CV</h2>
-
-            <p id="noiDungXacNhan"></p>
-
-            <div class="cv-confirm-buttons">
-                <button type="button" id="btnHuyXacNhan" class="cv-btn-secondary">
-                    Hủy
-                </button>
-
-                <button type="button" id="btnXacNhan" class="cv-btn-danger">
-                    Xóa CV
-                </button>
-            </div>
         </div>
     </div>
 

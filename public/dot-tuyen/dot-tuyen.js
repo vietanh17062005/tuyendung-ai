@@ -470,8 +470,11 @@ async function guiUploadCVTheoDot(event) {
   data.append("dot_tuyen_id", $("idDotUpload").value);
   files.forEach((file) => data.append("files", file));
   const button = $("btnGuiUploadDot");
+  const progress = $("progressUploadDot");
   button.disabled = true;
   button.textContent = "Đang tải...";
+  progress.hidden = true;
+  progress.value = 0;
   $("thongBaoUploadDot").className = "thong-bao hien dang-xu-ly";
   $("thongBaoUploadDot").textContent = "Đang tải CV lên đợt tuyển dụng...";
   try {
@@ -486,10 +489,41 @@ async function guiUploadCVTheoDot(event) {
       return;
     }
     if (!response.ok) throw new Error(result.message || `Lỗi máy chủ (${response.status})`);
-    $("thongBaoUploadDot").className = "thong-bao hien thanh-cong";
-    $("thongBaoUploadDot").textContent = result.message || "Đã tải CV thành công.";
+    const candidates = Array.isArray(result.candidates) ? result.candidates : [];
+    const failures = [];
+    if (candidates.length) {
+      progress.hidden = false;
+      progress.max = candidates.length;
+      button.textContent = "Đang phân tích...";
+      for (let index = 0; index < candidates.length; index += 1) {
+        const candidate = candidates[index];
+        $("thongBaoUploadDot").textContent =
+          `Đã tải ${candidates.length} CV. Đang trích xuất và phân tích ${index + 1}/${candidates.length}: ${candidate.ten_file || "CV"}...`;
+        try {
+          const analysisResponse = await fetch(`${API}/cv/review/${candidate.id}/analyze`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(layToken() ? { Authorization: `Bearer ${layToken()}` } : {}),
+            },
+            body: JSON.stringify({ cv_id: candidate.cv_id }),
+          });
+          const analysisResult = await analysisResponse.json().catch(() => ({}));
+          if (!analysisResponse.ok) {
+            failures.push(`${candidate.ten_file}: ${analysisResult.message || "Phân tích thất bại"}`);
+          }
+        } catch (error) {
+          failures.push(`${candidate.ten_file}: ${error.message || "Không kết nối được máy chủ AI"}`);
+        }
+        progress.value = index + 1;
+      }
+    }
+    $("thongBaoUploadDot").className = failures.length ? "thong-bao hien" : "thong-bao hien thanh-cong";
+    $("thongBaoUploadDot").textContent = failures.length
+      ? `${result.message || "Đã tải CV."} Phân tích thành công ${candidates.length - failures.length}/${candidates.length}. Lỗi: ${failures.slice(0, 3).join(" · ")}`
+      : `${result.message || "Đã tải CV thành công."}${candidates.length ? ` Đã phân tích ${candidates.length} CV.` : ""}`;
     await taiDuLieu();
-    setTimeout(dongUploadDot, 900);
+    if (!failures.length) setTimeout(dongUploadDot, 1400);
   } catch (error) {
     console.error(error);
     $("thongBaoUploadDot").className = "thong-bao hien";

@@ -30,8 +30,7 @@
       <nav class="menu-list">
         <a href="/dashboard/dashboard.html"><span>▦</span>Tổng quan</a>
         <a href="/dot-tuyen/dot-tuyen.html" class="active"><span>▤</span>Đợt tuyển dụng</a>
-        <a href="/ung-vien/ung-vien.html"><span>♙</span>Ứng viên</a>
-        <a href="/cv/cv.html"><span>▣</span>Hồ sơ</a>
+        <a href="/cv/cv.html"><span>▣</span>CV</a>
         <a href="/nguoi-dung/nguoi-dung.html" id="menuNguoiDung"><span>♙</span>Người dùng</a>
       </nav>
     </aside>
@@ -229,10 +228,11 @@
         <label class="chon-file-dot" for="fileUploadDot">
           <strong>Chọn nhiều CV hoặc một file ZIP</strong>
           <span>PDF, DOC, DOCX, JPG, PNG hoặc ZIP (tối đa 10 MB mỗi file)</span>
-          <input id="fileUploadDot" name="files" type="file" multiple
-            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip" required />
+          <input id="fileUploadDot" name="files" type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip"
+            required />
         </label>
         <p class="thong-bao" id="thongBaoUploadDot" role="status"></p>
+        <progress class="candidate-upload-progress" id="progressUploadDot" max="1" value="0" hidden></progress>
         <div class="modal-footer">
           <button type="button" class="btn-huy" id="btnHuyUploadDot">Hủy</button>
           <button type="submit" class="btn-luu" id="btnGuiUploadDot">Tải CV lên</button>
@@ -255,8 +255,9 @@
       </div>
       <p class="chatbot-loi" id="loiHoiAIDot" role="status"></p>
       <form class="chatbot-form" id="formHoiAIDot">
-        <label class="an-tren-man-hinh" for="noiDungHoiAIDot">Câu hỏi</label>
-        <textarea id="noiDungHoiAIDot" rows="2" maxlength="2000" placeholder="Nhập câu hỏi của bạn..." required></textarea>
+        <!-- <label class="an-tren-man-hinh" for="noiDungHoiAIDot">Câu hỏi</label> -->
+        <textarea id="noiDungHoiAIDot" rows="2" maxlength="2000" placeholder="Nhập câu hỏi của bạn..."
+          required></textarea>
         <button class="nut-ai" id="btnGuiHoiAIDot" type="submit">Gửi câu hỏi</button>
       </form>
     </section>

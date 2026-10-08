@@ -25,10 +25,32 @@
     const modalXacNhan = document.getElementById("modalXacNhan");
     const thongBao = document.getElementById("thongBao");
     const tongSo = document.getElementById("tongSo");
+    const sapXepUngVien = document.getElementById("sapXepUngVien");
+    const locKyNang = document.getElementById("locKyNang");
+    const locDiemAI = document.getElementById("locDiemAI");
+    const locSoNamKinhNghiem = document.getElementById("locSoNamKinhNghiem");
+    const phanTichNoiDung = document.getElementById("noiDungPhanTich");
+    const previewCV = document.getElementById("khungPreviewCV");
+    const khungChonJD = document.getElementById("khungChonJD");
+    const chonJDReview = document.getElementById("chonJDReview");
+    const metadataHoSo = document.getElementById("metaPhanTich");
+    const nutPhanTichLai = document.getElementById("btnPhanTichLai");
+    const nutTaiCVReview = document.getElementById("btnTaiCVReview");
+    const nutThongBaoUngVien = document.getElementById("btnThongBaoUngVien");
+    const danhSachThongBaoUngVien = document.getElementById("danhSachThongBaoUngVien");
+    const keyHistory = `lich_su_chat_ai_${nguoiDung.id || nguoiDung.email}`;
+    const keyNotifications = `ung_vien_da_biet_${nguoiDung.id || nguoiDung.email}`;
 
     let tatCaUngVien = [];
     let ungVienDangUpload = null;
     let hanhDongXacNhan = null;
+    let ungVienDangXem = null;
+    let hoSoDangXem = null;
+    let cvDangXemId = null;
+    let urlPreviewCV = null;
+    let loaiHienThiUngVien = "danh_sach";
+    let idsUngVienDaBiet = null;
+    let lichSuChatUngVien = docLichSuChat();
 
     const tenTrangThai = {
         moi: "Mới",
@@ -78,7 +100,22 @@
         return { Authorization: "Bearer " + token };
     }
 
+    async function docPhanHoiJSON(response) {
+        const body = await response.text();
+        try {
+            return JSON.parse(body);
+        } catch (error) {
+            if (/^\s*<!doctype html|^\s*<html/i.test(body)) {
+                throw new Error(
+                    "API CV trả về trang HTML thay vì dữ liệu. Hãy khởi động lại/triển khai phiên bản máy chủ mới nhất rồi tải lại trang.",
+                );
+            }
+            throw new Error(`API CV trả dữ liệu không hợp lệ (HTTP ${response.status}).`);
+        }
+    }
+
     function dangXuat() {
+        localStorage.removeItem(keyHistory);
         localStorage.removeItem("token");
         localStorage.removeItem("nguoi_dung");
         window.location.href = "/login/login.html";
@@ -114,7 +151,7 @@
                 headers: headersAuth()
             });
 
-            const data = await response.json();
+            const data = await docPhanHoiJSON(response);
 
             if (response.status === 401) {
                 dangXuat();
@@ -189,11 +226,11 @@
 
             const suffix = params.toString() ? "?" + params.toString() : "";
 
-            const response = await fetch("/api/ung-vien" + suffix, {
+            const response = await fetch("/api/cv/review/candidates" + suffix, {
                 headers: headersAuth()
             });
 
-            const data = await response.json();
+            const data = await docPhanHoiJSON(response);
 
             if (response.status === 401) {
                 dangXuat();
@@ -206,7 +243,14 @@
 
             tatCaUngVien = data;
 
+            capNhatThongBaoUngVien();
             locDanhSach();
+            if (ungVienDangXem && !tatCaUngVien.some((candidate) => Number(candidate.id) === Number(ungVienDangXem))) {
+                ungVienDangXem = null;
+            }
+            if (!ungVienDangXem && tatCaUngVien.length) {
+                await moHoSoUngVien(Number(tatCaUngVien[0].id));
+            }
         } catch (error) {
             console.error(error);
 
@@ -215,25 +259,31 @@
                 "loi"
             );
 
-            danhSachUngVien.innerHTML = `
-        <tr>
-          <td colspan="${coQuyenQuanLyUngVien ? 7 : 6}" class="table-empty">
-            Không tải được dữ liệu
-          </td>
-        </tr>
-      `;
+            danhSachUngVien.innerHTML = '<div class="candidate-empty-state">Không tải được dữ liệu ứng viên.</div>';
         }
     }
 
     function locDanhSach() {
         const tuKhoa = oTimKiem.value.trim().toLocaleLowerCase("vi");
         const trangThai = locTrangThai.value;
+        const skill = locKyNang.value.trim().toLocaleLowerCase("vi");
+        const minimumScore = Number(locDiemAI.value) || 0;
+        const minimumExperience = locSoNamKinhNghiem.value === ""
+            ? null
+            : Number(locSoNamKinhNghiem.value);
 
         const ketQua = tatCaUngVien.filter(function (ungVien) {
+            const parsed = ungVien.phan_tich || {};
+            const analyzedSkills = [
+                ...(parsed.extraction?.ky_nang || []),
+                ...(parsed.score?.ky_nang_khop || []),
+            ].join(" ").toLocaleLowerCase("vi");
+            const years = Number(parsed.extraction?.so_nam_kinh_nghiem);
             const noiDung = [
                 ungVien.ho_ten,
                 ungVien.email,
                 ungVien.sdt,
+                ungVien.so_dien_thoai,
                 ungVien.ten_dot_tuyen
             ]
                 .join(" ")
@@ -241,142 +291,447 @@
 
             return (
                 (!tuKhoa || noiDung.includes(tuKhoa)) &&
-                (!trangThai || ungVien.trang_thai === trangThai)
+                (!trangThai || ungVien.trang_thai === trangThai) &&
+                (!skill || analyzedSkills.includes(skill)) &&
+                (!minimumScore || Number(ungVien.diem_ai || 0) >= minimumScore) &&
+                (minimumExperience === null || (Number.isFinite(years) && years >= minimumExperience))
             );
         });
-
+        const sortMode = sapXepUngVien.value;
+        ketQua.sort(function (a, b) {
+            if (sortMode === "diem") return Number(b.diem_ai || 0) - Number(a.diem_ai || 0);
+            if (sortMode === "kinh_nghiem") {
+                return Number(b.phan_tich?.extraction?.so_nam_kinh_nghiem || 0)
+                    - Number(a.phan_tich?.extraction?.so_nam_kinh_nghiem || 0);
+            }
+            if (sortMode === "ten") return String(a.ho_ten || "").localeCompare(String(b.ho_ten || ""), "vi");
+            return Number(b.id) - Number(a.id);
+        });
         renderUngVien(ketQua);
     }
 
     function renderUngVien(danhSach) {
-        tongSo.textContent = `${danhSach.length} ứng viên`;
+        tongSo.textContent = `${danhSach.length} hồ sơ CV`;
 
         danhSachUngVien.replaceChildren();
+        renderKanbanUngVien(danhSach);
+        if (loaiHienThiUngVien === "kanban") {
+            return;
+        }
 
-        if (danhSach.length === 0) {
-            danhSachUngVien.innerHTML = `
-        <tr>
-          <td colspan="${coQuyenQuanLyUngVien ? 7 : 6}" class="table-empty">
-            Không tìm thấy ứng viên
-          </td>
-        </tr>
-      `;
-
+        if (!danhSach.length) {
+            danhSachUngVien.innerHTML = '<div class="candidate-empty-state">Không tìm thấy ứng viên phù hợp.</div>';
             return;
         }
 
         danhSach.forEach(function (ungVien, index) {
-            const tr = document.createElement("tr");
-
-            const ten = escapeHTML(ungVien.ho_ten);
-
-            const nguon = tenNguon[ungVien.nguon] || ungVien.nguon || "";
-
-            const chiTietLienHe = [];
-
-            if (ungVien.email) {
-                chiTietLienHe.push(`<span>${escapeHTML(ungVien.email)}</span>`);
-            }
-
-            if (ungVien.sdt) {
-                chiTietLienHe.push(`<span>${escapeHTML(ungVien.sdt)}</span>`);
-            }
-
-            const lienHe = chiTietLienHe.length
-                ? `<div class="candidate-contact">${chiTietLienHe.join("")}</div>`
-                : "-";
-
-            const cv = ungVien.cv_id
-                ? `
-          <button
-            class="btn-cv"
-            data-action="detail"
-            data-id="${ungVien.id}"
-          >
-            ${escapeHTML(ungVien.ten_file || "Xem CV")}
-          </button>
-        `
-                : `<span class="muted">Chưa có CV</span>`;
-
-            const nutSua = coQuyenQuanLyUngVien
-                ? `
-          <button
-            class="btn-sua"
-            data-action="edit"
-            data-id="${ungVien.id}"
-          >
-            Sửa
-          </button>
-
-          <button
-            class="btn-upload"
-            data-action="upload"
-            data-id="${ungVien.id}"
-            data-name="${escapeHTML(ungVien.ho_ten)}"
-          >
-            Upload CV
-          </button>
-        `
+            const card = document.createElement("article");
+            card.className = `candidate-review-card${String(ungVien.id) === String(ungVienDangXem) ? " selected" : ""}`;
+            const score = ungVien.diem_ai == null || ungVien.diem_ai === ""
+                ? NaN
+                : Number(ungVien.diem_ai);
+            const parsed = ungVien.phan_tich || {};
+            const skills = (parsed.extraction?.ky_nang || []).slice(0, 3).join(" · ");
+            const recommendations = {
+                nen_phong_van: "Nên phỏng vấn",
+                can_nhac: "Cân nhắc",
+                chua_phu_hop: "Chưa phù hợp",
+            };
+            const recommendation = recommendations[parsed.score?.de_xuat] || "Chưa có gợi ý AI";
+            const operations = coQuyenQuanLyUngVien
+                ? `<div class="candidate-card-actions">
+                    <button type="button" data-action="edit" data-id="${ungVien.id}">Sửa</button>
+                    <button type="button" data-action="upload" data-id="${ungVien.id}" data-name="${escapeHTML(ungVien.ho_ten)}">Upload CV</button>
+                    ${["admin", "manager"].includes(nguoiDung.vai_tro) ? `<button type="button" data-action="delete" data-id="${ungVien.id}">Xóa</button>` : ""}
+                  </div>`
                 : "";
-
-            const nutXoa = ["admin", "manager"].includes(nguoiDung.vai_tro)
-                ? `
-          <button
-            class="btn-xoa"
-            data-action="delete"
-            data-id="${ungVien.id}"
-          >
-            Xóa
-          </button>
-        `
-                : "";
-
-            tr.innerHTML = `
-        <td class="candidate-id">${index + 1}</td>
-
-        <td>
-          <strong>${ten}</strong>
-          <span class="candidate-source">${escapeHTML(nguon)}</span>
-        </td>
-
-        <td>${lienHe}</td>
-
-        <td class="candidate-campaign">
-          ${escapeHTML(ungVien.ten_dot_tuyen || "-")}
-        </td>
-
-        <td>${cv}</td>
-
-        <td>
-          <span class="badge ${escapeHTML(ungVien.trang_thai)}">
-            ${tenTrangThai[ungVien.trang_thai] ||
-                escapeHTML(ungVien.trang_thai)
-                }
-          </span>
-        </td>
-
-        ${coQuyenQuanLyUngVien
-                    ? `
-          <td class="action">
-            ${nutSua}
-
-            <button
-              class="btn-xem"
-              data-action="detail"
-              data-id="${ungVien.id}"
-            >
-              Chi tiết
-            </button>
-
-            ${nutXoa}
-          </td>
-        `
-                    : ""
-                }
-      `;
-
-            danhSachUngVien.appendChild(tr);
+            card.innerHTML = `
+              <button class="candidate-card-select" type="button" data-select-candidate="${ungVien.id}">
+                <span class="candidate-card-index">${String(index + 1).padStart(2, "0")}</span>
+                <span class="candidate-card-main">
+                  <strong>${escapeHTML(ungVien.ho_ten || "Ứng viên")}</strong>
+                  <small>${escapeHTML(ungVien.ten_dot_tuyen || "-")}</small>
+                  <small>${escapeHTML(skills || "Chưa trích xuất kỹ năng")}</small>
+                  <span class="candidate-card-meta">
+                    <span class="badge ${escapeHTML(ungVien.trang_thai || "moi")}">${escapeHTML(tenTrangThai[ungVien.trang_thai] || ungVien.trang_thai || "Mới")}</span>
+                    <span>${escapeHTML(ungVien.ten_file || "Chưa có CV")}</span>
+                  </span>
+                  <small>AI: ${escapeHTML(recommendation)} · Phụ trách: ${escapeHTML(ungVien.nguoi_phu_trach || "Chưa phân công")}</small>
+                </span>
+                <span class="candidate-score-mini">${Number.isFinite(score) ? `${Math.round(score)}%` : "—"}</span>
+              </button>
+              ${operations}`;
+            danhSachUngVien.appendChild(card);
         });
+    }
+
+    function renderKanbanUngVien(danhSach) {
+        const board = document.getElementById("bangKanbanUngVien");
+        const stageGroups = [
+            { key: "moi", title: "Mới / đã phân tích", statuses: ["moi", "da_phan_tich"] },
+            { key: "da_chon", title: "Đã chọn / liên hệ", statuses: ["da_chon", "da_lien_he"] },
+            { key: "phong_van", title: "Phỏng vấn", statuses: ["da_xep_lich", "da_phong_van"] },
+            { key: "ket_qua", title: "Kết quả", statuses: ["offer", "da_tuyen", "tu_choi", "talent_pool"] },
+        ];
+        board.replaceChildren();
+        stageGroups.forEach((group) => {
+            const items = danhSach.filter((candidate) => group.statuses.includes(candidate.trang_thai));
+            const column = document.createElement("section");
+            column.className = "candidate-kanban-column";
+            column.innerHTML = `<h3>${escapeHTML(group.title)} <span>${items.length}</span></h3>`;
+            items.forEach((candidate) => {
+                const card = document.createElement("button");
+                card.type = "button";
+                card.className = "candidate-kanban-card";
+                card.dataset.selectCandidate = candidate.id;
+                const score = candidate.diem_ai == null || candidate.diem_ai === ""
+                    ? NaN
+                    : Number(candidate.diem_ai);
+                card.innerHTML = `<strong>${escapeHTML(candidate.ho_ten || "Ứng viên")}</strong>
+                    <span>${escapeHTML(candidate.ten_dot_tuyen || "")}</span>
+                    <small>${Number.isFinite(score) ? `Điểm AI ${Math.round(score)}%` : "Chưa phân tích"}</small>`;
+                column.appendChild(card);
+            });
+            board.appendChild(column);
+        });
+        const kanbanView = loaiHienThiUngVien === "kanban";
+        board.hidden = !kanbanView;
+        danhSachUngVien.hidden = kanbanView;
+        document.querySelector(".candidate-review-list").hidden = kanbanView;
+        document.querySelector(".candidate-review-preview").hidden = kanbanView;
+        document.querySelector(".candidate-review-analysis").hidden = kanbanView;
+    }
+
+    function hienPhanTichChoUngVien(data) {
+        const analysisRow = data.phan_tich;
+        const analysisData = analysisRow?.du_lieu_phan_tich || {};
+        const result = analysisData.score || {};
+        const extraction = analysisData.extraction || {};
+        const reviewMeta = data.ho_so_hr || {};
+        const score = Number(analysisRow?.diem_phu_hop ?? analysisRow?.diem ?? result.tong);
+        const overrideScore = reviewMeta.diem_ghi_de;
+        const effectiveScore = overrideScore == null ? score : Number(overrideScore);
+        const recommendation = reviewMeta.de_xuat_ghi_de || result.de_xuat || "can_nhac";
+        const recommendationNames = {
+            nen_phong_van: "Nên phỏng vấn",
+            can_nhac: "Cân nhắc",
+            chua_phu_hop: "Chưa phù hợp",
+        };
+        if (!analysisRow) {
+            phanTichNoiDung.innerHTML = '<div class="candidate-empty-state">Chưa có kết quả AI. Chọn JD rồi nhấn “Phân tích CV”.</div>';
+        } else {
+            const metrics = [
+                ["Kỹ năng", result.ky_nang],
+                ["Kinh nghiệm", result.kinh_nghiem],
+                ["Học vấn", result.hoc_van],
+                ["Kỹ năng mềm", result.ky_nang_mem],
+            ];
+            const list = (items) => (Array.isArray(items) && items.length
+                ? `<ul>${items.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}</ul>`
+                : '<p class="candidate-no-data">Chưa có dữ liệu</p>');
+            const evidence = Array.isArray(result.minh_chung) ? result.minh_chung : [];
+            phanTichNoiDung.innerHTML = `
+              <div class="candidate-score-summary">
+                <div class="candidate-score-ring"><strong>${Number.isFinite(effectiveScore) ? Math.round(effectiveScore) : "—"}%</strong><span>${overrideScore == null ? "Điểm hiện tại" : "Điểm HR"}</span></div>
+                <div><span class="candidate-recommendation">${escapeHTML(recommendationNames[recommendation] || recommendationNames.can_nhac)}</span>
+                  <small>Điểm gốc AI: ${Number.isFinite(score) ? `${Math.round(score)}%` : "Chưa có"}</small>
+                  ${overrideScore == null ? "" : `<small>Điểm AI: ${Math.round(score)}%</small>`}
+                </div>
+              </div>
+              ${reviewMeta.diem_ghi_de == null ? "" : `<div class="candidate-override-note"><strong>Đánh giá của người phụ trách</strong><p>${escapeHTML(reviewMeta.ly_do_ghi_de || "")}</p><small>${escapeHTML(reviewMeta.ngay_ghi_de || "")}</small></div>`}
+              <h3>Điểm thành phần</h3>
+              <div class="candidate-score-metrics">${metrics.map(([name, value]) => {
+                const amount = Number(value) || 0;
+                return `<div><span>${name}</span><strong>${amount}%</strong><progress max="100" value="${amount}"></progress></div>`;
+              }).join("")}</div>
+              <h3>Tóm tắt</h3><p class="candidate-analysis-summary">${escapeHTML(result.tom_tat || analysisRow.tom_tat || "Chưa có tóm tắt.")}</p>
+              <h3>Kỹ năng khớp</h3>${list(result.ky_nang_khop)}
+              <h3>Kỹ năng còn thiếu</h3>${list(result.ky_nang_thieu)}
+              <h3>Điểm mạnh</h3>${list(result.diem_manh)}
+              <h3>Điểm cần xem xét</h3>${list(result.diem_yeu)}
+              <h3>Cảnh báo</h3>${list(result.canh_bao)}
+              <h3>Bằng chứng theo tiêu chí</h3>
+              ${evidence.length ? `<div class="candidate-evidence-list">${evidence.map((item) => `<article><strong>${escapeHTML(item.tieu_chi)}</strong><span>${Number(item.diem) || 0}/100 · ${escapeHTML(item.ly_do)}</span><blockquote>${escapeHTML(item.trich_dan_cv || "Không có trích dẫn")}</blockquote></article>`).join("")}</div>` : '<p class="candidate-no-data">AI chưa cung cấp trích dẫn minh chứng.</p>'}
+              <h3>Thông tin trích xuất</h3>
+              <dl class="candidate-extracted-data">
+                <div><dt>Email</dt><dd>${escapeHTML(extraction.email || data.ung_vien.email || "Chưa có")}</dd></div>
+                <div><dt>Điện thoại</dt><dd>${escapeHTML(extraction.so_dien_thoai || data.ung_vien.so_dien_thoai || "Chưa có")}</dd></div>
+                <div><dt>Kinh nghiệm</dt><dd>${extraction.so_nam_kinh_nghiem == null ? "Chưa rõ" : `${Number(extraction.so_nam_kinh_nghiem)} năm`}</dd></div>
+                <div><dt>Kinh nghiệm làm việc</dt><dd>${list(extraction.kinh_nghiem)}</dd></div>
+                <div><dt>Học vấn</dt><dd>${list(extraction.hoc_van)}</dd></div>
+                <div><dt>Kỹ năng</dt><dd>${list(extraction.ky_nang)}</dd></div>
+                <div><dt>Ngoại ngữ / chứng chỉ</dt><dd>${list([...(extraction.ngon_ngu || []), ...(extraction.chung_chi || [])])}</dd></div>
+                <div><dt>Liên kết</dt><dd>${Array.isArray(extraction.lien_ket) && extraction.lien_ket.length ? extraction.lien_ket.map((link) => taoLienKet(link)).join("<br/>") : "Chưa có"}</dd></div>
+              </dl>
+              ${Array.isArray(analysisData.ung_vien_trung_tiem_nang) && analysisData.ung_vien_trung_tiem_nang.length ? `<h3>Hồ sơ có thể trùng</h3>${list(analysisData.ung_vien_trung_tiem_nang.map((item) => `${item.ho_ten} · ${item.ly_do} (${item.similarity}%)`))}` : ""}
+              <p class="candidate-analysis-disclaimer">AI chỉ hỗ trợ tham khảo. Quyết định tuyển dụng thuộc về người phụ trách.</p>
+            `;
+        }
+
+        const jobs = Array.isArray(data.jd) ? data.jd : [];
+        khungChonJD.hidden = jobs.length < 2;
+        chonJDReview.replaceChildren();
+        jobs.forEach((job) => {
+            const option = document.createElement("option");
+            option.value = job.id;
+            option.textContent = job.tieu_de || `JD #${job.id}`;
+            chonJDReview.appendChild(option);
+        });
+        const analysisJobId = analysisRow?.jd_id;
+        if (analysisJobId) chonJDReview.value = String(analysisJobId);
+
+        const isHr = ["admin", "manager", "hr"].includes(nguoiDung.vai_tro);
+        nutPhanTichLai.hidden = !isHr || !data.cv.length || !jobs.length;
+        nutPhanTichLai.textContent = analysisRow ? "Phân tích lại" : "Phân tích CV";
+        document.getElementById("formGhiChuReview").hidden = !isHr;
+        document.getElementById("formGhiDeAI").hidden = !isHr || !analysisRow;
+        document.getElementById("ghiChuNoiBo").value = reviewMeta.ghi_chu_noi_bo || "";
+        document.getElementById("mucLuongMongMuon").value = reviewMeta.muc_luong_mong_muon || "";
+        document.getElementById("diemGhiDe").value = overrideScore ?? score ?? "";
+        document.getElementById("deXuatGhiDe").value = recommendation;
+        document.getElementById("lyDoGhiDe").value = reviewMeta.ly_do_ghi_de || "";
+        document.getElementById("btnXoaGhiDe").hidden = reviewMeta.diem_ghi_de == null;
+        document.getElementById("metaGhiDe").textContent = reviewMeta.nguoi_ghi_de_id
+            ? `Cập nhật bởi ${reviewMeta.nguoi_ghi_de || `tài khoản #${reviewMeta.nguoi_ghi_de_id}`} · ${reviewMeta.ngay_ghi_de || ""}`
+            : "Đánh giá gốc AI không bị thay đổi.";
+        metadataHoSo.textContent = analysisRow
+            ? `Phân tích ${analysisRow.ngay_phan_tich || analysisRow.ngay_tao || ""} · AI chỉ hỗ trợ quyết định`
+            : "Chưa phân tích · AI chỉ hỗ trợ quyết định";
+        renderLichSuLienHe(reviewMeta.lich_su_lien_he);
+    }
+
+    async function moHoSoUngVien(id) {
+        ungVienDangXem = id;
+        locDanhSach();
+        try {
+            const response = await fetch(`/api/cv/review/${id}`, { headers: headersAuth() });
+            const data = await docPhanHoiJSON(response);
+            if (response.status === 401) return dangXuat();
+            if (!response.ok) throw new Error(data.message || "Không tải được hồ sơ ứng viên.");
+            hoSoDangXem = data;
+            document.getElementById("tieuDePreview").textContent = data.ung_vien.ho_ten || "CV ứng viên";
+            document.getElementById("metaPreview").textContent = [
+                data.ung_vien.ten_dot_tuyen,
+                tenTrangThai[data.ung_vien.trang_thai] || data.ung_vien.trang_thai,
+                data.ung_vien.email,
+                data.ung_vien.so_dien_thoai,
+            ].filter(Boolean).join(" · ");
+            document.getElementById("hanhDongLienHe").hidden = !["admin", "manager", "hr"].includes(nguoiDung.vai_tro);
+            nutTaiCVReview.hidden = !data.cv.length;
+            const fileSelect = document.getElementById("chonFileCVReview");
+            const fileWrap = document.getElementById("khungChonFileCV");
+            fileSelect.replaceChildren();
+            data.cv.forEach((cv) => {
+                const option = document.createElement("option");
+                option.value = cv.id;
+                option.textContent = `${cv.ten_file || `CV #${cv.id}`}${cv.la_ban_chinh ? " · Bản chính" : ""}`;
+                fileSelect.appendChild(option);
+            });
+            fileWrap.hidden = data.cv.length < 2;
+            const stillExists = data.cv.some((cv) => Number(cv.id) === Number(cvDangXemId));
+            cvDangXemId = stillExists ? cvDangXemId : (data.cv[0]?.id ?? null);
+            fileSelect.value = cvDangXemId == null ? "" : String(cvDangXemId);
+            await hienThiPreviewCV();
+            hienPhanTichChoUngVien(data);
+        } catch (error) {
+            hienThongBao(error.message, "loi");
+        }
+    }
+
+    async function hienThiPreviewCV() {
+        const cv = hoSoDangXem?.cv?.find((item) => Number(item.id) === Number(cvDangXemId));
+        previewCV.replaceChildren();
+        if (urlPreviewCV) URL.revokeObjectURL(urlPreviewCV);
+        urlPreviewCV = null;
+        if (!cv) {
+            nutTaiCVReview.hidden = true;
+            previewCV.innerHTML = '<div class="candidate-empty-state">Ứng viên chưa có CV.</div>';
+            return;
+        }
+        nutTaiCVReview.hidden = false;
+        nutTaiCVReview.textContent = `Tải ${cv.ten_file || "CV"}`;
+        const loading = document.createElement("div");
+        loading.className = "candidate-empty-state";
+        loading.textContent = "Đang tải bản xem trước CV...";
+        previewCV.appendChild(loading);
+        const response = await fetch(`/api/cv/${cv.id}/tai-xuong`, { headers: headersAuth() });
+        if (response.status === 401) {
+            dangXuat();
+            return;
+        }
+        if (!response.ok) {
+            throw new Error("Không tải được file CV để xem trước.");
+        }
+        const blob = await response.blob();
+        if (urlPreviewCV) URL.revokeObjectURL(urlPreviewCV);
+        urlPreviewCV = URL.createObjectURL(blob);
+        previewCV.replaceChildren();
+        const extension = String(cv.ten_file || "").split(".").pop().toLowerCase();
+        if (extension === "pdf") {
+            const frame = document.createElement("iframe");
+            frame.src = urlPreviewCV;
+            frame.title = `CV ${hoSoDangXem.ung_vien.ho_ten}`;
+            previewCV.appendChild(frame);
+        } else if (["png", "jpg", "jpeg"].includes(extension)) {
+            const image = document.createElement("img");
+            image.src = urlPreviewCV;
+            image.alt = `CV ${hoSoDangXem.ung_vien.ho_ten}`;
+            previewCV.appendChild(image);
+        } else {
+            previewCV.innerHTML = `<div class="candidate-empty-state">${escapeHTML(cv.ten_file)}<br/>Định dạng này có thể tải xuống; phần trích xuất và phân tích vẫn hiển thị bên phải.</div>`;
+        }
+    }
+
+    function renderLichSuLienHe(history) {
+        const container = document.getElementById("lichSuLienHe");
+        const items = Array.isArray(history) ? history : [];
+        container.innerHTML = items.length
+            ? `<h3>Lịch sử liên hệ</h3>${items.slice(0, 8).map((item) => `<article><strong>${escapeHTML(item.loai || "Liên hệ")}</strong><span>${escapeHTML(item.ngay_tao || "")}</span><p>${escapeHTML(item.noi_dung || "")}</p>${item.ket_qua ? `<small>${escapeHTML(item.ket_qua)}</small>` : ""}</article>`).join("")}`
+            : "";
+    }
+
+    async function phanTichCVHienTai() {
+        if (!ungVienDangXem || !hoSoDangXem) return;
+        nutPhanTichLai.disabled = true;
+        nutPhanTichLai.textContent = "Đang trích xuất & phân tích...";
+        metadataHoSo.textContent = "Đang trích xuất nội dung CV và đối chiếu với JD...";
+        try {
+            const response = await fetch(`/api/cv/review/${ungVienDangXem}/analyze`, {
+                method: "POST",
+                headers: headersJson(),
+                body: JSON.stringify({
+                    jd_id: chonJDReview.value || hoSoDangXem.jd?.[0]?.id,
+                    cv_id: cvDangXemId,
+                }),
+            });
+            const result = await response.json();
+            if (response.status === 401) return dangXuat();
+            if (!response.ok) throw new Error(result.message || "Không phân tích được CV.");
+            hienThongBao(result.message, "thanh-cong");
+            await moHoSoUngVien(ungVienDangXem);
+            await layUngVien();
+        } catch (error) {
+            metadataHoSo.textContent = "Phân tích thất bại";
+            hienThongBao(error.message, "loi");
+        } finally {
+            nutPhanTichLai.disabled = false;
+            if (hoSoDangXem) {
+                nutPhanTichLai.textContent = hoSoDangXem.phan_tich ? "Phân tích lại" : "Phân tích CV";
+            }
+        }
+    }
+
+    function docLichSuChat() {
+        try {
+            const stored = JSON.parse(localStorage.getItem(keyHistory) || "[]");
+            return Array.isArray(stored) ? stored.slice(-10) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function luuLichSuChat() {
+        localStorage.setItem(keyHistory, JSON.stringify(lichSuChatUngVien.slice(-10)));
+    }
+
+    function hienTinNhanChat(text, role) {
+        const paragraph = document.createElement("p");
+        paragraph.className = `chatbot-tin-nhan-${role === "assistant" ? "ai" : "nguoi-dung"}`;
+        paragraph.textContent = text;
+        const container = document.getElementById("chatbotTinNhanUngVien");
+        container.appendChild(paragraph);
+        container.scrollTop = container.scrollHeight;
+    }
+
+    function khoiPhucChatUngVien() {
+        const container = document.getElementById("chatbotTinNhanUngVien");
+        container.replaceChildren();
+        if (!lichSuChatUngVien.length) {
+            hienTinNhanChat("Xin chào! Tôi có thể giúp bạn tra cứu ứng viên hoặc tư vấn tuyển dụng.", "assistant");
+            return;
+        }
+        lichSuChatUngVien.forEach((message) => hienTinNhanChat(message.text, message.role));
+    }
+
+    function capNhatThongBaoUngVien() {
+        let known;
+        try {
+            known = JSON.parse(localStorage.getItem(keyNotifications));
+        } catch (error) {
+            known = null;
+        }
+        const snapshot = Object.fromEntries(tatCaUngVien.map((candidate) => [
+            Number(candidate.id),
+            [candidate.trang_thai || "", candidate.diem_ai ?? "", candidate.ngay_cap_nhat || ""].join("|"),
+        ]));
+        if (!known || typeof known !== "object") {
+            idsUngVienDaBiet = snapshot;
+            localStorage.setItem(keyNotifications, JSON.stringify(idsUngVienDaBiet));
+            return;
+        }
+        const knownIds = new Set(Array.isArray(known) ? known.map(Number) : Object.keys(known).map(Number));
+        const fresh = tatCaUngVien.filter((candidate) => !knownIds.has(Number(candidate.id)));
+        const changed = tatCaUngVien.filter((candidate) =>
+            knownIds.has(Number(candidate.id))
+            && !Array.isArray(known)
+            && known[candidate.id] !== snapshot[candidate.id],
+        );
+        const badge = document.getElementById("soThongBaoUngVien");
+        const count = fresh.length + changed.length;
+        badge.hidden = count === 0;
+        badge.textContent = count > 99 ? "99+" : String(count);
+        idsUngVienDaBiet = snapshot;
+        const list = danhSachThongBaoUngVien;
+        const messages = [
+            ...fresh.map((candidate) => ({ candidate, label: "Ứng viên mới" })),
+            ...changed.map((candidate) => ({ candidate, label: "Hồ sơ vừa thay đổi" })),
+        ];
+        list.innerHTML = messages.length
+            ? `<strong>Thông báo ứng viên</strong>${messages.slice(0, 10).map(({ candidate, label }) => `<button type="button" data-notification-candidate="${candidate.id}"><b>${escapeHTML(label)}: ${escapeHTML(candidate.ho_ten)}</b><span>${escapeHTML(candidate.ten_dot_tuyen || "")}</span></button>`).join("")}`
+            : `<strong>Thông báo ứng viên</strong><p>Không có thay đổi mới kể từ lần xem trước.</p>`;
+    }
+
+    async function guiHoiAIUngVien(event) {
+        event.preventDefault();
+        const input = document.getElementById("noiDungHoiAIUngVien");
+        const question = input.value.trim();
+        const button = document.getElementById("btnGuiHoiAIUngVien");
+        const errorBox = document.getElementById("loiHoiAIUngVien");
+        if (!question) return;
+        lichSuChatUngVien.push({ role: "user", text: question });
+        lichSuChatUngVien = lichSuChatUngVien.slice(-10);
+        luuLichSuChat();
+        hienTinNhanChat(question, "user");
+        input.value = "";
+        errorBox.textContent = "";
+        button.disabled = true;
+        try {
+            const response = await fetch("/api/ai/chat", {
+                method: "POST",
+                headers: headersJson(),
+                body: JSON.stringify({ messages: lichSuChatUngVien }),
+            });
+            const text = await response.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (error) {
+                throw new Error(/^\s*<!doctype html|^\s*<html/i.test(text)
+                    ? "Máy chủ chưa sẵn sàng API Hỏi AI. Hãy khởi động lại hoặc triển khai lại máy chủ."
+                    : "Máy chủ trả về dữ liệu không hợp lệ khi hỏi AI.");
+            }
+            if (response.status === 401) return dangXuat();
+            if (!response.ok) throw new Error(result.message || "Không thể gửi câu hỏi đến AI.");
+            lichSuChatUngVien.push({ role: "assistant", text: result.reply });
+            lichSuChatUngVien = lichSuChatUngVien.slice(-10);
+            luuLichSuChat();
+            hienTinNhanChat(result.reply, "assistant");
+        } catch (error) {
+            errorBox.textContent = error.message || "Không thể kết nối đến AI.";
+        } finally {
+            button.disabled = false;
+            input.focus();
+        }
     }
 
     function moForm(ungVien) {
@@ -421,10 +776,6 @@
     });
 
     document.getElementById("btnThem").hidden = !coQuyenQuanLyUngVien;
-
-    if (!coQuyenQuanLyUngVien) {
-        document.getElementById("cotThaoTac")?.remove();
-    }
 
     document.getElementById("btnDong").addEventListener("click", dongModal);
 
@@ -593,6 +944,10 @@
                 hienThongBao(data.message, "thanh-cong");
 
                 await layUngVien();
+                await moHoSoUngVien(ungVienDangUpload);
+                if (hoSoDangXem?.jd?.length) {
+                    await phanTichCVHienTai();
+                }
             } catch (error) {
                 hienThongBao(error.message || "Upload CV thất bại", "loi");
             }
@@ -877,6 +1232,11 @@
         });
 
     danhSachUngVien.addEventListener("click", function (event) {
+        const selectButton = event.target.closest("[data-select-candidate]");
+        if (selectButton) {
+            moHoSoUngVien(Number(selectButton.dataset.selectCandidate));
+            return;
+        }
         const button = event.target.closest("button[data-action]");
 
         if (!button) {
@@ -926,6 +1286,161 @@
     locTrangThai.addEventListener("change", locDanhSach);
 
     oTimKiem.addEventListener("input", locDanhSach);
+    sapXepUngVien.addEventListener("change", locDanhSach);
+    locKyNang.addEventListener("input", locDanhSach);
+    locDiemAI.addEventListener("change", locDanhSach);
+    locSoNamKinhNghiem.addEventListener("input", locDanhSach);
+    document.getElementById("btnXemDanhSach").addEventListener("click", function () {
+        loaiHienThiUngVien = "danh_sach";
+        this.classList.add("active");
+        document.getElementById("btnXemKanban").classList.remove("active");
+        locDanhSach();
+    });
+    document.getElementById("btnXemKanban").addEventListener("click", function () {
+        loaiHienThiUngVien = "kanban";
+        this.classList.add("active");
+        document.getElementById("btnXemDanhSach").classList.remove("active");
+        locDanhSach();
+    });
+    document.getElementById("bangKanbanUngVien").addEventListener("click", function (event) {
+        const card = event.target.closest("[data-select-candidate]");
+        if (card) moHoSoUngVien(Number(card.dataset.selectCandidate));
+    });
+
+    nutThongBaoUngVien.addEventListener("click", function (event) {
+        event.stopPropagation();
+        danhSachThongBaoUngVien.hidden = !danhSachThongBaoUngVien.hidden;
+        if (!danhSachThongBaoUngVien.hidden) {
+            localStorage.setItem(keyNotifications, JSON.stringify(idsUngVienDaBiet || {}));
+            document.getElementById("soThongBaoUngVien").hidden = true;
+        }
+    });
+    danhSachThongBaoUngVien.addEventListener("click", function (event) {
+        const item = event.target.closest("[data-notification-candidate]");
+        if (item) {
+            danhSachThongBaoUngVien.hidden = true;
+            moHoSoUngVien(Number(item.dataset.notificationCandidate));
+        }
+    });
+    document.addEventListener("click", function (event) {
+        if (!event.target.closest(".candidate-notification-wrap")) {
+            danhSachThongBaoUngVien.hidden = true;
+        }
+    });
+
+    document.getElementById("btnMoHoiAI").addEventListener("click", function () {
+        document.getElementById("modalHoiAI").classList.add("show");
+        khoiPhucChatUngVien();
+        document.getElementById("noiDungHoiAIUngVien").focus();
+    });
+    document.getElementById("btnDongHoiAIUngVien").addEventListener("click", function () {
+        document.getElementById("modalHoiAI").classList.remove("show");
+    });
+    document.getElementById("formHoiAIUngVien").addEventListener("submit", guiHoiAIUngVien);
+    document.getElementById("btnPhanTichLai").addEventListener("click", phanTichCVHienTai);
+    chonJDReview.addEventListener("change", function () {
+        if (hoSoDangXem?.phan_tich) {
+            metadataHoSo.textContent = "JD đã đổi. Chọn “Phân tích lại” để cập nhật kết quả.";
+        }
+    });
+    nutTaiCVReview.addEventListener("click", function () {
+        const cv = hoSoDangXem?.cv?.find((item) => Number(item.id) === Number(cvDangXemId));
+        if (!cv) return;
+        const link = document.createElement("a");
+        link.href = urlPreviewCV || `/api/cv/${cv.id}/tai-xuong`;
+        link.download = cv.ten_file || "CV";
+        link.click();
+    });
+    document.getElementById("chonFileCVReview").addEventListener("change", async function () {
+        cvDangXemId = this.value;
+        try {
+            await hienThiPreviewCV();
+        } catch (error) {
+            hienThongBao(error.message, "loi");
+        }
+    });
+
+    document.getElementById("formGhiChuReview").addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!ungVienDangXem) return;
+        try {
+            const response = await fetch(`/api/cv/review/${ungVienDangXem}/notes`, {
+                method: "PUT",
+                headers: headersJson(),
+                body: JSON.stringify({
+                    ghi_chu_noi_bo: document.getElementById("ghiChuNoiBo").value,
+                    muc_luong_mong_muon: document.getElementById("mucLuongMongMuon").value,
+                }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "Không lưu được ghi chú.");
+            hienThongBao(result.message, "thanh-cong");
+            await moHoSoUngVien(ungVienDangXem);
+        } catch (error) {
+            hienThongBao(error.message, "loi");
+        }
+    });
+    document.getElementById("formGhiDeAI").addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (!ungVienDangXem) return;
+        try {
+            const response = await fetch(`/api/cv/review/${ungVienDangXem}/override`, {
+                method: "PUT",
+                headers: headersJson(),
+                body: JSON.stringify({
+                    diem: document.getElementById("diemGhiDe").value,
+                    de_xuat: document.getElementById("deXuatGhiDe").value,
+                    ly_do: document.getElementById("lyDoGhiDe").value,
+                }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "Không lưu được đánh giá.");
+            hienThongBao(result.message, "thanh-cong");
+            await moHoSoUngVien(ungVienDangXem);
+        } catch (error) {
+            hienThongBao(error.message, "loi");
+        }
+    });
+    document.getElementById("btnXoaGhiDe").addEventListener("click", async function () {
+        if (!ungVienDangXem) return;
+        try {
+            const response = await fetch(`/api/cv/review/${ungVienDangXem}/override`, {
+                method: "PUT",
+                headers: headersJson(),
+                body: JSON.stringify({ xoa_ghi_de: true }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "Không thể bỏ đánh giá ghi đè.");
+            hienThongBao(result.message, "thanh-cong");
+            await moHoSoUngVien(ungVienDangXem);
+        } catch (error) {
+            hienThongBao(error.message, "loi");
+        }
+    });
+    document.getElementById("hanhDongLienHe").addEventListener("click", async function (event) {
+        const button = event.target.closest("[data-contact-kind]");
+        if (!button || !ungVienDangXem) return;
+        const text = window.prompt("Ghi nội dung trao đổi:");
+        if (!text?.trim()) return;
+        const resultText = window.prompt("Kết quả (quan tâm / không / hẹn lại...):", "") || "";
+        try {
+            const response = await fetch(`/api/cv/review/${ungVienDangXem}/contact`, {
+                method: "POST",
+                headers: headersJson(),
+                body: JSON.stringify({
+                    loai: button.dataset.contactKind,
+                    noi_dung: text,
+                    ket_qua: resultText,
+                }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || "Không lưu được lịch sử liên hệ.");
+            hienThongBao(result.message, "thanh-cong");
+            await moHoSoUngVien(ungVienDangXem);
+        } catch (error) {
+            hienThongBao(error.message, "loi");
+        }
+    });
 
     const menuNguoiDung = document.getElementById("menuNguoiDung");
 
@@ -935,4 +1450,7 @@
 
     layDotTuyen();
     layUngVien();
+    window.setInterval(function () {
+        if (!document.hidden) layUngVien();
+    }, 60000);
 })();

@@ -1655,6 +1655,18 @@ table {
   margin-top: 8px;
 }
 
+.candidate-upload-progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  margin: 12px 0;
+  accent-color: #6552dc;
+}
+
+.candidate-upload-progress[hidden] {
+  display: none;
+}
+
 #modalHoiAI .chatbot-tin-nhan {
   display: flex;
   flex: 1 1 auto;
