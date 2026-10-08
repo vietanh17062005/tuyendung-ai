@@ -12,10 +12,40 @@ const JD_TEMPLATES = [
   { id: "qa", ten: "QA Engineer", mo_ta: "Tuyển QA engineer cho kiểm thử chức năng và automation" },
   { id: "data", ten: "Data Analyst", mo_ta: "Tuyển data analyst cho phân tích dữ liệu và dashboard" },
 ];
+const JD_METADATA_COLUMNS = {
+  bo_phan: "VARCHAR(100) NULL",
+  dia_diem: "VARCHAR(200) NULL",
+  loai_hinh: "VARCHAR(50) NULL",
+  muc_luong: "VARCHAR(150) NULL",
+  han_nhan_ho_so: "DATE NULL",
+  ky_nang: "TEXT NULL",
+};
+let metadataReady;
 
 async function layCotBang(tableName) {
   const [rows] = await db.query(`SHOW COLUMNS FROM ${tableName}`);
   return rows.map((row) => row.Field);
+}
+
+function layNgayCapNhatJD(columns) {
+  return columns.includes("ngay_cap_nhat") ? "ngay_cap_nhat" : "ngay_sua";
+}
+
+async function damBaoCotMetadataJD() {
+  if (!metadataReady) {
+    metadataReady = (async function () {
+      const columns = new Set(await layCotBang("jd"));
+      for (const [name, definition] of Object.entries(JD_METADATA_COLUMNS)) {
+        if (!columns.has(name)) {
+          await db.query(`ALTER TABLE jd ADD COLUMN ${name} ${definition}`);
+        }
+      }
+    })().catch(function (error) {
+      metadataReady = null;
+      throw error;
+    });
+  }
+  await metadataReady;
 }
 
 function parseTieuChi(value) {
@@ -73,8 +103,10 @@ router.get(
   kiemTraDangNhap,
   async function (req, res) {
     try {
+      await damBaoCotMetadataJD();
       const columns = await layCotBang("jd");
       const nguoiDuyetField = columns.includes("nguoi_duyet_id") ? "nguoi_duyet_id" : "nguoi_duyet";
+      const ngayCapNhatField = layNgayCapNhatJD(columns);
       const dotColumns = await layCotBang("dot_tuyen");
       const dotTenField = dotColumns.includes("ten") ? "ten" : "ten_dot";
 
@@ -90,8 +122,14 @@ router.get(
           jd.${nguoiDuyetField} AS nguoi_duyet,
           jd.ngay_duyet,
           jd.tieu_chi,
+          jd.bo_phan,
+          jd.dia_diem,
+          jd.loai_hinh,
+          jd.muc_luong,
+          jd.han_nhan_ho_so,
+          jd.ky_nang,
           jd.ngay_tao,
-          jd.ngay_cap_nhat,
+          jd.${ngayCapNhatField} AS ngay_cap_nhat,
           dt.${dotTenField} AS ten_dot_tuyen,
           nd.ho_ten AS ten_nguoi_duyet
         FROM jd
@@ -113,6 +151,7 @@ router.get(
   kiemTraDangNhap,
   async function (req, res) {
     try {
+      await damBaoCotMetadataJD();
       const id = Number(req.params.id);
       if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ message: "ID JD không hợp lệ" });
@@ -120,6 +159,7 @@ router.get(
 
       const columns = await layCotBang("jd");
       const nguoiDuyetField = columns.includes("nguoi_duyet_id") ? "nguoi_duyet_id" : "nguoi_duyet";
+      const ngayCapNhatField = layNgayCapNhatJD(columns);
       const dotColumns = await layCotBang("dot_tuyen");
       const dotTenField = dotColumns.includes("ten") ? "ten" : "ten_dot";
 
@@ -136,8 +176,14 @@ router.get(
           jd.${nguoiDuyetField} AS nguoi_duyet,
           jd.ngay_duyet,
           jd.tieu_chi,
+          jd.bo_phan,
+          jd.dia_diem,
+          jd.loai_hinh,
+          jd.muc_luong,
+          jd.han_nhan_ho_so,
+          jd.ky_nang,
           jd.ngay_tao,
-          jd.ngay_cap_nhat,
+          jd.${ngayCapNhatField} AS ngay_cap_nhat,
           dt.${dotTenField} AS ten_dot_tuyen,
           nd.ho_ten AS ten_nguoi_duyet
         FROM jd
@@ -193,6 +239,7 @@ router.post(
   kiemTraVaiTro("admin", "manager", "hr"),
   async function (req, res) {
     try {
+      await damBaoCotMetadataJD();
       const dotTuyenId = Number(req.body?.dot_tuyen_id);
       const tieuDe = String(req.body?.tieu_de || "").trim();
       if (!Number.isInteger(dotTuyenId) || dotTuyenId <= 0) {
@@ -207,16 +254,26 @@ router.post(
         return res.status(404).json({ message: "Đợt tuyển dụng không tồn tại" });
       }
 
+      const insertData = {
+        dot_tuyen_id: dotTuyenId,
+        tieu_de: tieuDe,
+        mo_ta: req.body?.mo_ta || null,
+        yeu_cau: req.body?.yeu_cau || null,
+        quyen_loi: req.body?.quyen_loi || null,
+        tieu_chi: JSON.stringify(Array.isArray(req.body?.tieu_chi) ? req.body.tieu_chi : []),
+        trang_thai: "nhap",
+        bo_phan: String(req.body?.bo_phan || "").trim() || null,
+        dia_diem: String(req.body?.dia_diem || "").trim() || null,
+        loai_hinh: String(req.body?.loai_hinh || "").trim() || null,
+        muc_luong: String(req.body?.muc_luong || "").trim() || null,
+        han_nhan_ho_so: req.body?.han_nhan_ho_so || null,
+        ky_nang: String(req.body?.ky_nang || "").trim() || null,
+      };
+      const insertColumns = Object.keys(insertData);
       const [result] = await db.query(
-        `INSERT INTO jd (dot_tuyen_id, tieu_de, mo_ta, yeu_cau, quyen_loi, tieu_chi, trang_thai) VALUES (?, ?, ?, ?, ?, ?, 'nhap')`,
-        [
-          dotTuyenId,
-          tieuDe,
-          req.body?.mo_ta || null,
-          req.body?.yeu_cau || null,
-          req.body?.quyen_loi || null,
-          JSON.stringify(Array.isArray(req.body?.tieu_chi) ? req.body.tieu_chi : []),
-        ],
+        `INSERT INTO jd (${insertColumns.join(", ")})
+         VALUES (${insertColumns.map(() => "?").join(", ")})`,
+        insertColumns.map((column) => insertData[column]),
       );
 
       res.status(201).json({ success: true, message: "Thêm JD thành công", data: { id: result.insertId } });
@@ -321,6 +378,7 @@ router.put(
   kiemTraVaiTro("admin", "manager", "hr"),
   async function (req, res) {
     try {
+      await damBaoCotMetadataJD();
       const id = Number(req.params.id);
       const dotTuyenId = Number(req.body?.dot_tuyen_id);
       const tieuDe = String(req.body?.tieu_de || "").trim();
@@ -343,21 +401,24 @@ router.put(
         return res.status(403).json({ message: "HR chỉ được sửa JD ở trạng thái Nháp hoặc Từ chối" });
       }
 
+      const updateData = {
+        dot_tuyen_id: dotTuyenId,
+        tieu_de: tieuDe,
+        mo_ta: req.body?.mo_ta || null,
+        yeu_cau: req.body?.yeu_cau || null,
+        quyen_loi: req.body?.quyen_loi || null,
+        tieu_chi: JSON.stringify(Array.isArray(req.body?.tieu_chi) ? req.body.tieu_chi : []),
+        bo_phan: String(req.body?.bo_phan || "").trim() || null,
+        dia_diem: String(req.body?.dia_diem || "").trim() || null,
+        loai_hinh: String(req.body?.loai_hinh || "").trim() || null,
+        muc_luong: String(req.body?.muc_luong || "").trim() || null,
+        han_nhan_ho_so: req.body?.han_nhan_ho_so || null,
+        ky_nang: String(req.body?.ky_nang || "").trim() || null,
+      };
+      const updateColumns = Object.keys(updateData);
       await db.query(
-        `
-        UPDATE jd
-        SET dot_tuyen_id = ?, tieu_de = ?, mo_ta = ?, yeu_cau = ?, quyen_loi = ?, tieu_chi = ?
-        WHERE id = ?
-        `,
-        [
-          dotTuyenId,
-          tieuDe,
-          req.body?.mo_ta || null,
-          req.body?.yeu_cau || null,
-          req.body?.quyen_loi || null,
-          JSON.stringify(Array.isArray(req.body?.tieu_chi) ? req.body.tieu_chi : []),
-          id,
-        ],
+        `UPDATE jd SET ${updateColumns.map((column) => `${column} = ?`).join(", ")} WHERE id = ?`,
+        [...updateColumns.map((column) => updateData[column]), id],
       );
 
       res.json({ success: true, message: "Cập nhật JD thành công" });

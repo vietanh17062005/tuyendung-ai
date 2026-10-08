@@ -52,7 +52,20 @@
             <input id="timKiemTongQuan" type="search" placeholder="Tìm lịch phỏng vấn, ứng viên mới..."
               aria-label="Tìm trong lịch phỏng vấn và danh sách ứng viên mới" />
           </label>
-          <a class="nut-ai" href="/cv/cv.html">✦ <span>Phân tích hồ sơ</span></a>
+          <button class="nut-ai" id="btnHoiAI" type="button">✦ <span>Hỏi AI</span></button>
+          <div class="thong-bao-wrap">
+            <button class="nut-chuong" id="btnThongBao" type="button" aria-label="Thông báo" aria-expanded="false">
+              <span aria-hidden="true">🔔</span>
+              <span class="thong-bao-so" id="soThongBao" hidden></span>
+            </button>
+            <div class="bang-thong-bao" id="bangThongBao" hidden>
+              <div class="bang-thong-bao-dau">
+                <strong>Thông báo</strong>
+                <span>Cập nhật ứng viên gần đây</span>
+              </div>
+              <div class="danh-sach-thong-bao" id="danhSachThongBao"></div>
+            </div>
+          </div>
           <div class="tai-khoan" id="taiKhoan">
             <div class="tai-khoan-thong-tin">
               <div class="avatar" id="avatar">A</div>
@@ -81,7 +94,7 @@
           <h2 id="xinChao">Xin chào!</h2>
           <p id="moTaVaiTro">Chào mừng bạn quay trở lại hệ thống.</p>
         </div>
-        <a href="/dot-tuyen/dot-tuyen.html?tao=1" class="nut-tao">＋ Tạo đợt tuyển dụng</a>
+        <a href="/dot-tuyen/dot-tuyen.html?tao=1" class="nut-tao" id="btnTaoDotTuyen">＋ Tạo đợt tuyển dụng</a>
       </section>
 
       <section class="the">
@@ -89,7 +102,7 @@
           <div class="the-dau-the"><span class="the-icon">♙</span><span class="the-label">Tổng ứng viên</span><span
               class="the-cham">•••</span></div>
           <strong id="soUngVien">0</strong>
-          <div class="the-phu"><span class="the-trang-thai">↗ Hồ sơ trong hệ thống</span><span>tất cả thời gian</span>
+          <div class="the-phu"><span class="the-trang-thai">↗ Hồ sơ trong hệ thống</span><span id="nhanKhoangThoiGian">Tất cả thời gian</span>
           </div>
         </div>
         <div class="the-item the-dot-tuyen">
@@ -120,7 +133,14 @@
               <h2>Số lượng ứng viên</h2>
               <p>Ứng viên theo từng giai đoạn tuyển dụng</p>
             </div>
-            <span class="nhan-thoi-gian">Toàn bộ thời gian</span>
+            <label class="bo-loc-thoi-gian">
+              <span class="an-tren-man-hinh">Lọc ứng viên theo thời gian</span>
+              <select id="locThoiGianUngVien" aria-label="Lọc ứng viên theo thời gian">
+                <option value="all">Tất cả</option>
+                <option value="week">Tuần này</option>
+                <option value="month">Tháng này</option>
+              </select>
+            </label>
           </div>
           <div id="pheuTuyenDung" class="pheu-tuyen-dung"></div>
           <div class="goi-y-ai"><span class="goi-y-icon">✦</span>
@@ -151,16 +171,28 @@
         <div id="danhSachUngVienMoi" class="danh-sach-ung-vien-moi"></div>
       </section>
 
-      <section class="quyen-container">
-        <div class="quyen-header">
-          <div>
-            <h2>Chức năng theo quyền của bạn</h2>
-            <p>Các khu vực bạn có thể sử dụng trong hệ thống.</p>
-          </div>
-        </div>
-        <div class="danh-sach-quyen" id="danhSachQuyen"></div>
-      </section>
     </main>
+  </div>
+
+  <div class="modal" id="modalHoiAI">
+    <section class="modal-box chatbot-box" role="dialog" aria-modal="true" aria-labelledby="tieuDeChatbot">
+      <div class="modal-header">
+        <div>
+          <h2 id="tieuDeChatbot">Trợ lý tuyển dụng AI</h2>
+          <p>Đặt câu hỏi về tuyển dụng, phỏng vấn hoặc xây dựng JD.</p>
+        </div>
+        <button class="btn-dong" id="btnDongHoiAI" type="button" aria-label="Đóng chat">×</button>
+      </div>
+      <div class="chatbot-tin-nhan" id="chatbotTinNhan" aria-live="polite">
+        <p class="chatbot-tin-nhan-ai">Xin chào! Tôi có thể hỗ trợ gì cho bạn hôm nay?</p>
+      </div>
+      <p class="chatbot-loi" id="loiHoiAI" role="status"></p>
+      <form class="chatbot-form" id="formHoiAI">
+        <label class="an-tren-man-hinh" for="noiDungHoiAI">Câu hỏi</label>
+        <textarea id="noiDungHoiAI" rows="2" maxlength="2000" placeholder="Nhập câu hỏi của bạn..." required></textarea>
+        <button class="nut-ai" id="btnGuiHoiAI" type="submit">Gửi câu hỏi</button>
+      </form>
+    </section>
   </div>
 
   <!-- MODAL THÔNG TIN TÀI KHOẢN -->

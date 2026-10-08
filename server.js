@@ -3,7 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const { GoogleGenAI, Type } = require("@google/genai");
+const { Type } = require("@google/genai");
+const { goiAI } = require("./services/ai");
 
 const db = require("./database/db");
 
@@ -43,45 +44,9 @@ khoiTaoBangLichSuJD().catch(function (error) {
   console.error("Khởi tạo bảng lịch sử JD AI thất bại:", error);
 });
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-});
-
-const GEMINI_MODELS = [
-  process.env.GEMINI_MODEL || "gemini-2.5-flash",
-  "gemini-2.5-flash-lite",
-  "gemini-2.0-flash",
-].filter(function (value, index, array) {
-  return value && array.indexOf(value) === index;
-});
-
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static(path.join(__dirname, "public")));
-
-function laLoiTamThoi(error) {
-  const status = Number(
-    error?.status ||
-    error?.code ||
-    error?.response?.status ||
-    0,
-  );
-
-  const message = String(
-    error?.message ||
-    error?.response?.data?.error?.message ||
-    "",
-  ).toUpperCase();
-
-  return (
-    status === 429 ||
-    status === 503 ||
-    message.includes("UNAVAILABLE") ||
-    message.includes("RESOURCE_EXHAUSTED") ||
-    message.includes("TOO MANY REQUESTS") ||
-    message.includes("HIGH DEMAND")
-  );
-}
 
 function layThongBaoLoi(error) {
   return (
@@ -91,70 +56,17 @@ function layThongBaoLoi(error) {
   );
 }
 
-async function cho(ms) {
-  return new Promise(function (resolve) {
-    setTimeout(resolve, ms);
-  });
-}
-
-async function goiGemini(options) {
-  let loiCuoi = null;
-
-  for (
-    let viTriModel = 0;
-    viTriModel < GEMINI_MODELS.length;
-    viTriModel++
-  ) {
-    const model = GEMINI_MODELS[viTriModel];
-
-    for (let lanThu = 1; lanThu <= 3; lanThu++) {
-      try {
-        console.log(
-          `Đang gọi Gemini model ${model}, lần thử ${lanThu}/3`,
-        );
-
-        const response = await ai.models.generateContent({
-          ...options,
-          model,
-        });
-
-        console.log(
-          `Gemini trả kết quả thành công bằng ${model}`,
-        );
-
-        return response;
-      } catch (error) {
-        loiCuoi = error;
-
-        console.error(
-          `Gemini ${model} lỗi lần ${lanThu}/3:`,
-          layThongBaoLoi(error),
-        );
-
-        if (!laLoiTamThoi(error)) {
-          throw error;
-        }
-
-        if (lanThu < 3) {
-          const thoiGianCho = lanThu * 2000;
-
-          console.log(
-            `Chờ ${thoiGianCho}ms rồi thử lại ${model}`,
-          );
-
-          await cho(thoiGianCho);
-        }
-      }
-    }
-
-    if (viTriModel < GEMINI_MODELS.length - 1) {
-      console.warn(
-        `${model} vẫn không khả dụng. Chuyển sang ${GEMINI_MODELS[viTriModel + 1]}`,
-      );
-    }
-  }
-
-  throw loiCuoi;
+async function goiConfiguredAI(options) {
+  const jsonMode = options.config?.responseMimeType === "application/json";
+  const response = await goiAI(
+    jsonMode
+      ? "Bạn là trợ lý AI chuyên nghiệp cho tuyển dụng. Tuân thủ chính xác định dạng JSON được yêu cầu."
+      : "Bạn là trợ lý AI chuyên nghiệp cho tuyển dụng. Trả lời ngắn gọn, rõ ràng và đúng ngữ cảnh.",
+    String(options.contents || ""),
+    8192,
+    { jsonMode },
+  );
+  return { text: response.text, provider: response.provider };
 }
 
 function lamSachTieuChi(danhSach) {
@@ -287,13 +199,6 @@ app.post(
   kiemTraVaiTro("admin", "manager", "hr"),
   async function (req, res) {
     try {
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(500).json({
-          message:
-            "Chưa cấu hình GEMINI_API_KEY trên máy chủ",
-        });
-      }
-
       const {
         ten_dot,
         mo_ta_dot,
@@ -347,7 +252,7 @@ Mỗi tiêu chí gồm:
 Chỉ trả về JSON theo schema được cung cấp.
 `;
 
-      const response = await goiGemini({
+      const response = await goiConfiguredAI({
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -483,15 +388,9 @@ Chỉ trả về JSON theo schema được cung cấp.
 app.post(
   "/api/ai/screen-cv",
   kiemTraDangNhap,
+  kiemTraVaiTro("admin", "manager", "hr"),
   async function (req, res) {
     try {
-      if (!process.env.GEMINI_API_KEY) {
-        return res.status(500).json({
-          message:
-            "Chưa cấu hình GEMINI_API_KEY trên máy chủ",
-        });
-      }
-
       const {
         cvText,
         jobDescription,
@@ -529,7 +428,7 @@ YÊU CẦU:
 Trả về đúng JSON theo schema được cung cấp.
 `;
 
-      const response = await goiGemini({
+      const response = await goiConfiguredAI({
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -635,17 +534,266 @@ Trả về đúng JSON theo schema được cung cấp.
   },
 );
 
+app.post(
+  "/api/ai/chat",
+  kiemTraDangNhap,
+  async function (req, res) {
+    try {
+      const messages = req.body?.messages;
+      if (
+        !Array.isArray(messages) ||
+        messages.length === 0 ||
+        messages.length > 10 ||
+        messages[messages.length - 1]?.role !== "user"
+      ) {
+        return res.status(400).json({
+          message: "Vui lòng gửi tối đa 10 tin nhắn và kết thúc bằng câu hỏi.",
+        });
+      }
+
+      const vaiTro = req.nguoiDung?.vai_tro;
+      const nguoiDungId = Number(req.nguoiDung?.id);
+      if (!["admin", "manager", "hr", "interviewer", "viewer"].includes(vaiTro)) {
+        return res.status(403).json({
+          message: "Vai trò tài khoản không được phép sử dụng trợ lý tuyển dụng.",
+        });
+      }
+
+      const chiXemUngVienDuocPhanCong = vaiTro === "interviewer";
+      if (chiXemUngVienDuocPhanCong && (!Number.isInteger(nguoiDungId) || nguoiDungId <= 0)) {
+        return res.status(403).json({
+          message: "Không xác định được tài khoản phỏng vấn để giới hạn dữ liệu.",
+        });
+      }
+
+      const dieuKienUngVien = chiXemUngVienDuocPhanCong
+        ? `EXISTS (
+            SELECT 1
+            FROM phong_van pv
+            WHERE pv.ung_vien_id = uv.id AND pv.nguoi_phong_van = ?
+          )`
+        : "1 = 1";
+      const thamSoUngVien = chiXemUngVienDuocPhanCong ? [nguoiDungId] : [];
+      const [tongUngVienRows] = await db.query(
+        `SELECT COUNT(*) AS so_luong FROM ung_vien uv WHERE ${dieuKienUngVien}`,
+        thamSoUngVien,
+      );
+      const [ungVienTheoTrangThai] = await db.query(
+        `SELECT uv.trang_thai, COUNT(*) AS so_luong
+         FROM ung_vien uv
+         WHERE ${dieuKienUngVien}
+         GROUP BY uv.trang_thai`,
+        thamSoUngVien,
+      );
+
+      const cotDotTuyen = await db.query("SHOW COLUMNS FROM dot_tuyen");
+      const cacCotDotTuyen = cotDotTuyen[0].map((cot) => cot.Field);
+      const cotTenDotTuyen = cacCotDotTuyen.includes("ten") ? "ten" : "ten_dot";
+      const cotNgaySuaDotTuyen = cacCotDotTuyen.includes("ngay_cap_nhat")
+        ? "ngay_cap_nhat"
+        : cacCotDotTuyen.includes("ngay_sua")
+          ? "ngay_sua"
+          : "ngay_tao";
+      const cotJD = await db.query("SHOW COLUMNS FROM jd");
+      const cacCotJD = cotJD[0].map((cot) => cot.Field);
+      const cotNgaySuaJD = cacCotJD.includes("ngay_cap_nhat")
+        ? "ngay_cap_nhat"
+        : cacCotJD.includes("ngay_sua")
+          ? "ngay_sua"
+          : "ngay_tao";
+      const dieuKienViTriDuocGiao = chiXemUngVienDuocPhanCong
+        ? `AND dt.id IN (
+            SELECT DISTINCT uv.dot_tuyen_id
+            FROM phong_van pv
+            INNER JOIN ung_vien uv ON uv.id = pv.ung_vien_id
+            WHERE pv.nguoi_phong_van = ?
+          )`
+        : "";
+      const thamSoViTri = chiXemUngVienDuocPhanCong ? [nguoiDungId] : [];
+
+      const [viTriDangTuyen] = await db.query(
+        `SELECT jd.tieu_de, jd.mo_ta, jd.yeu_cau, jd.tieu_chi,
+                dt.${cotTenDotTuyen} AS ten_dot_tuyen,
+                jd.trang_thai AS trang_thai_jd,
+                jd.${cotNgaySuaJD} AS ngay_cap_nhat
+         FROM jd
+         INNER JOIN dot_tuyen dt ON dt.id = jd.dot_tuyen_id
+         WHERE dt.trang_thai = 'dang_tuyen' AND jd.trang_thai = 'da_duyet'
+           ${dieuKienViTriDuocGiao}
+         ORDER BY jd.${cotNgaySuaJD} DESC
+         LIMIT 12`,
+        thamSoViTri,
+      );
+      const [dotTuyenDangMo] = await db.query(
+        `SELECT dt.${cotTenDotTuyen} AS ten_dot_tuyen, COUNT(jd.id) AS so_vi_tri
+         FROM dot_tuyen dt
+         LEFT JOIN jd ON jd.dot_tuyen_id = dt.id AND jd.trang_thai = 'da_duyet'
+         WHERE dt.trang_thai = 'dang_tuyen'
+           ${dieuKienViTriDuocGiao}
+         GROUP BY dt.id, dt.${cotTenDotTuyen}
+         ORDER BY MAX(dt.${cotNgaySuaDotTuyen}) DESC
+         LIMIT 12`,
+        thamSoViTri,
+      );
+      const duLieuHeThong = {
+        phamViUngVien:
+          chiXemUngVienDuocPhanCong
+            ? "Chỉ ứng viên có lịch phỏng vấn được giao cho interviewer đang đăng nhập."
+            : "Tổng số liệu ứng viên trong hệ thống.",
+        tongUngVien: Number(tongUngVienRows[0]?.so_luong) || 0,
+        ungVienTheoTrangThai: ungVienTheoTrangThai.map((dong) => ({
+          trangThai: dong.trang_thai,
+          soLuong: Number(dong.so_luong) || 0,
+        })),
+        chienDichDangMo: dotTuyenDangMo,
+        viTriDangTuyen: viTriDangTuyen.map((viTri) => ({
+          chienDich: viTri.ten_dot_tuyen,
+          tieuDe: String(viTri.tieu_de || "").slice(0, 300),
+          moTa: String(viTri.mo_ta || "").slice(0, 800),
+          yeuCau: String(viTri.yeu_cau || "").slice(0, 800),
+          tieuChi:
+            typeof viTri.tieu_chi === "string"
+              ? viTri.tieu_chi.slice(0, 800)
+              : JSON.stringify(viTri.tieu_chi || []).slice(0, 800),
+        })),
+      };
+
+      const hopThoai = [];
+      for (const message of messages) {
+        const role = message?.role;
+        const text = typeof message?.text === "string" ? message.text.trim() : "";
+        if (!["user", "assistant"].includes(role) || !text || text.length > 2000) {
+          return res.status(400).json({
+            message: "Tin nhắn không hợp lệ hoặc vượt quá 2.000 ký tự.",
+          });
+        }
+        hopThoai.push(`${role === "user" ? "Người dùng" : "Trợ lý"}: ${text}`);
+      }
+
+      const cauHoiCuoi = messages[messages.length - 1].text.trim();
+      const cauHoiChuanHoa = cauHoiCuoi
+        .toLocaleLowerCase("vi")
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .replace(/đ/g, "d");
+      const laCauHoiDemUngVien =
+        /\b(bao nhieu|tong so|so luong|dem)\b/.test(cauHoiChuanHoa) &&
+        /\b(ung vien|ho so)\b/.test(cauHoiChuanHoa);
+
+      if (laCauHoiDemUngVien) {
+        const dieuKienDem = [];
+        const thamSoDem = [...thamSoUngVien];
+        if (/\b(tuan nay|trong tuan|tuan)\b/.test(cauHoiChuanHoa)) {
+          dieuKienDem.push(
+            "uv.ngay_tao >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)",
+          );
+        } else if (/\b(thang nay|trong thang|thang)\b/.test(cauHoiChuanHoa)) {
+          dieuKienDem.push("uv.ngay_tao >= DATE_FORMAT(CURDATE(), '%Y-%m-01')");
+        }
+
+        const trangThaiDem = [
+          { tuKhoa: ["da tuyen", "trung tuyen"], giaTri: "da_tuyen", nhan: "đã tuyển" },
+          { tuKhoa: ["offer", "da gui de nghi"], giaTri: "offer", nhan: "đã gửi đề nghị (Offer)" },
+          { tuKhoa: ["da phong van", "phong van"], giaTri: "da_phong_van", nhan: "đã phỏng vấn" },
+          { tuKhoa: ["da phan tich"], giaTri: "da_phan_tich", nhan: "đã phân tích" },
+          { tuKhoa: ["da lien he"], giaTri: "da_lien_he", nhan: "đã liên hệ" },
+          { tuKhoa: ["da xep lich"], giaTri: "da_xep_lich", nhan: "đã xếp lịch" },
+          { tuKhoa: ["tu choi", "khong phu hop"], giaTri: "tu_choi", nhan: "bị từ chối/không phù hợp" },
+          { tuKhoa: ["moi tiep nhan", "trang thai moi"], giaTri: "moi", nhan: "mới tiếp nhận" },
+        ].find((trangThai) =>
+          trangThai.tuKhoa.some((tuKhoa) => cauHoiChuanHoa.includes(tuKhoa)),
+        );
+
+        if (trangThaiDem) {
+          dieuKienDem.push("uv.trang_thai = ?");
+          thamSoDem.push(trangThaiDem.giaTri);
+        }
+
+        const [ketQuaDem] = await db.query(
+          `SELECT COUNT(*) AS so_luong
+           FROM ung_vien uv
+           WHERE ${dieuKienUngVien}
+             ${dieuKienDem.length ? `AND ${dieuKienDem.join(" AND ")}` : ""}`,
+          thamSoDem,
+        );
+        const khoangThoiGian = dieuKienDem.some((dieuKien) => dieuKien.includes("WEEKDAY"))
+          ? "trong tuần này"
+          : dieuKienDem.some((dieuKien) => dieuKien.includes("DATE_FORMAT"))
+            ? "trong tháng này"
+            : "tính đến hiện tại";
+        const nhanTrangThai = trangThaiDem ? ` ${trangThaiDem.nhan}` : "";
+        const phamVi = chiXemUngVienDuocPhanCong
+          ? "trong số ứng viên được phân công phỏng vấn cho bạn"
+          : "trong hệ thống";
+
+        return res.json({
+          reply: `Theo dữ liệu hệ thống, có ${Number(ketQuaDem[0]?.so_luong) || 0} ứng viên${nhanTrangThai} ${phamVi} ${khoangThoiGian}.`,
+        });
+      }
+
+      const response = await goiConfiguredAI({
+        contents: `
+Bạn là trợ lý AI hỗ trợ tuyển dụng tại Việt Nam.
+Là trợ lý tuyển dụng cho doanh nghiệp. Trả lời bằng tiếng Việt tự nhiên, súc tích (thường 2-5 câu), đi thẳng vào câu hỏi.
+Ưu tiên sự chính xác hơn việc cố trả lời: không bịa số liệu, vị trí tuyển, yêu cầu hoặc tiêu chí không có trong ngữ cảnh hệ thống. Nếu thiếu dữ liệu, nói rõ đang thiếu gì.
+Với câu hỏi về số liệu ứng viên, trạng thái ứng viên, chiến dịch hoặc vị trí đang tuyển, chỉ dùng dữ liệu trong ngữ cảnh hệ thống; nếu dữ liệu không có thì nói không tìm thấy.
+Khi được hỏi kỹ năng của người dùng phù hợp công việc nào, chỉ so sánh với các vị trí đang tuyển trong ngữ cảnh. Nêu tối đa 3 vị trí theo mức phù hợp, mỗi vị trí gồm lý do khớp và 1-2 kỹ năng còn thiếu nếu có. Không tự tạo điểm phần trăm hoặc vị trí không có trong danh sách.
+Khi được hỏi tiêu chí tuyển dụng, dùng tiêu chí/yêu cầu đã lưu trong JD nếu có. Nếu người dùng muốn gợi ý thêm, ghi rõ đó là đề xuất của AI, không phải dữ liệu trong JD.
+Nếu câu hỏi mơ hồ, hỏi lại một câu ngắn thay vì suy diễn. Không tiết lộ dữ liệu nhận dạng cá nhân ứng viên. Với Interviewer, chỉ dùng phạm vi đã được giới hạn ở ngữ cảnh.
+
+NGỮ CẢNH HỆ THỐNG (dữ liệu hiện tại từ cơ sở dữ liệu):
+${JSON.stringify(duLieuHeThong)}
+
+HỘI THOẠI:
+${hopThoai.join("\n")}
+
+Trợ lý:
+`,
+        config: {
+          temperature: 0.2,
+        },
+      });
+      const reply = typeof response?.text === "string" ? response.text.trim() : "";
+      if (!reply) {
+        return res.status(502).json({
+          message: "AI chưa trả về câu trả lời. Vui lòng thử lại.",
+        });
+      }
+
+      res.json({ reply, provider: response.provider });
+    } catch (error) {
+      console.error("Lỗi chatbot AI:", error);
+      res.status(500).json({
+        message: `Không thể sử dụng AI: ${layThongBaoLoi(error)}`,
+      });
+    }
+  },
+);
+
 app.get(
   "/api/dashboard",
   kiemTraDangNhap,
   async function (req, res) {
     try {
+      const khoangThoiGianUngVien = {
+        all: "",
+        week: " AND ngay_tao >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)",
+        month: " AND ngay_tao >= DATE_FORMAT(CURDATE(), '%Y-%m-01')",
+      };
+      const kyHieuThoiGian = req.query.period || "all";
+      if (!Object.hasOwn(khoangThoiGianUngVien, kyHieuThoiGian)) {
+        return res.status(400).json({
+          message: "Khoảng thời gian lọc ứng viên không hợp lệ.",
+        });
+      }
+      const dieuKienNgayTao = khoangThoiGianUngVien[kyHieuThoiGian];
+
       const [dotTuyen] = await db.query(
         "SELECT COUNT(*) AS so_luong FROM dot_tuyen",
       );
 
       const [ungVien] = await db.query(
-        "SELECT COUNT(*) AS so_luong FROM ung_vien",
+        `SELECT COUNT(*) AS so_luong FROM ung_vien WHERE 1 = 1${dieuKienNgayTao}`,
       );
 
       const [dotDangTuyen] = await db.query(
@@ -671,12 +819,13 @@ app.get(
       const [daTuyen] = await db.query(`
         SELECT COUNT(*) AS so_luong
         FROM ung_vien
-        WHERE trang_thai = 'da_tuyen'
+        WHERE trang_thai = 'da_tuyen'${dieuKienNgayTao}
       `);
 
       const [trangThaiUngVien] = await db.query(`
         SELECT trang_thai, COUNT(*) AS so_luong
         FROM ung_vien
+        WHERE 1 = 1${dieuKienNgayTao}
         GROUP BY trang_thai
       `);
 
@@ -695,8 +844,33 @@ app.get(
       const [ungVienMoi] = await db.query(`
         SELECT id, ho_ten, trang_thai, ngay_tao
         FROM ung_vien
+        WHERE 1 = 1${dieuKienNgayTao}
         ORDER BY ngay_tao DESC, id DESC
         LIMIT 4
+      `);
+
+      const [cotUngVien] = await db.query("SHOW COLUMNS FROM ung_vien");
+      const truongNgaySua = cotUngVien.some((cot) => cot.Field === "ngay_cap_nhat")
+        ? "ngay_cap_nhat"
+        : cotUngVien.some((cot) => cot.Field === "ngay_sua")
+          ? "ngay_sua"
+          : null;
+      const cotNgaySua = truongNgaySua ? `uv.${truongNgaySua}` : "uv.ngay_tao";
+      const dieuKienNgaySua = truongNgaySua
+        ? ` OR ${cotNgaySua} >= DATE_SUB(NOW(), INTERVAL 7 DAY)`
+        : "";
+
+      const [thongBao] = await db.query(`
+        SELECT uv.id, uv.ho_ten,
+               CASE
+                 WHEN ${cotNgaySua} IS NOT NULL AND ${cotNgaySua} > uv.ngay_tao THEN 'updated'
+                 ELSE 'added'
+               END AS loai,
+               GREATEST(uv.ngay_tao, COALESCE(${cotNgaySua}, uv.ngay_tao)) AS thoi_gian
+        FROM ung_vien AS uv
+        WHERE uv.ngay_tao >= DATE_SUB(NOW(), INTERVAL 7 DAY)${dieuKienNgaySua}
+        ORDER BY thoi_gian DESC, id DESC
+        LIMIT 8
       `);
 
       res.json({
@@ -708,6 +882,7 @@ app.get(
         ung_vien_theo_trang_thai: trangThaiUngVien,
         phong_van_sap_toi: phongVanSapToi,
         ung_vien_moi: ungVienMoi,
+        thong_bao: thongBao,
       });
     } catch (error) {
       console.error(error);

@@ -1333,6 +1333,401 @@ td:nth-child(8) {
   }
 }
 
+.noi-dung > .topbar .topbar-actions {
+  gap: 10px;
+}
+
+.nut-ai {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 9px;
+  background: #7552e8;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.thong-bao-wrap {
+  position: relative;
+}
+
+.nut-chuong {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.thong-bao-so {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  padding: 2px 4px;
+  border-radius: 99px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.bang-thong-bao {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(340px, calc(100vw - 30px));
+  max-height: 380px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 16px 40px #0f172a24;
+}
+
+.bang-thong-bao[hidden],
+.menu-hanh-dong-noi[hidden] {
+  display: none;
+}
+
+.bang-thong-bao-dau {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.bang-thong-bao-dau span,
+.thong-bao-item span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.thong-bao-item {
+  display: grid;
+  gap: 5px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.thong-bao-item strong {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.menu-hanh-dong-dot {
+  position: relative;
+  display: inline-flex;
+}
+
+.btn-ba-cham-dot {
+  width: 36px;
+  height: 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.menu-hanh-dong-noi {
+  position: absolute;
+  z-index: 15;
+  top: calc(100% + 5px);
+  right: 0;
+  display: grid;
+  min-width: 170px;
+  padding: 5px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 12px 30px #0f172a20;
+}
+
+.menu-hanh-dong-noi button {
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #334155;
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.menu-hanh-dong-noi button:hover {
+  background: #f1f5f9;
+}
+
+.so-hop-tieu-chi {
+  color: #7552e8;
+  font-weight: 700;
+}
+
+.table-scroll td.cot-stt {
+  text-align: center;
+}
+
+.table-scroll td:nth-child(2) {
+  text-align: left;
+}
+
+table {
+  min-width: 1180px;
+}
+
+.table-scroll th:nth-child(1),
+.table-scroll td:nth-child(1) {
+  width: 42px;
+  min-width: 42px;
+}
+
+.table-scroll th:nth-child(2),
+.table-scroll td:nth-child(2) {
+  width: 295px;
+}
+
+.table-scroll th:nth-child(3),
+.table-scroll td:nth-child(3) {
+  width: 145px;
+}
+
+.table-scroll th:nth-child(4),
+.table-scroll td:nth-child(4) {
+  width: 115px;
+}
+
+.table-scroll th:nth-child(5),
+.table-scroll td:nth-child(5) {
+  width: 120px;
+}
+
+.table-scroll th:nth-child(6),
+.table-scroll td:nth-child(6) {
+  width: 180px;
+}
+
+.table-scroll th:nth-child(7),
+.table-scroll td:nth-child(7) {
+  width: 125px;
+}
+
+.table-scroll th:nth-child(8),
+.table-scroll td:nth-child(8) {
+  width: 78px;
+  min-width: 78px;
+}
+
+#danhSach .menu-hanh-dong-noi {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  right: auto;
+  bottom: auto;
+}
+
+#danhSach td:nth-child(2) {
+  text-align: left;
+}
+
+.jd-ai-nhanh-dot {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 1px solid #ddd6fe;
+  border-radius: 12px;
+  background: #f5f3ff;
+}
+
+.jd-ai-nhanh-dot strong {
+  color: #6d45d7;
+  font-size: 13px;
+}
+
+.jd-ai-nhanh-dot p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.jd-ai-nhanh-dot textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d8d4e8;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.kenh-nhan-cv {
+  display: block;
+  max-width: 180px;
+  overflow: hidden;
+  color: #64748b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phan-trang-dot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-top: 1px solid #edf1f7;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.phan-trang-dot[hidden] {
+  display: none;
+}
+
+.phan-trang-nut,
+#cacTrangDot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.phan-trang-nut button {
+  min-width: 34px;
+  height: 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #334155;
+  cursor: pointer;
+}
+
+.phan-trang-nut button.active {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: white;
+}
+
+.phan-trang-nut button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.upload-dot-box,
+#modalHoiAI .chatbot-box {
+  width: min(640px, calc(100% - 28px));
+}
+
+.chon-file-dot {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 22px;
+  border: 1px dashed #a5b4fc;
+  border-radius: 12px;
+  background: #f8faff;
+  color: #334155;
+  cursor: pointer;
+}
+
+.chon-file-dot span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.chon-file-dot input {
+  width: 100%;
+  margin-top: 8px;
+}
+
+#modalHoiAI .chatbot-tin-nhan {
+  min-height: 220px;
+  max-height: 380px;
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+#modalHoiAI .chatbot-tin-nhan p {
+  max-width: 90%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+#modalHoiAI .chatbot-tin-nhan-ai {
+  background: white;
+}
+
+#modalHoiAI .chatbot-tin-nhan-nguoi-dung {
+  margin-left: auto;
+  background: #e9e4ff;
+}
+
+#modalHoiAI .chatbot-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+#modalHoiAI .chatbot-form textarea {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  font: inherit;
+}
+
+#loiHoiAIDot {
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+@media (max-width: 750px) {
+  .noi-dung > .topbar .topbar-actions {
+    right: auto;
+  }
+
+  .phan-trang-dot {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+  .noi-dung > .topbar .topbar-actions {
+    flex-wrap: wrap;
+  }
+
+  .noi-dung > .topbar .tim-kiem-topbar {
+    flex-basis: 100%;
+  }
+
+  #modalHoiAI .chatbot-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Đồng bộ trang quản lý đợt tuyển dụng với giao diện tổng quan */
 
 .menu {

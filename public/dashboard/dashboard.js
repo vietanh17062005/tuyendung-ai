@@ -40,6 +40,11 @@ const menuNguoiDung = document.getElementById("menuNguoiDung");
 const taiKhoan = document.getElementById("taiKhoan");
 
 const menuTaiKhoan = document.getElementById("menuTaiKhoan");
+const locThoiGianUngVien = document.getElementById("locThoiGianUngVien");
+const khoaThongBaoDaXem = `thong_bao_da_xem_${nguoiDung.id || nguoiDung.email}`;
+const khoaLichSuHoiAI = `lich_su_chat_ai_${nguoiDung.id || nguoiDung.email}`;
+let thongBaoHienTai = [];
+let lichSuHoiAI = docLichSuHoiAI();
 
 /* Hiển thị tài khoản */
 
@@ -57,6 +62,10 @@ moTaVaiTro.textContent = layMoTaVaiTro(nguoiDung.vai_tro);
 
 if (nguoiDung.vai_tro !== "admin") {
   menuNguoiDung.style.display = "none";
+}
+
+if (!["admin", "manager"].includes(nguoiDung.vai_tro)) {
+  document.getElementById("btnTaoDotTuyen").style.display = "none";
 }
 
 /* Dropdown tài khoản */
@@ -117,7 +126,8 @@ function layMoTaVaiTro(vaiTro) {
 
 async function layDuLieuDashboard() {
   try {
-    const response = await fetch("/api/dashboard", {
+    const thamSo = new URLSearchParams({ period: locThoiGianUngVien.value });
+    const response = await fetch(`/api/dashboard?${thamSo}`, {
       headers: {
         Authorization: "Bearer " + token,
       },
@@ -141,6 +151,10 @@ async function layDuLieuDashboard() {
     document.getElementById("soUngVien").textContent = dinhDangSo(data.so_ung_vien);
     document.getElementById("soPhongVan").textContent = dinhDangSo(data.so_phong_van);
     document.getElementById("soDaTuyen").textContent = dinhDangSo(data.so_da_tuyen);
+    document.getElementById("nhanKhoangThoiGian").textContent =
+      locThoiGianUngVien.selectedOptions[0].textContent === "Tất cả"
+        ? "Tất cả thời gian"
+        : locThoiGianUngVien.selectedOptions[0].textContent;
 
     const tongUngVien = Number(data.so_ung_vien) || 0;
     const tongDaTuyen = Number(data.so_da_tuyen) || 0;
@@ -151,11 +165,15 @@ async function layDuLieuDashboard() {
     hienThiPheuTuyenDung(data);
     hienThiPhongVanSapToi(data.phong_van_sap_toi || []);
     hienThiUngVienMoi(data.ung_vien_moi || []);
+    hienThiThongBao(data.thong_bao || []);
   } catch (error) {
     console.error(error);
     hienThiLoiDashboard();
   }
 }
+
+locThoiGianUngVien.addEventListener("change", layDuLieuDashboard);
+setInterval(layDuLieuDashboard, 60 * 1000);
 
 function dinhDangSo(value) {
   return (Number(value) || 0).toLocaleString("vi-VN");
@@ -356,164 +374,201 @@ document.getElementById("timKiemTongQuan").addEventListener("input", (event) => 
   locDanhSachTongQuan(event.target.value);
 });
 
-/* Quyền */
+function hienThiThongBao(danhSach) {
+  thongBaoHienTai = danhSach;
+  const daXem = new Set(layThongBaoDaXem());
+  const chuaXem = danhSach.filter((thongBao) => !daXem.has(maThongBao(thongBao)));
+  const huyHieu = document.getElementById("soThongBao");
+  const container = document.getElementById("danhSachThongBao");
+  huyHieu.textContent = chuaXem.length > 9 ? "9+" : String(chuaXem.length);
+  huyHieu.hidden = chuaXem.length === 0;
+  container.replaceChildren();
 
-function hienThiQuyen() {
-  const danhSachQuyen = document.getElementById("danhSachQuyen");
+  if (!danhSach.length) {
+    container.appendChild(taoThongBaoTrong("Chưa có cập nhật ứng viên gần đây."));
+    return;
+  }
 
-  const quyenTheoVaiTro = {
-    admin: [
-      {
-        icon: "▤",
-        ten: "Quản lý đợt tuyển dụng",
-        moTa: "Tạo, sửa và quản lý các đợt tuyển dụng.",
-      },
-
-      {
-        icon: "♙",
-        ten: "Quản lý ứng viên",
-        moTa: "Theo dõi và quản lý hồ sơ ứng viên.",
-      },
-
-      {
-        icon: "▣",
-        ten: "Quản lý CV",
-        moTa: "Quản lý CV và thông tin hồ sơ ứng viên.",
-      },
-
-      {
-        icon: "◷",
-        ten: "Phỏng vấn",
-        moTa: "Theo dõi lịch và kết quả phỏng vấn.",
-      },
-
-      {
-        icon: "✓",
-        ten: "Quyết định tuyển dụng",
-        moTa: "Theo dõi và quản lý kết quả tuyển dụng.",
-      },
-
-      {
-        icon: "♙",
-        ten: "Người dùng & phân quyền",
-        moTa: "Quản lý tài khoản và vai trò người dùng.",
-      },
-    ],
-
-    manager: [
-      {
-        icon: "▤",
-        ten: "Đợt tuyển dụng",
-        moTa: "Quản lý các đợt tuyển dụng được phân quyền.",
-      },
-
-      {
-        icon: "♙",
-        ten: "Ứng viên",
-        moTa: "Theo dõi và đánh giá ứng viên.",
-      },
-
-      {
-        icon: "✓",
-        ten: "Duyệt JD",
-        moTa: "Duyệt JD và quản lý yêu cầu tuyển dụng.",
-      },
-
-      {
-        icon: "◷",
-        ten: "Quyết định tuyển dụng",
-        moTa: "Đưa ra quyết định tuyển dụng cuối cùng.",
-      },
-    ],
-
-    hr: [
-      {
-        icon: "▤",
-        ten: "Đợt tuyển dụng",
-        moTa: "Theo dõi các đợt tuyển dụng.",
-      },
-
-      {
-        icon: "♙",
-        ten: "Ứng viên",
-        moTa: "Thêm và quản lý ứng viên.",
-      },
-
-      {
-        icon: "▣",
-        ten: "CV",
-        moTa: "Tải lên và quản lý CV ứng viên.",
-      },
-
-      {
-        icon: "◷",
-        ten: "Phỏng vấn",
-        moTa: "Liên hệ và sắp xếp lịch phỏng vấn.",
-      },
-    ],
-
-    interviewer: [
-      {
-        icon: "♙",
-        ten: "Ứng viên",
-        moTa: "Xem thông tin ứng viên được phân công.",
-      },
-
-      {
-        icon: "◷",
-        ten: "Phỏng vấn",
-        moTa: "Theo dõi lịch phỏng vấn.",
-      },
-
-      {
-        icon: "✓",
-        ten: "Đánh giá",
-        moTa: "Nhập đánh giá và nhận xét ứng viên.",
-      },
-    ],
-
-    viewer: [
-      {
-        icon: "▤",
-        ten: "Xem dữ liệu",
-        moTa: "Xem các thông tin được hệ thống cấp quyền.",
-      },
-
-      {
-        icon: "▥",
-        ten: "Báo cáo",
-        moTa: "Xem các báo cáo được phép truy cập.",
-      },
-    ],
-  };
-
-  const danhSach = quyenTheoVaiTro[nguoiDung.vai_tro] || [];
-
-  danhSachQuyen.innerHTML = "";
-
-  danhSach.forEach(function (quyen) {
-    const div = document.createElement("div");
-
-    div.className = "quyen-item";
-
-    div.innerHTML = `
-
-                <div class="quyen-icon">
-                    ${quyen.icon}
-                </div>
-
-                <strong>
-                    ${quyen.ten}
-                </strong>
-
-                <p>
-                    ${quyen.moTa}
-                </p>
-
-            `;
-
-    danhSachQuyen.appendChild(div);
+  danhSach.forEach((thongBao) => {
+    const hang = document.createElement("article");
+    const tieuDe = document.createElement("strong");
+    const thoiGian = document.createElement("span");
+    const ngay = new Date(String(thongBao.thoi_gian || "").replace(" ", "T"));
+    hang.className = "thong-bao-item";
+    tieuDe.textContent = thongBao.loai === "updated"
+      ? `${thongBao.ho_ten || "Ứng viên"} có hồ sơ vừa được cập nhật`
+      : `${thongBao.ho_ten || "Ứng viên"} vừa được thêm`;
+    thoiGian.textContent = Number.isNaN(ngay.getTime())
+      ? ""
+      : ngay.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
+    hang.append(tieuDe, thoiGian);
+    container.appendChild(hang);
   });
+}
+
+function maThongBao(thongBao) {
+  return `${thongBao.id}:${thongBao.loai}:${thongBao.thoi_gian}`;
+}
+
+function layThongBaoDaXem() {
+  try {
+    const daXem = JSON.parse(localStorage.getItem(khoaThongBaoDaXem) || "[]");
+    return Array.isArray(daXem) ? daXem : [];
+  } catch (error) {
+    console.error("Không thể đọc trạng thái thông báo đã xem:", error);
+    return [];
+  }
+}
+
+const btnThongBao = document.getElementById("btnThongBao");
+const bangThongBao = document.getElementById("bangThongBao");
+btnThongBao.addEventListener("click", function (event) {
+  event.stopPropagation();
+  const dangMo = bangThongBao.hidden;
+  bangThongBao.hidden = !dangMo;
+  btnThongBao.setAttribute("aria-expanded", String(dangMo));
+
+  if (dangMo) {
+    const daXem = new Set(layThongBaoDaXem());
+    thongBaoHienTai.forEach((thongBao) => daXem.add(maThongBao(thongBao)));
+    localStorage.setItem(khoaThongBaoDaXem, JSON.stringify([...daXem].slice(-100)));
+    hienThiThongBao(thongBaoHienTai);
+  }
+});
+
+bangThongBao.addEventListener("click", (event) => event.stopPropagation());
+document.addEventListener("click", () => {
+  bangThongBao.hidden = true;
+  btnThongBao.setAttribute("aria-expanded", "false");
+});
+
+/* Chatbot AI */
+
+const modalHoiAI = document.getElementById("modalHoiAI");
+const formHoiAI = document.getElementById("formHoiAI");
+const tinNhanHoiAI = document.getElementById("chatbotTinNhan");
+const loiHoiAI = document.getElementById("loiHoiAI");
+
+function docLichSuHoiAI() {
+  try {
+    const lichSu = JSON.parse(localStorage.getItem(khoaLichSuHoiAI) || "[]");
+    if (
+      !Array.isArray(lichSu) ||
+      lichSu.some((tinNhan) =>
+        !["user", "assistant"].includes(tinNhan?.role) ||
+        typeof tinNhan?.text !== "string"
+      )
+    ) {
+      throw new Error("Lịch sử chatbot đã lưu không đúng định dạng.");
+    }
+    return lichSu;
+  } catch (error) {
+    console.error("Không thể khôi phục lịch sử chatbot:", error);
+    return [];
+  }
+}
+
+function luuLichSuHoiAI() {
+  try {
+    localStorage.setItem(khoaLichSuHoiAI, JSON.stringify(lichSuHoiAI));
+  } catch (error) {
+    console.error("Không thể lưu lịch sử chatbot:", error);
+    loiHoiAI.textContent = "Không lưu được lịch sử chat trên trình duyệt này.";
+  }
+}
+
+function hienThiLichSuHoiAI() {
+  if (!lichSuHoiAI.length) return;
+  tinNhanHoiAI.replaceChildren();
+  lichSuHoiAI.forEach((tinNhan) => {
+    hienThiTinNhanHoiAI(tinNhan.text, tinNhan.role === "user" ? "nguoi-dung" : "ai");
+  });
+}
+
+function xoaLichSuHoiAI() {
+  lichSuHoiAI = [];
+  localStorage.removeItem(khoaLichSuHoiAI);
+}
+
+document.getElementById("btnHoiAI").addEventListener("click", () => {
+  modalHoiAI.classList.add("hien");
+  hienThiLichSuHoiAI();
+  document.getElementById("noiDungHoiAI").focus();
+});
+
+document.getElementById("btnDongHoiAI").addEventListener("click", () => {
+  modalHoiAI.classList.remove("hien");
+});
+
+modalHoiAI.addEventListener("click", (event) => {
+  if (event.target === modalHoiAI) modalHoiAI.classList.remove("hien");
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    modalHoiAI.classList.remove("hien");
+    bangThongBao.hidden = true;
+    btnThongBao.setAttribute("aria-expanded", "false");
+  }
+});
+
+formHoiAI.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const input = document.getElementById("noiDungHoiAI");
+  const cauHoi = input.value.trim();
+  const nutGui = document.getElementById("btnGuiHoiAI");
+  if (!cauHoi) return;
+
+  lichSuHoiAI.push({ role: "user", text: cauHoi });
+  luuLichSuHoiAI();
+  hienThiTinNhanHoiAI(cauHoi, "nguoi-dung");
+  input.value = "";
+  loiHoiAI.textContent = "";
+  nutGui.disabled = true;
+
+  try {
+    const response = await fetch("/api/ai/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ messages: lichSuHoiAI.slice(-10) }),
+    });
+    const noiDung = await response.text();
+    let data;
+    try {
+      data = JSON.parse(noiDung);
+    } catch (error) {
+      if (/^\s*<!doctype html|^\s*<html/i.test(noiDung)) {
+        throw new Error("Máy chủ chưa nhận phiên bản có API Hỏi AI. Hãy khởi động lại máy chủ hoặc triển khai lại bản mới nhất.");
+      }
+      throw new Error("Máy chủ trả về dữ liệu không hợp lệ khi hỏi AI.");
+    }
+    if (response.status === 401) {
+      dangXuat();
+      return;
+    }
+    if (!response.ok) throw new Error(data.message || "Không thể gửi câu hỏi đến AI.");
+
+    lichSuHoiAI.push({ role: "assistant", text: data.reply });
+    luuLichSuHoiAI();
+    hienThiTinNhanHoiAI(data.reply, "ai");
+  } catch (error) {
+    console.error(error);
+    loiHoiAI.textContent = error.message || "Không thể kết nối đến AI.";
+  } finally {
+    nutGui.disabled = false;
+    input.focus();
+  }
+});
+
+function hienThiTinNhanHoiAI(noiDung, loai) {
+  const tinNhan = document.createElement("p");
+  tinNhan.className = `chatbot-tin-nhan-${loai}`;
+  tinNhan.textContent = noiDung;
+  tinNhanHoiAI.appendChild(tinNhan);
+  tinNhanHoiAI.scrollTop = tinNhanHoiAI.scrollHeight;
 }
 
 /* Thông tin tài khoản */
@@ -773,6 +828,7 @@ document.getElementById("btnDangXuat").addEventListener("click", function () {
 });
 
 function dangXuat() {
+  xoaLichSuHoiAI();
   localStorage.removeItem("token");
 
   localStorage.removeItem("nguoi_dung");
@@ -781,8 +837,6 @@ function dangXuat() {
 }
 
 /* Chạy */
-
-hienThiQuyen();
 
 layDuLieuDashboard();
 

@@ -50,8 +50,23 @@
         <div class="topbar-actions">
           <label class="tim-kiem tim-kiem-topbar">
             <span aria-hidden="true">⌕</span>
-            <input type="search" id="timKiemToanCuc" placeholder="Tìm đợt tuyển dụng, bản mô tả..." aria-label="Tìm đợt tuyển dụng hoặc bản mô tả công việc" />
+            <input type="search" id="timKiemToanCuc" placeholder="Tìm đợt tuyển dụng, bản mô tả..."
+              aria-label="Tìm đợt tuyển dụng hoặc bản mô tả công việc" />
           </label>
+          <button class="nut-ai" id="btnHoiAI" type="button">✦ <span>Hỏi AI</span></button>
+          <div class="thong-bao-wrap">
+            <button class="nut-chuong" id="btnThongBaoDot" type="button" aria-label="Thông báo" aria-expanded="false">
+              <span aria-hidden="true">🔔</span>
+              <span class="thong-bao-so" id="soThongBaoDot" hidden></span>
+            </button>
+            <div class="bang-thong-bao" id="bangThongBaoDot" hidden>
+              <div class="bang-thong-bao-dau">
+                <strong>Thông báo</strong>
+                <span>Cập nhật đợt tuyển dụng gần đây</span>
+              </div>
+              <div class="danh-sach-thong-bao" id="danhSachThongBaoDot"></div>
+            </div>
+          </div>
 
           <div class="tai-khoan" id="taiKhoan">
             <div class="tai-khoan-thong-tin">
@@ -123,7 +138,8 @@
         <span class="goi-y-dot-icon">✦</span>
         <div>
           <strong>Soạn bản mô tả nhanh với AI</strong>
-          <p>Chọn một đợt tuyển dụng trong danh sách để làm rõ yêu cầu, tạo bản mô tả và bộ tiêu chí đánh giá với AI.</p>
+          <p>Chọn một đợt tuyển dụng trong danh sách để làm rõ yêu cầu, tạo bản mô tả và bộ tiêu chí đánh giá với AI.
+          </p>
         </div>
         <span class="goi-y-dot-badge">Trợ lý tuyển dụng</span>
       </section>
@@ -133,14 +149,21 @@
       <section class="table-container">
         <div class="table-controls">
           <div class="tab-trang-thai" role="tablist" aria-label="Lọc đợt tuyển dụng">
-            <button type="button" class="tab-trang-thai-nut active" data-status="">Tất cả <span id="demTatCa">0</span></button>
-            <button type="button" class="tab-trang-thai-nut" data-status="dang_tuyen">Đang tuyển <span id="demDangTuyen">0</span></button>
-            <button type="button" class="tab-trang-thai-nut" data-status="tam_dung">Tạm dừng <span id="demTamDung">0</span></button>
-            <button type="button" class="tab-trang-thai-nut" data-status="ket_thuc">Đã kết thúc <span id="demKetThuc">0</span></button>
+            <button type="button" class="tab-trang-thai-nut active" data-status="">Tất cả <span
+                id="demTatCa">0</span></button>
+            <button type="button" class="tab-trang-thai-nut" data-status="nhap">Nháp <span
+                id="demNhap">0</span></button>
+            <button type="button" class="tab-trang-thai-nut" data-status="dang_tuyen">Đang tuyển <span
+                id="demDangTuyen">0</span></button>
+            <button type="button" class="tab-trang-thai-nut" data-status="tam_dung">Tạm dừng <span
+                id="demTamDung">0</span></button>
+            <button type="button" class="tab-trang-thai-nut" data-status="ket_thuc">Đã đóng <span
+                id="demKetThuc">0</span></button>
           </div>
           <label class="tim-kiem tim-kiem-bang">
             <span aria-hidden="true">⌕</span>
-            <input type="search" id="oTimKiem" placeholder="Tìm tên đợt tuyển dụng..." aria-label="Tìm tên đợt tuyển dụng" />
+            <input type="search" id="oTimKiem" placeholder="Tìm tên đợt tuyển dụng..."
+              aria-label="Tìm tên đợt tuyển dụng" />
           </label>
           <p id="tongSo" class="so-ket-qua">0 đợt tuyển dụng</p>
           <select id="locTrangThai" class="loc-an" aria-label="Lọc theo trạng thái">
@@ -148,7 +171,7 @@
             <option value="nhap">Nháp</option>
             <option value="dang_tuyen">Đang tuyển</option>
             <option value="tam_dung">Tạm dừng</option>
-            <option value="ket_thuc">Kết thúc</option>
+            <option value="ket_thuc">Đã đóng</option>
           </select>
         </div>
         <div class="table-header">
@@ -162,13 +185,13 @@
           <table>
             <thead>
               <tr>
+                <th>STT</th>
                 <th>Tên đợt tuyển dụng</th>
-                <th>Ứng viên</th>
-                <th>Bản mô tả</th>
-
+                <th>Ứng viên đã nhận</th>
+                <th>Hợp tiêu chí</th>
                 <th>Trạng thái</th>
-                <th>Thời gian</th>
-
+                <th>Kênh nhận CV</th>
+                <th>Ngày tạo</th>
                 <th id="cotThaoTac">Thao tác</th>
               </tr>
             </thead>
@@ -180,8 +203,63 @@
         <div class="khong-co-du-lieu" id="khongCoDuLieu">
           Không tìm thấy đợt tuyển dụng nào.
         </div>
+        <footer class="phan-trang-dot" id="phanTrangDot">
+          <span id="thongTinPhanTrangDot"></span>
+          <div class="phan-trang-nut" aria-label="Phân trang danh sách đợt tuyển dụng">
+            <button type="button" id="btnTrangTruocDot" aria-label="Trang trước">‹</button>
+            <div id="cacTrangDot"></div>
+            <button type="button" id="btnTrangSauDot" aria-label="Trang sau">›</button>
+          </div>
+        </footer>
       </section>
     </main>
+  </div>
+
+  <div class="modal" id="modalUploadDot">
+    <section class="modal-box upload-dot-box" role="dialog" aria-modal="true" aria-labelledby="tieuDeUploadDot">
+      <div class="modal-header">
+        <div>
+          <h2 id="tieuDeUploadDot">Tải CV lên đợt tuyển dụng</h2>
+          <p id="tenDotUpload">Mỗi CV sẽ tạo một hồ sơ ứng viên mới.</p>
+        </div>
+        <button class="btn-dong" id="btnDongUploadDot" type="button" aria-label="Đóng">×</button>
+      </div>
+      <form id="formUploadDot">
+        <input type="hidden" id="idDotUpload" />
+        <label class="chon-file-dot" for="fileUploadDot">
+          <strong>Chọn nhiều CV hoặc một file ZIP</strong>
+          <span>PDF, DOC, DOCX, JPG, PNG hoặc ZIP (tối đa 10 MB mỗi file)</span>
+          <input id="fileUploadDot" name="files" type="file" multiple
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip" required />
+        </label>
+        <p class="thong-bao" id="thongBaoUploadDot" role="status"></p>
+        <div class="modal-footer">
+          <button type="button" class="btn-huy" id="btnHuyUploadDot">Hủy</button>
+          <button type="submit" class="btn-luu" id="btnGuiUploadDot">Tải CV lên</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="modal" id="modalHoiAI">
+    <section class="modal-box chatbot-box" role="dialog" aria-modal="true" aria-labelledby="tieuDeChatbotDot">
+      <div class="modal-header">
+        <div>
+          <h2 id="tieuDeChatbotDot">Trợ lý tuyển dụng AI</h2>
+          <p>Hỏi về ứng viên, đợt tuyển dụng hoặc tiêu chí tuyển chọn.</p>
+        </div>
+        <button class="btn-dong" id="btnDongHoiAIDot" type="button" aria-label="Đóng chat">×</button>
+      </div>
+      <div class="chatbot-tin-nhan" id="chatbotTinNhanDot" aria-live="polite">
+        <p class="chatbot-tin-nhan-ai">Xin chào! Tôi có thể hỗ trợ gì về các đợt tuyển dụng?</p>
+      </div>
+      <p class="chatbot-loi" id="loiHoiAIDot" role="status"></p>
+      <form class="chatbot-form" id="formHoiAIDot">
+        <label class="an-tren-man-hinh" for="noiDungHoiAIDot">Câu hỏi</label>
+        <textarea id="noiDungHoiAIDot" rows="2" maxlength="2000" placeholder="Nhập câu hỏi của bạn..." required></textarea>
+        <button class="nut-ai" id="btnGuiHoiAIDot" type="submit">Gửi câu hỏi</button>
+      </form>
+    </section>
   </div>
 
   <!-- MODAL THÔNG TIN TÀI KHOẢN -->
@@ -279,17 +357,26 @@
           <p>Nhập thông tin đợt tuyển dụng</p>
         </div>
 
-        <button class="btn-dong" id="btnDong">×</button>
+        <button type="button" class="btn-dong" id="btnDong">×</button>
       </div>
 
       <form id="form">
         <input type="hidden" id="id" />
 
+        <section class="jd-ai-nhanh-dot">
+          <div>
+            <strong>✦ Trợ lý JD bằng AI</strong>
+            <p>Mô tả nhanh vị trí; AI sẽ hỗ trợ soạn tiêu đề, nhiệm vụ, yêu cầu và kỹ năng.</p>
+          </div>
+          <label class="an-tren-man-hinh" for="jdYTuongNhanh">Mô tả vị trí cần tuyển</label>
+          <textarea id="jdYTuongNhanh" rows="2" maxlength="1000"
+            placeholder="Ví dụ: Senior Product Designer, 5 năm kinh nghiệm, fintech, Hà Nội, hybrid"></textarea>
+        </section>
+
         <div class="form-section-heading">
           <span class="form-section-number">01</span>
           <div>
             <strong>Thông tin chiến dịch</strong>
-            <p>Thiết lập tên, thời hạn và trạng thái của đợt tuyển dụng.</p>
           </div>
         </div>
 
@@ -356,6 +443,79 @@
             <span>Thay đổi nội dung và bộ tiêu chí đánh giá</span>
           </div>
 
+          <div class="form-row">
+            <div class="form-group">
+              <label for="jdSuaBoPhan">Bộ phận</label>
+              <input type="text" id="jdSuaBoPhan" maxlength="100" placeholder="Ví dụ: Công nghệ thông tin" />
+            </div>
+            <div class="form-group">
+              <label for="jdSuaDiaDiem">Địa điểm làm việc</label>
+              <select id="jdSuaDiaDiem">
+                <option value="">Chọn tỉnh/thành phố</option>
+                <option value="An Giang">An Giang</option>
+                <option value="Bắc Ninh">Bắc Ninh</option>
+                <option value="Cà Mau">Cà Mau</option>
+                <option value="Cao Bằng">Cao Bằng</option>
+                <option value="Đắk Lắk">Đắk Lắk</option>
+                <option value="Điện Biên">Điện Biên</option>
+                <option value="Đồng Nai">Đồng Nai</option>
+                <option value="Đồng Tháp">Đồng Tháp</option>
+                <option value="Gia Lai">Gia Lai</option>
+                <option value="Hà Tĩnh">Hà Tĩnh</option>
+                <option value="Hưng Yên">Hưng Yên</option>
+                <option value="Khánh Hòa">Khánh Hòa</option>
+                <option value="Lai Châu">Lai Châu</option>
+                <option value="Lâm Đồng">Lâm Đồng</option>
+                <option value="Lạng Sơn">Lạng Sơn</option>
+                <option value="Lào Cai">Lào Cai</option>
+                <option value="Nghệ An">Nghệ An</option>
+                <option value="Ninh Bình">Ninh Bình</option>
+                <option value="Phú Thọ">Phú Thọ</option>
+                <option value="Quảng Ngãi">Quảng Ngãi</option>
+                <option value="Quảng Ninh">Quảng Ninh</option>
+                <option value="Quảng Trị">Quảng Trị</option>
+                <option value="Sơn La">Sơn La</option>
+                <option value="Tây Ninh">Tây Ninh</option>
+                <option value="Thái Nguyên">Thái Nguyên</option>
+                <option value="Thanh Hóa">Thanh Hóa</option>
+                <option value="Thành phố Cần Thơ">Thành phố Cần Thơ</option>
+                <option value="Thành phố Đà Nẵng">Thành phố Đà Nẵng</option>
+                <option value="Thành phố Hà Nội">Thành phố Hà Nội</option>
+                <option value="Thành phố Hải Phòng">Thành phố Hải Phòng</option>
+                <option value="Thành phố Huế">Thành phố Huế</option>
+                <option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
+                <option value="Tuyên Quang">Tuyên Quang</option>
+                <option value="Vĩnh Long">Vĩnh Long</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="jdSuaLoaiHinh">Hình thức làm việc</label>
+              <select id="jdSuaLoaiHinh">
+                <option value="">Chọn hình thức</option>
+                <option value="Toàn thời gian">Toàn thời gian</option>
+                <option value="Bán thời gian">Bán thời gian</option>
+                <option value="Thực tập">Thực tập</option>
+                <option value="Hợp đồng">Hợp đồng</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="jdSuaMucLuong">Mức lương</label>
+              <input type="text" id="jdSuaMucLuong" maxlength="150" placeholder="Ví dụ: 20–30 triệu VND/tháng" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="jdSuaHanNhan">Hạn nhận hồ sơ</label>
+              <input type="date" id="jdSuaHanNhan" />
+            </div>
+            <div class="form-group">
+              <label for="jdSuaKyNang">Kỹ năng yêu cầu</label>
+              <input type="text" id="jdSuaKyNang" maxlength="1000" placeholder="Node.js, MySQL, giao tiếp..." />
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="jdSuaTieuDe">Tiêu đề bản mô tả</label>
             <input type="text" id="jdSuaTieuDe" maxlength="200" />
@@ -390,7 +550,7 @@
 
         <div class="modal-footer">
           <button type="button" class="btn-huy" id="btnHuy">Hủy</button>
-          <button type="button" class="btn-luu-jd" id="btnLuuVaTaoJD">Lưu &amp; tạo bản mô tả</button>
+          <button type="button" class="btn-luu-jd" id="btnLuuVaTaoJD">Lưu &amp; tạo JD bằng AI</button>
           <button type="submit" class="btn-luu">Lưu đợt tuyển dụng</button>
         </div>
       </form>
@@ -471,8 +631,79 @@
         <!-- BƯỚC 3 -->
 
         <div class="jd-buoc" id="jdBuoc3">
-          <label class="jd-nhan" for="jdTieuDe">Tiêu đề JD</label>
-          <input type="text" id="jdTieuDe" maxlength="200" />
+          <div class="jd-ai-tieu-de"><strong>Thông tin vị trí</strong></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="jd-nhan" for="jdTieuDe">Tiêu đề công việc *</label>
+              <input type="text" id="jdTieuDe" maxlength="200" />
+            </div>
+            <div class="form-group">
+              <label class="jd-nhan" for="jdBoPhan">Bộ phận</label>
+              <input type="text" id="jdBoPhan" maxlength="100" placeholder="Ví dụ: Thiết kế & Sản phẩm" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="jd-nhan" for="jdDiaDiem">Địa điểm</label>
+              <select id="jdDiaDiem">
+                <option value="">Chọn tỉnh/thành phố</option>
+                <option value="An Giang">An Giang</option>
+                <option value="Bắc Ninh">Bắc Ninh</option>
+                <option value="Cà Mau">Cà Mau</option>
+                <option value="Cao Bằng">Cao Bằng</option>
+                <option value="Đắk Lắk">Đắk Lắk</option>
+                <option value="Điện Biên">Điện Biên</option>
+                <option value="Đồng Nai">Đồng Nai</option>
+                <option value="Đồng Tháp">Đồng Tháp</option>
+                <option value="Gia Lai">Gia Lai</option>
+                <option value="Hà Tĩnh">Hà Tĩnh</option>
+                <option value="Hưng Yên">Hưng Yên</option>
+                <option value="Khánh Hòa">Khánh Hòa</option>
+                <option value="Lai Châu">Lai Châu</option>
+                <option value="Lâm Đồng">Lâm Đồng</option>
+                <option value="Lạng Sơn">Lạng Sơn</option>
+                <option value="Lào Cai">Lào Cai</option>
+                <option value="Nghệ An">Nghệ An</option>
+                <option value="Ninh Bình">Ninh Bình</option>
+                <option value="Phú Thọ">Phú Thọ</option>
+                <option value="Quảng Ngãi">Quảng Ngãi</option>
+                <option value="Quảng Ninh">Quảng Ninh</option>
+                <option value="Quảng Trị">Quảng Trị</option>
+                <option value="Sơn La">Sơn La</option>
+                <option value="Tây Ninh">Tây Ninh</option>
+                <option value="Thái Nguyên">Thái Nguyên</option>
+                <option value="Thanh Hóa">Thanh Hóa</option>
+                <option value="Thành phố Cần Thơ">Thành phố Cần Thơ</option>
+                <option value="Thành phố Đà Nẵng">Thành phố Đà Nẵng</option>
+                <option value="Thành phố Hà Nội">Thành phố Hà Nội</option>
+                <option value="Thành phố Hải Phòng">Thành phố Hải Phòng</option>
+                <option value="Thành phố Huế">Thành phố Huế</option>
+                <option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
+                <option value="Tuyên Quang">Tuyên Quang</option>
+                <option value="Vĩnh Long">Vĩnh Long</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="jd-nhan" for="jdLoaiHinh">Hình thức làm việc</label>
+              <select id="jdLoaiHinh">
+                <option value="">Chọn hình thức</option>
+                <option value="Toàn thời gian">Toàn thời gian</option>
+                <option value="Bán thời gian">Bán thời gian</option>
+                <option value="Thực tập">Thực tập</option>
+                <option value="Hợp đồng">Hợp đồng</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="jd-nhan" for="jdMucLuong">Khoảng lương</label>
+              <input type="text" id="jdMucLuong" maxlength="150" placeholder="Ví dụ: 20–30 triệu VND/tháng" />
+            </div>
+            <div class="form-group">
+              <label class="jd-nhan" for="jdHanNhan">Hạn nhận hồ sơ</label>
+              <input type="date" id="jdHanNhan" />
+            </div>
+          </div>
 
           <label class="jd-nhan" for="jdGioiThieu">Giới thiệu vị trí</label>
           <textarea id="jdGioiThieu" rows="3"></textarea>
@@ -488,13 +719,16 @@
 
           <label class="jd-nhan" for="jdQuyenLoi">Quyền lợi</label>
           <textarea id="jdQuyenLoi" rows="4"></textarea>
+          <label class="jd-nhan" for="jdKyNang">Kỹ năng yêu cầu</label>
+          <input type="text" id="jdKyNang" maxlength="1000" placeholder="Ví dụ: Figma, UX Research, Prototyping" />
 
           <div class="jd-ai-tieu-de">
             <strong>Bộ tiêu chí chấm điểm</strong>
           </div>
 
           <p class="jd-ai-huong-dan">
-            Bộ tiêu chí do AI đề xuất dựa trên bản mô tả, dùng để phân tích hồ sơ. Bạn có thể sửa tên, mô tả, trọng số, thêm hoặc xóa
+            Bộ tiêu chí do AI đề xuất dựa trên bản mô tả, dùng để phân tích hồ sơ. Bạn có thể sửa tên, mô tả, trọng số,
+            thêm hoặc xóa
             tiêu chí.
           </p>
 

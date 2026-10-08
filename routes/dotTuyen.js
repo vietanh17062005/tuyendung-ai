@@ -3,6 +3,14 @@ const db = require("../database/db");
 const { kiemTraDangNhap, kiemTraVaiTro } = require("../middleware/auth");
 
 const router = express.Router();
+const TRANG_THAI_DOT_TUYEN = new Set(["nhap", "dang_tuyen", "tam_dung", "ket_thuc"]);
+
+function laNgayHopLe(value) {
+  if (value === null || value === undefined || value === "") return true;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
 
 async function layCotBang(tableName) {
   const [rows] = await db.query(`SHOW COLUMNS FROM ${tableName}`);
@@ -36,11 +44,22 @@ function layNgayCapNhatField(columns) {
   return "ngay_tao";
 }
 
+async function dongDotQuaHan() {
+  await db.query(
+    `UPDATE dot_tuyen
+     SET trang_thai = 'ket_thuc'
+     WHERE trang_thai IN ('dang_tuyen', 'tam_dung')
+       AND ngay_ket_thuc IS NOT NULL
+       AND ngay_ket_thuc <= CURDATE()`,
+  );
+}
+
 router.get(
   "/",
   kiemTraDangNhap,
   async function (req, res) {
     try {
+      await dongDotQuaHan();
       const columns = await layCotBang("dot_tuyen");
       const tenField = columns.includes("ten") ? "ten" : "ten_dot";
       const nguoiTaoField = layNguoiTaoField(columns);
@@ -60,10 +79,17 @@ router.get(
           dt.ngay_tao,
           dt.${ngayCapNhatField} AS ngay_cap_nhat,
           nd.ho_ten AS nguoi_tao_ten,
-          (SELECT COUNT(*) FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien
+          (SELECT COUNT(*) FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien,
+          (SELECT COUNT(DISTINCT uv.id)
+           FROM ung_vien uv
+           INNER JOIN phan_tich_ai pa ON pa.ung_vien_id = uv.id AND pa.diem >= 80
+           INNER JOIN jd jd_match ON jd_match.id = pa.jd_id AND jd_match.dot_tuyen_id = dt.id
+           WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien_hop_tieu_chi,
+          (SELECT GROUP_CONCAT(DISTINCT NULLIF(TRIM(uv.nguon), '') ORDER BY uv.nguon SEPARATOR ', ')
+           FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id AND NULLIF(TRIM(uv.nguon), '') IS NOT NULL) AS kenh_nhan_cv
         FROM dot_tuyen dt
         LEFT JOIN nguoi_dung nd ON nd.id = dt.${tenNguoiTaoField}
-        ORDER BY dt.id DESC
+        ORDER BY dt.ngay_tao DESC, dt.id DESC
       `;
       const [rows] = await db.query(ketQua);
       res.json({ success: true, data: rows.map(normalizeDotTuyen) });
@@ -79,6 +105,7 @@ router.get(
   kiemTraDangNhap,
   async function (req, res) {
     try {
+      await dongDotQuaHan();
       const id = Number(req.params.id);
       if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ message: "ID đợt tuyển dụng không hợp lệ" });
@@ -127,12 +154,22 @@ router.get(
 router.post(
   "/",
   kiemTraDangNhap,
-  kiemTraVaiTro("admin", "manager", "hr"),
+  kiemTraVaiTro("admin", "manager"),
   async function (req, res) {
     try {
       const ten = String(req.body?.ten ?? req.body?.ten_dot ?? "").trim();
       if (!ten) {
         return res.status(400).json({ message: "Vui lòng nhập tên đợt tuyển dụng" });
+      }
+      const trangThai = String(req.body?.trang_thai || "nhap");
+      const ngayBatDau = req.body?.ngay_bat_dau || null;
+      const ngayKetThuc = req.body?.ngay_ket_thuc || null;
+      if (!TRANG_THAI_DOT_TUYEN.has(trangThai)) {
+        return res.status(400).json({ message: "Trạng thái đợt tuyển dụng không hợp lệ" });
+      }
+      if (!laNgayHopLe(ngayBatDau) || !laNgayHopLe(ngayKetThuc) ||
+          (ngayBatDau && ngayKetThuc && ngayKetThuc < ngayBatDau)) {
+        return res.status(400).json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ" });
       }
 
       const columns = await layCotBang("dot_tuyen");
@@ -140,7 +177,7 @@ router.post(
       const nguoiTaoFields = columns.filter((column) =>
         ["nguoi_tao", "nguoi_tao_id"].includes(column)
       );
-      const nguoiTaoValue = req.body?.nguoi_tao_id ?? req.body?.nguoi_tao ?? req.nguoiDung?.id ?? null;
+      const nguoiTaoValue = req.nguoiDung?.id ?? null;
 
       if (!nguoiTaoValue) {
         return res.status(400).json({ message: "Không xác định được người tạo đợt tuyển dụng" });
@@ -157,10 +194,10 @@ router.post(
       const insertValues = [
         ten,
         req.body?.mo_ta || null,
-        req.body?.trang_thai || "nhap",
+        trangThai,
         ...nguoiTaoFields.map(() => nguoiTaoValue),
-        req.body?.ngay_bat_dau || null,
-        req.body?.ngay_ket_thuc || null,
+        ngayBatDau,
+        ngayKetThuc,
       ];
       const placeholders = insertColumns.map(() => "?").join(", ");
       const [result] = await db.query(
@@ -191,6 +228,16 @@ router.put(
       if (!ten) {
         return res.status(400).json({ message: "Vui lòng nhập tên đợt tuyển dụng" });
       }
+      const trangThai = String(req.body?.trang_thai || "nhap");
+      const ngayBatDau = req.body?.ngay_bat_dau || null;
+      const ngayKetThuc = req.body?.ngay_ket_thuc || null;
+      if (!TRANG_THAI_DOT_TUYEN.has(trangThai)) {
+        return res.status(400).json({ message: "Trạng thái đợt tuyển dụng không hợp lệ" });
+      }
+      if (!laNgayHopLe(ngayBatDau) || !laNgayHopLe(ngayKetThuc) ||
+          (ngayBatDau && ngayKetThuc && ngayKetThuc < ngayBatDau)) {
+        return res.status(400).json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ" });
+      }
 
       const columns = await layCotBang("dot_tuyen");
       const tenField = columns.includes("ten") ? "ten" : "ten_dot";
@@ -208,9 +255,9 @@ router.put(
         [
           ten,
           req.body?.mo_ta || null,
-          req.body?.trang_thai || "nhap",
-          req.body?.ngay_bat_dau || null,
-          req.body?.ngay_ket_thuc || null,
+          trangThai,
+          ngayBatDau,
+          ngayKetThuc,
           id,
         ],
       );

@@ -1,4 +1,14 @@
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+require("dotenv").config();
+const { OpenAI } = require("openai");
+
+// 1. Danh sách Model Gemini chuẩn hiện tại (Loại bỏ các model đã khai tử/ngưng hỗ trợ)
+const GEMINI_MODELS = [
+    process.env.GEMINI_MODEL || "gemini-flash-latest",
+    "gemini-3.8-flash",
+    "gemini-3.5-flash",
+].filter(function (val, idx, arr) {
+    return val && arr.indexOf(val) === idx;
+});
 
 function taoLoi(message, status) {
     const error = new Error(message);
@@ -6,78 +16,233 @@ function taoLoi(message, status) {
     return error;
 }
 
-async function goiGemini(system, noiDung, maxTokens) {
+function cho(ms) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, ms);
+    });
+}
+
+function laLoiTamThoi(status, message) {
+    const msg = String(message || "").toUpperCase();
+    return (
+        status === 429 ||
+        status === 503 ||
+        msg.includes("UNAVAILABLE") ||
+        msg.includes("RESOURCE_EXHAUSTED") ||
+        msg.includes("TOO MANY REQUESTS")
+    );
+}
+
+/**
+ * Gọi Gemini REST API - Tự động retry và fallback model thông minh
+ */
+async function goiGemini(system, noiDung, maxTokens, jsonMode) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
         throw taoLoi("Máy chủ chưa cấu hình GEMINI_API_KEY", 500);
     }
 
-    const controller = new AbortController();
-    const timer = setTimeout(function () {
-        controller.abort();
-    }, 50000);
+    let loiCuoi = null;
+
+    for (let viTriModel = 0; viTriModel < GEMINI_MODELS.length; viTriModel++) {
+        const model = GEMINI_MODELS[viTriModel];
+
+        for (let lanThu = 1; lanThu <= 3; lanThu++) {
+            const controller = new AbortController();
+            const timer = setTimeout(function () {
+                controller.abort();
+            }, 50000);
+
+            try {
+                console.log(`[Gemini] Đang gọi model ${model}, lần thử ${lanThu}/3`);
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+                    {
+                        method: "POST",
+                        signal: controller.signal,
+                        headers: {
+                            "content-type": "application/json",
+                            "x-goog-api-key": apiKey,
+                        },
+                        body: JSON.stringify({
+                            systemInstruction: { parts: [{ text: system }] },
+                            contents: [{ role: "user", parts: [{ text: noiDung }] }],
+                            generationConfig: {
+                                maxOutputTokens: maxTokens,
+                                ...(jsonMode === false
+                                    ? {}
+                                    : { responseMimeType: "application/json" }),
+                            },
+                        }),
+                    },
+                );
+
+                const data = await response.json().catch(function () {
+                    return {};
+                });
+
+                if (!response.ok) {
+                    const status = response.status;
+                    const errorMsg = data?.error?.message || "";
+                    console.error(`[Gemini] ${model} lỗi ${status}:`, JSON.stringify(data));
+
+                    if (status === 404 || errorMsg.includes("NOT_FOUND")) {
+                        console.warn(`[Gemini] Model ${model} không khả dụng. Chuyển model dự phòng...`);
+                        loiCuoi = taoLoi(`Gemini không hỗ trợ model ${model}.`, 502);
+                        break;
+                    }
+
+                    const thongBao = status === 429 || errorMsg.toLowerCase().includes("quota")
+                        ? `Gemini đã hết hạn mức gọi: ${errorMsg || "hãy kiểm tra quota và billing."}`
+                        : status === 503
+                            ? `Gemini đang quá tải: ${errorMsg || "vui lòng thử lại sau."}`
+                            : `Gemini lỗi ${status}: ${errorMsg || "không có thông tin chi tiết."}`;
+                    loiCuoi = taoLoi(thongBao, status === 429 ? 429 : 502);
+
+                    if (!laLoiTamThoi(status, errorMsg)) {
+                        throw loiCuoi;
+                    }
+
+                    if (status === 429) break;
+                    if (lanThu < 3) await cho(lanThu * 2000);
+                    continue;
+                }
+
+                const parts = data.candidates?.[0]?.content?.parts || [];
+                const text = parts
+                    .map(function (phan) {
+                        return phan.text || "";
+                    })
+                    .join("");
+
+                if (!text) {
+                    console.error("Gemini không trả nội dung:", JSON.stringify(data));
+                    throw taoLoi("AI không trả về nội dung, vui lòng thử lại", 502);
+                }
+
+                console.log(`[Gemini] Trả kết quả thành công bằng ${model}`);
+                return text;
+
+            } catch (error) {
+                loiCuoi = error;
+                if (error.status && error.status !== 502) throw error;
+
+                if (lanThu < 3 && laLoiTamThoi(error.status, error.message)) {
+                    await cho(lanThu * 2000);
+                }
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+    }
+
+    throw loiCuoi || taoLoi("Không kết nối được AI, vui lòng thử lại", 502);
+}
+
+async function goiOpenAI(system, noiDung, maxTokens, jsonMode) {
+    if (!process.env.OPENAI_API_KEY) {
+        throw taoLoi("Máy chủ chưa cấu hình OPENAI_API_KEY", 500);
+    }
 
     try {
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-            {
-                method: "POST",
-                signal: controller.signal,
-                headers: {
-                    "content-type": "application/json",
-                    "x-goog-api-key": apiKey,
-                },
-                body: JSON.stringify({
-                    systemInstruction: { parts: [{ text: system }] },
-                    contents: [{ role: "user", parts: [{ text: noiDung }] }],
-                    generationConfig: {
-                        maxOutputTokens: maxTokens,
-                        responseMimeType: "application/json",
-                    },
-                }),
-            },
-        );
-
-        const data = await response.json().catch(function () {
-            return {};
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        const response = await openai.chat.completions.create({
+            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+            messages: [
+                { role: "system", content: system },
+                { role: "user", content: noiDung },
+            ],
+            temperature: 0.2,
+            max_tokens: maxTokens,
+            ...(jsonMode === false
+                ? {}
+                : { response_format: { type: "json_object" } }),
         });
-
-        if (!response.ok) {
-            console.error("Gemini API:", response.status, JSON.stringify(data));
-
-            throw taoLoi(
-                response.status === 429
-                    ? "AI đã hết hạn mức tạm thời, vui lòng thử lại sau ít phút"
-                    : "AI tạm thời không phản hồi, vui lòng thử lại",
-                502,
-            );
-        }
-
-        const parts = data.candidates?.[0]?.content?.parts || [];
-
-        const text = parts
-            .map(function (phan) {
-                return phan.text || "";
-            })
-            .join("");
-
-        if (!text) {
-            console.error("Gemini không trả nội dung:", JSON.stringify(data));
-
-            throw taoLoi("AI không trả về nội dung, vui lòng thử lại", 502);
-        }
-
-        return text;
+        const reply = response.choices[0]?.message?.content?.trim();
+        if (!reply) throw taoLoi("OpenAI chưa trả về nội dung", 502);
+        return reply;
     } catch (error) {
-        if (error.status) throw error;
-
-        console.error("Gọi AI lỗi:", error);
-        throw taoLoi("Không kết nối được AI, vui lòng thử lại", 502);
-    } finally {
-        clearTimeout(timer);
+        const status = Number(error?.status) || 502;
+        const message = error?.code === "insufficient_quota"
+            ? "OpenAI đã hết credit hoặc hạn mức. Hãy kiểm tra billing của tài khoản OpenAI."
+            : error.message || "Không thể kết nối OpenAI.";
+        console.error(`[OpenAI] Lỗi gọi model (${status}):`, message);
+        throw taoLoi(message, status);
     }
 }
+
+async function goiAI(system, noiDung, maxTokens, options) {
+    const jsonMode = options?.jsonMode !== false;
+    const providersConfigured = {
+        gemini: Boolean(process.env.GEMINI_API_KEY),
+        openai: Boolean(process.env.OPENAI_API_KEY),
+    };
+    const providerSetting = String(process.env.AI_PROVIDER || "gemini").toLowerCase();
+    const openaiSettings = ["openai", "gpt", "chatgpt"];
+    if (!["gemini", ...openaiSettings].includes(providerSetting)) {
+        throw taoLoi("AI_PROVIDER chỉ nhận gemini, openai, gpt hoặc chatgpt", 500);
+    }
+    const primary = openaiSettings.includes(providerSetting) ? "openai" : "gemini";
+    const providers = [primary, primary === "gemini" ? "openai" : "gemini"]
+        .filter((provider) => providersConfigured[provider]);
+
+    if (!providers.length) {
+        throw taoLoi("Chưa cấu hình GEMINI_API_KEY hoặc OPENAI_API_KEY trên máy chủ", 500);
+    }
+
+    const errors = [];
+    for (const provider of providers) {
+        try {
+            console.log(`[AI] Đang dùng ${provider === "openai" ? "OpenAI" : "Gemini"}`);
+            const text = provider === "openai"
+                ? await goiOpenAI(system, noiDung, maxTokens, jsonMode)
+                : await goiGemini(system, noiDung, maxTokens, jsonMode);
+            return { text, provider };
+        } catch (error) {
+            errors.push({
+                provider: provider === "openai" ? "OpenAI" : "Gemini",
+                error,
+            });
+            console.error(`[AI] ${provider} thất bại:`, error.message);
+            if (providers.length > 1) {
+                console.warn(`[AI] Đang chuyển sang ${provider === "openai" ? "Gemini" : "OpenAI"}`);
+            }
+        }
+    }
+
+    const message = errors
+        .map(({ provider, error }) => `${provider}: ${error.message}`)
+        .join(" | ");
+    const status = errors.some(({ error }) => error.status === 429) ? 429 : 502;
+    throw taoLoi(message || "Không thể kết nối nhà cung cấp AI.", status);
+}
+
+/**
+ * Gọi chatbot bằng nhà cung cấp AI được cấu hình và fallback tự động
+ */
+async function goiChatbotOpenAI(messages, duLieuHeThong) {
+    const systemPrompt = `
+Bạn là trợ lý AI hỗ trợ tuyển dụng tại Việt Nam.
+Trả lời bằng tiếng Việt tự nhiên, súc tích (thường 2-5 câu), đi thẳng vào câu hỏi.
+Ưu tiên sự chính xác hơn việc cố trả lời: không bịa số liệu, vị trí tuyển, yêu cầu hoặc tiêu chí không có trong ngữ cảnh hệ thống. Nếu thiếu dữ liệu, nói rõ đang thiếu gì.
+Với câu hỏi về số liệu ứng viên, trạng thái ứng viên, chiến dịch hoặc vị trí đang tuyển, chỉ dùng dữ liệu trong ngữ cảnh hệ thống; nếu dữ liệu không có thì nói không tìm thấy.
+
+NGỮ CẢNH HỆ THỐNG:
+${JSON.stringify(duLieuHeThong)}
+`;
+
+    const noiDung = messages
+        .map(function (m) {
+            return `${m.role === "assistant" ? "Trợ lý" : "Người dùng"}: ${String(m.text || "").slice(0, 2000)}`;
+        })
+        .join("\n");
+    const response = await goiAI(systemPrompt, noiDung, 2048, { jsonMode: false });
+    return response.text;
+}
+
+// --- HÀM XỬ LÝ DỮ LIỆU JD & CÂU HỎI ---
 
 function docJSON(text) {
     const batDau = text.indexOf("{");
@@ -258,7 +423,8 @@ Quy tắc: 4 đến 6 nhóm, mỗi nhóm 1 đến 3 câu, tổng tối đa 12 c�
 ${chuoi(yTuong, 3000)}
 </y_tuong>`;
 
-    const danhSach = lamSachCauHoi(docJSON(await goiGemini(system, noiDung, 8192)));
+    const response = await goiAI(system, noiDung, 8192);
+    const danhSach = lamSachCauHoi(docJSON(response.text));
 
     if (!danhSach.length) {
         throw taoLoi("AI chưa đặt được câu hỏi, vui lòng thử lại", 502);
@@ -292,7 +458,8 @@ ${chuoi(yTuong, 3000)}
 ${dsHoiDap || "người dùng bỏ qua phần làm rõ"}
 </cau_tra_loi_lam_ro>`;
 
-    const data = docJSON(await goiGemini(system, noiDung, 8192));
+    const response = await goiAI(system, noiDung, 8192);
+    const data = docJSON(response.text);
 
     const ketQua = {
         tieu_de: chuoi(data.tieu_de, 200),
@@ -312,6 +479,9 @@ ${dsHoiDap || "người dùng bỏ qua phần làm rõ"}
 }
 
 module.exports = {
+    goiAI,
+    goiGemini,
+    goiChatbotOpenAI,
     taoCauHoi,
     soanJD,
     lamSachTieuChi,

@@ -625,6 +625,7 @@ async function doiMatKhau(event) {
 /* Đăng xuất */
 
 function dangXuat() {
+  localStorage.removeItem(`lich_su_chat_ai_${nguoiDung?.id || nguoiDung?.email}`);
   localStorage.removeItem("token");
   localStorage.removeItem("nguoi_dung");
 

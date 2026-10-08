@@ -1366,7 +1366,7 @@ router.put(
                 ungVienHienTai
             ] = await db.query(
                 `
-                    SELECT dot_tuyen_id
+                    SELECT dot_tuyen_id, trang_thai
                     FROM ung_vien
                     WHERE id = ?
                 `,
@@ -1382,6 +1382,19 @@ router.put(
                     .json({
                         message:
                             "Không tìm thấy ứng viên"
+                    });
+            }
+
+            if (
+                ["offer", "da_tuyen"].includes(trang_thai) &&
+                trang_thai !== ungVienHienTai[0].trang_thai &&
+                !["admin", "manager"].includes(req.nguoiDung?.vai_tro)
+            ) {
+                return res
+                    .status(403)
+                    .json({
+                        message:
+                            "Chỉ Admin hoặc Manager mới được ra quyết định tuyển dụng cuối cùng"
                     });
             }
 

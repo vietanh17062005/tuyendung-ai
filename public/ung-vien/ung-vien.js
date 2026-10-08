@@ -14,6 +14,7 @@
     }
 
     const danhSachUngVien = document.getElementById("danhSachUngVien");
+    const trangThaiUngVien = document.getElementById("trangThai");
     const dotTuyenId = document.getElementById("dotTuyenId");
     const locDotTuyen = document.getElementById("locDotTuyen");
     const locTrangThai = document.getElementById("locTrangThai");
@@ -53,6 +54,12 @@
     const coQuyenQuanLyUngVien = ["admin", "manager", "hr"].includes(
         nguoiDung.vai_tro
     );
+    if (!["admin", "manager"].includes(nguoiDung.vai_tro)) {
+        ["offer", "da_tuyen"].forEach((trangThai) => {
+            const option = trangThaiUngVien.querySelector(`option[value="${trangThai}"]`);
+            if (option) option.disabled = true;
+        });
+    }
 
     function dotTuyenKhoaTaoUngVien(trangThai) {
         return ["tam_dung", "ket_thuc", "da_dong", "dong", "closed"].includes(
