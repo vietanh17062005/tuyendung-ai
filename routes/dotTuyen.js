@@ -65,6 +65,21 @@ router.get(
       const nguoiTaoField = layNguoiTaoField(columns);
       const tenNguoiTaoField = layTenNguoiTaoField(columns);
       const ngayCapNhatField = layNgayCapNhatField(columns);
+      const cotPhanTichAI = await layCotBang("phan_tich_ai");
+      const cotDiemPhanTich = ["diem_phu_hop", "diem"].find((column) =>
+        cotPhanTichAI.includes(column),
+      );
+      const cotUngVienPhanTich = cotPhanTichAI.includes("ung_vien_id")
+        ? "ung_vien_id"
+        : null;
+      const truyVanUngVienHopTieuChi = cotDiemPhanTich && cotUngVienPhanTich
+        ? `(SELECT COUNT(DISTINCT uv.id)
+           FROM ung_vien uv
+           INNER JOIN phan_tich_ai pa
+             ON pa.${cotUngVienPhanTich} = uv.id AND pa.${cotDiemPhanTich} >= 80
+           INNER JOIN jd jd_match ON jd_match.id = pa.jd_id AND jd_match.dot_tuyen_id = dt.id
+           WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien_hop_tieu_chi`
+        : "0 AS so_ung_vien_hop_tieu_chi";
       const ketQua = `
         SELECT
           dt.id,
@@ -80,11 +95,7 @@ router.get(
           dt.${ngayCapNhatField} AS ngay_cap_nhat,
           nd.ho_ten AS nguoi_tao_ten,
           (SELECT COUNT(*) FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien,
-          (SELECT COUNT(DISTINCT uv.id)
-           FROM ung_vien uv
-           INNER JOIN phan_tich_ai pa ON pa.ung_vien_id = uv.id AND pa.diem >= 80
-           INNER JOIN jd jd_match ON jd_match.id = pa.jd_id AND jd_match.dot_tuyen_id = dt.id
-           WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien_hop_tieu_chi,
+          ${truyVanUngVienHopTieuChi},
           (SELECT GROUP_CONCAT(DISTINCT NULLIF(TRIM(uv.nguon), '') ORDER BY uv.nguon SEPARATOR ', ')
            FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id AND NULLIF(TRIM(uv.nguon), '') IS NOT NULL) AS kenh_nhan_cv
         FROM dot_tuyen dt
