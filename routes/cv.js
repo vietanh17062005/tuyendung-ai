@@ -1255,7 +1255,7 @@ router.post(
                         buffer,
                         {
                             access:
-                                "public",
+                                "private",
                             contentType:
                                 req.file
                                     .mimetype,
