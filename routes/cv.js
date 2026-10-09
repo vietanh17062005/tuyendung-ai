@@ -1159,260 +1159,110 @@ router.get(
 |--------------------------------------------------------------------------
 */
 
-router.post(
-    "/upload",
-    kiemTraDangNhap,
-    kiemTraVaiTro(
-        "admin",
-        "manager",
-        "hr"
-    ),
-    upload.single(
-        "file"
-    ),
-    async function (
-        req,
-        res
-    ) {
-        try {
-            if (
-                !req.file
-            ) {
-                return res
-                    .status(400)
-                    .json({
-                        message:
-                            "Vui lòng chọn file CV.",
-                    });
-            }
 
-            const ungVienId =
-                Number(
-                    req.body
-                        ?.ung_vien_id
-                );
+router.post("/upload", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "hr"), upload.single("file"), async function (req, res) {
+    let connection;
+    let duongDanMoi = null;
+    let duongDanCu = null;
 
-            if (
-                !Number.isInteger(
-                    ungVienId
-                ) ||
-                ungVienId <= 0
-            ) {
-                if (
-                    req.file.path
-                ) {
-                    xoaFile(
-                        req.file.path
-                    );
-                }
+    try {
+        const ungVienId = Number(req.body?.ung_vien_id);
+        const cvId = req.body?.cv_id ? Number(req.body.cv_id) : null;
 
-                return res
-                    .status(400)
-                    .json({
-                        message:
-                            "Ứng viên không hợp lệ.",
-                    });
-            }
+        if (!req.file) return res.status(400).json({ message: "Vui lòng chọn file CV." });
+        if (!Number.isInteger(ungVienId) || ungVienId <= 0) return res.status(400).json({ message: "Ứng viên không hợp lệ." });
 
-            const ungVien =
-                await layUngVien(
-                    ungVienId
-                );
+        const ungVien = await layUngVien(ungVienId);
+        if (!ungVien) return res.status(404).json({ message: "Không tìm thấy ứng viên." });
 
-            if (
-                !ungVien
-            ) {
-                if (
-                    req.file.path
-                ) {
-                    xoaFile(
-                        req.file.path
-                    );
-                }
-
-                return res
-                    .status(404)
-                    .json({
-                        message:
-                            "Không tìm thấy ứng viên.",
-                    });
-            }
-
-            let duongDan = null;
-
-            if (
-                dangChayTrenVercel
-            ) {
-                const buffer =
-                    req.file
-                        .buffer;
-
-                const blob =
-                    await put(
-                        `cv/${Date.now()}_${taoTenFile(
-                            req.file.originalname
-                        )}`,
-                        buffer,
-                        {
-                            access:
-                                "private",
-                            contentType:
-                                req.file
-                                    .mimetype,
-                        }
-                    );
-
-                duongDan =
-                    blob.url;
-            } else {
-                duongDan =
-                    path.relative(
-                        process.cwd(),
-                        req.file.path
-                    );
-            }
-
-            const laBanChinh =
-                String(
-                    req.body
-                        ?.la_ban_chinh
-                ) === "1";
-
-            const connection =
-                await db.getConnection();
-
-            try {
-                await connection.beginTransaction();
-
-                if (
-                    laBanChinh
-                ) {
-                    await connection.query(
-                        `
-                        UPDATE cv
-                        SET la_ban_chinh = 0
-                        WHERE ung_vien_id = ?
-                        `,
-                        [
-                            ungVienId,
-                        ]
-                    );
-                }
-
-                const cvColumns =
-                    await layCotBang(
-                        "cv"
-                    );
-
-                const data = {
-                    ung_vien_id:
-                        ungVienId,
-
-                    ten_file:
-                        req.file
-                            .originalname,
-
-                    duong_dan:
-                        duongDan,
-
-                    loai_file:
-                        req.file
-                            .mimetype,
-
-                    kich_thuoc:
-                        req.file
-                            .size,
-
-                    la_ban_chinh:
-                        laBanChinh
-                            ? 1
-                            : 0,
-
-                    ngay_tai_len:
-                        new Date(),
-                };
-
-                const fields =
-                    Object.keys(
-                        data
-                    ).filter(
-                        (field) =>
-                            cvColumns.has(
-                                field
-                            )
-                    );
-
-                const values =
-                    fields.map(
-                        (field) =>
-                            data[
-                            field
-                            ]
-                    );
-
-                const [
-                    result,
-                ] =
-                    await connection.query(
-                        `
-                        INSERT INTO cv
-                            (${fields.join(
-                            ", "
-                        )})
-                        VALUES
-                            (${fields
-                            .map(
-                                () =>
-                                    "?"
-                            )
-                            .join(
-                                ", "
-                            )})
-                        `,
-                        values
-                    );
-
-                await connection.commit();
-
-                res.status(
-                    201
-                ).json({
-                    message:
-                        "Tải CV lên thành công.",
-                    id:
-                        result.insertId,
-                });
-            } catch (
-            error
-            ) {
-                await connection.rollback();
-
-                await xoaFile(
-                    duongDan
-                );
-
-                throw error;
-            } finally {
-                connection.release();
-            }
-        } catch (
-        error
-        ) {
-            console.error(
-                "POST /api/cv/upload:",
-                error
-            );
-
-            res.status(
-                500
-            ).json({
-                message:
-                    error.message ||
-                    "Không thể tải CV lên.",
-            });
+        let cvCu = null;
+        if (cvId !== null) {
+            if (!Number.isInteger(cvId) || cvId <= 0) return res.status(400).json({ message: "CV không hợp lệ." });
+            cvCu = await layCV(cvId);
+            if (!cvCu || Number(cvCu.ung_vien_id) !== ungVienId) return res.status(404).json({ message: "Không tìm thấy CV thuộc ứng viên này." });
+            duongDanCu = cvCu.duong_dan;
         }
+
+        if (dangChayTrenVercel) {
+            const blob = await put(`cv/${Date.now()}_${taoTenFile(req.file.originalname)}`, req.file.buffer, {
+                access: "private",
+                contentType: req.file.mimetype
+            });
+            duongDanMoi = blob.url;
+        } else {
+            duongDanMoi = path.relative(process.cwd(), req.file.path);
+        }
+
+        const cvColumns = await layCotBang("cv");
+        const coLaBanChinh = cvColumns.has("la_ban_chinh");
+        const coYeuCauBanChinh = req.body?.la_ban_chinh !== undefined;
+        const laBanChinh = coYeuCauBanChinh
+            ? String(req.body.la_ban_chinh) === "1"
+            : Boolean(cvCu?.la_ban_chinh);
+
+        const data = {
+            ung_vien_id: ungVienId,
+            ten_file: req.file.originalname,
+            duong_dan: duongDanMoi,
+            loai_file: req.file.mimetype,
+            kich_thuoc: req.file.size,
+            la_ban_chinh: laBanChinh ? 1 : 0,
+            ngay_tai_len: new Date()
+        };
+
+        const fields = Object.keys(data).filter(field => cvColumns.has(field));
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        if (laBanChinh && coLaBanChinh) {
+            await connection.query("UPDATE cv SET la_ban_chinh = 0 WHERE ung_vien_id = ?", [ungVienId]);
+        }
+
+        let cvMoiId;
+
+        if (cvCu) {
+            const updateFields = fields.filter(field => field !== "ung_vien_id");
+            await connection.query(
+                `UPDATE cv SET ${updateFields.map(field => `${field} = ?`).join(", ")} WHERE id = ?`,
+                [...updateFields.map(field => data[field]), cvId]
+            );
+            cvMoiId = cvId;
+        } else {
+            const [result] = await connection.query(
+                `INSERT INTO cv (${fields.join(", ")}) VALUES (${fields.map(() => "?").join(", ")})`,
+                fields.map(field => data[field])
+            );
+            cvMoiId = result.insertId;
+        }
+
+        await connection.commit();
+
+        if (cvCu && duongDanCu && duongDanCu !== duongDanMoi) {
+            await xoaFile(duongDanCu);
+        }
+
+        return res.status(cvCu ? 200 : 201).json({
+            message: cvCu ? "Đã cập nhật CV thành công." : "Tải CV lên thành công.",
+            id: cvMoiId
+        });
+    } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error("Rollback CV:", rollbackError);
+            }
+        }
+
+        if (duongDanMoi) await xoaFile(duongDanMoi);
+        else if (req.file?.path) await xoaFile(path.relative(process.cwd(), req.file.path));
+
+        console.error("POST /api/cv/upload:", error);
+        return res.status(500).json({ message: error.message || "Không thể tải hoặc cập nhật CV." });
+    } finally {
+        if (connection) connection.release();
     }
-);
+});
 
 /*
 |--------------------------------------------------------------------------
