@@ -1659,55 +1659,1014 @@
     }
 }
 
+/* Form chỉnh sửa và xác nhận kết quả AI */
+.cv-review-editor {
+    background: #fff;
+    border: 1px solid #e4eaf2;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 12px 35px rgba(15, 35, 65, .07);
+    color: #172033;
+    margin: 18px 0
+}
 
-/* Căn nút và trường thay CV */
-.cv-candidate-form .cv-modal-footer .cv-tool-btn {
+.cv-review-editor-head {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 24px 26px;
+    background: linear-gradient(120deg, #f0f6ff 0%, #f8faff 60%, #f1fbf8 100%);
+    border-bottom: 1px solid #e4eaf2
+}
+
+.cv-review-editor-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 48px;
+    height: 48px;
+    border-radius: 15px;
+    background: #e0eaff;
+    color: #245bd6;
+    font-size: 25px
+}
+
+.cv-review-kicker {
+    display: block;
+    color: #3566c7;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px
+}
+
+.cv-review-editor-head h3 {
+    font-size: 20px;
+    line-height: 1.35;
+    margin: 0 0 5px;
+    font-weight: 750;
+    color: #172033
+}
+
+.cv-review-editor-head p {
+    margin: 0;
+    color: #657187;
+    font-size: 13px;
+    line-height: 1.6
+}
+
+.cv-review-editor-section {
+    padding: 23px 26px;
+    border-bottom: 1px solid #edf0f5
+}
+
+.cv-review-editor-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    margin: 0 0 18px;
+    color: #202b40;
+    font-weight: 750
+}
+
+.cv-review-editor-section h4>span {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: #edf3ff;
+    color: #3264ce;
+    font-size: 11px;
+    font-weight: 800
+}
+
+.cv-review-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px
+}
+
+.cv-review-form-grid label,
+.cv-review-score-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    color: #37445a;
+    font-size: 12px;
+    font-weight: 700
+}
+
+.cv-review-form-grid label.full {
+    grid-column: 1/-1
+}
+
+.cv-review-form-grid label small,
+.cv-review-score-grid label small {
+    color: #8490a3;
+    font-size: 11px;
+    font-weight: 500
+}
+
+.cv-review-editor input,
+.cv-review-editor textarea,
+.cv-review-editor select {
+    box-sizing: border-box;
+    width: 100%;
+    border: 1px solid #dce3ed;
+    border-radius: 10px;
+    background: #fff;
+    padding: 11px 12px;
+    color: #1b2639;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 450;
+    outline: none;
+    transition: border-color .18s, box-shadow .18s, background .18s
+}
+
+.cv-review-editor textarea {
+    resize: vertical;
+    min-height: 68px;
+    line-height: 1.6
+}
+
+.cv-review-editor input:focus,
+.cv-review-editor textarea:focus,
+.cv-review-editor select:focus {
+    border-color: #6c91ee;
+    box-shadow: 0 0 0 3px rgba(70, 112, 225, .12);
+    background: #fcfdff
+}
+
+.cv-review-editor input::placeholder,
+.cv-review-editor textarea::placeholder {
+    color: #a1aabb
+}
+
+.cv-review-score-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 19px
+}
+
+.cv-review-score-grid label {
+    padding: 13px;
+    border: 1px solid #e5eaf2;
+    border-radius: 12px;
+    background: #fbfcfe
+}
+
+.cv-review-score-grid label.cv-review-score-main {
+    grid-column: 1/-1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px;
+    align-items: center;
+    gap: 8px 20px;
+    background: linear-gradient(120deg, #f3f7ff, #f7fbff);
+    border-color: #dbe6ff;
+    padding: 17px 18px
+}
+
+.cv-review-score-input {
+    display: flex;
+    align-items: center;
+    gap: 7px
+}
+
+.cv-review-score-input input {
+    font-size: 25px;
+    font-weight: 800;
+    color: #245bd6;
+    text-align: center;
+    padding: 8px
+}
+
+.cv-review-score-input b {
+    font-size: 22px;
+    color: #245bd6
+}
+
+.cv-review-score-main>small {
+    grid-column: 1/-1
+}
+
+.cv-review-details-grid {
+    margin-top: 8px
+}
+
+.cv-review-editor-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 18px 26px;
+    background: #fbfcfe
+}
+
+.cv-review-editor-footer>span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #667389;
+    font-size: 12px
+}
+
+.cv-review-editor-footer>span i {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22a06b;
+    box-shadow: 0 0 0 4px #e3f7ed
+}
+
+.cv-review-editor-footer>div {
+    display: flex;
+    gap: 10px;
+    align-items: center
+}
+
+.cv-review-cancel-btn,
+.cv-review-save-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    border-radius: 10px;
+    padding: 0 17px;
+    font-size: 13px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s, background .15s
+}
+
+.cv-review-cancel-btn {
+    border: 1px solid #dce3ed;
+    background: #fff;
+    color: #4e5b70
+}
+
+.cv-review-save-btn {
+    border: 1px solid #245bd6;
+    background: #245bd6;
+    color: #fff;
+    box-shadow: 0 5px 12px rgba(36, 91, 214, .2)
+}
+
+.cv-review-save-btn:hover {
+    background: #174bbd;
+    box-shadow: 0 7px 17px rgba(36, 91, 214, .25);
+    transform: translateY(-1px)
+}
+
+.cv-review-cancel-btn:hover {
+    background: #f0f3f8
+}
+
+.cv-review-save-btn:disabled,
+.cv-review-cancel-btn:disabled {
+    opacity: .65;
+    cursor: wait;
+    transform: none
+}
+
+.cv-inline-spinner {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    border: 2px solid rgba(255, 255, 255, .4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: cvInlineSpin .7s linear infinite;
+    vertical-align: middle
+}
+
+@keyframes cvInlineSpin {
+    to {
+        transform: rotate(360deg)
+    }
+}
+
+@media(max-width:700px) {
+
+    .cv-review-editor-head,
+    .cv-review-editor-section {
+        padding: 18px
+    }
+
+    .cv-review-form-grid,
+    .cv-review-score-grid {
+        grid-template-columns: 1fr
+    }
+
+    .cv-review-score-grid label.cv-review-score-main {
+        grid-template-columns: minmax(0, 1fr) 115px
+    }
+
+    .cv-review-editor-footer {
+        padding: 16px 18px;
+        align-items: stretch;
+        flex-direction: column
+    }
+
+    .cv-review-editor-footer>div {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr
+    }
+
+    .cv-review-form-grid label.full {
+        grid-column: auto
+    }
+}
+
+
+/* Menu thao tác CV: chỉ hiện khi bấm nút ba chấm */
+.cv-list-item-wrap {
+    position: relative;
+    border-bottom: 1px solid #f1f5f9
+}
+
+.cv-list-item-wrap .cv-list-item {
+    border-bottom: 0
+}
+
+.cv-candidate-more {
+    position: absolute;
+    right: 5px;
+    top: 8px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #64748b;
+    font-size: 19px;
     line-height: 1;
-    padding-top: 0;
-    padding-bottom: 0;
+    cursor: pointer;
+    z-index: 3
 }
 
-.cv-candidate-file {
-    display: block;
-    margin: 16px 20px 0;
+.cv-candidate-more:hover,
+.cv-candidate-more:focus-visible {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #1e293b;
+    outline: none
 }
 
-.cv-candidate-file>span {
-    display: block;
-    margin-bottom: 7px;
-    color: #334155;
-    font-size: 12px;
-    font-weight: 700;
+.cv-candidate-menu {
+    position: absolute;
+    right: 7px;
+    top: 36px;
+    z-index: 30;
+    display: none;
+    width: 158px;
+    padding: 5px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .16)
 }
 
-.cv-candidate-file input {
+.cv-candidate-menu.show {
+    display: block
+}
+
+.cv-candidate-menu button {
     display: block;
     width: 100%;
-    box-sizing: border-box;
-    padding: 9px;
-    border: 1px solid #dbe2ea;
-    border-radius: 7px;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 6px;
     background: #fff;
     color: #334155;
+    text-align: left;
     font: inherit;
     font-size: 12px;
+    cursor: pointer
 }
 
-.cv-candidate-file small {
+.cv-candidate-menu button:hover {
+    background: #f8fafc
+}
+
+.cv-candidate-menu button.danger {
+    color: #dc2626
+}
+
+/* Polish form Sửa ứng viên và khu vực thay thế CV */
+#modalUngVien .cv-candidate-modal {
+    width: min(720px, calc(100vw - 32px));
+    max-height: min(88vh, 860px);
+    overflow: auto;
+    border: 1px solid #e3e9f2;
+    border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .22)
+}
+
+#modalUngVien .cv-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px;
+    background: #fff;
+    border-bottom: 1px solid #edf0f5
+}
+
+#modalUngVien .cv-modal-header h2 {
+    margin: 0;
+    color: #172033;
+    font-size: 20px;
+    line-height: 1.35;
+    font-weight: 750
+}
+
+#modalUngVien .cv-modal-header p {
+    margin: 5px 0 0;
+    color: #788397;
+    font-size: 12px;
+    line-height: 1.5
+}
+
+#modalUngVien .cv-modal-close {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid #e5eaf1;
+    border-radius: 9px;
+    background: #fff;
+    color: #667085;
+    font-size: 23px;
+    line-height: 1;
+    cursor: pointer
+}
+
+#modalUngVien .cv-modal-close:hover {
+    background: #f8fafc;
+    color: #1e293b
+}
+
+#modalUngVien .cv-candidate-form {
+    padding: 22px 24px 0
+}
+
+#modalUngVien .cv-candidate-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 17px 16px;
+    margin: 0
+}
+
+#modalUngVien .cv-candidate-grid label {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px
+}
+
+#modalUngVien .cv-candidate-grid span {
+    margin: 0;
+    color: #344054;
+    font-size: 12px;
+    font-weight: 650
+}
+
+#modalUngVien .cv-candidate-grid input,
+#modalUngVien .cv-candidate-grid select {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid #d9e1ec;
+    border-radius: 8px;
+    background: #fff;
+    color: #243047;
+    font-size: 13px;
+    transition: border-color .15s, box-shadow .15s
+}
+
+#modalUngVien .cv-candidate-grid input::placeholder {
+    color: #a0aaba
+}
+
+#modalUngVien .cv-candidate-grid input:focus,
+#modalUngVien .cv-candidate-grid select:focus {
+    border-color: #7da2f7;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
+    outline: none
+}
+
+#modalUngVien .cv-candidate-grid input:disabled,
+#modalUngVien .cv-candidate-grid select:disabled {
+    background: #f7f9fc;
+    color: #64748b;
+    cursor: default
+}
+
+#modalUngVien .cv-replace-cv,
+#modalUngVien .cv-replace-file-section,
+#modalUngVien .cv-cv-replace {
+    margin: 22px 0 0;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 11px;
+    background: #f8fafc
+}
+
+#modalUngVien .cv-replace-cv h3,
+#modalUngVien .cv-replace-file-section h3,
+#modalUngVien .cv-cv-replace h3 {
+    margin: 0 0 5px;
+    color: #263449;
+    font-size: 13px;
+    font-weight: 750
+}
+
+#modalUngVien .cv-replace-cv p,
+#modalUngVien .cv-replace-file-section p,
+#modalUngVien .cv-cv-replace p {
+    margin: 0 0 12px;
+    color: #7a8598;
+    font-size: 12px;
+    line-height: 1.6
+}
+
+#modalUngVien input[type="file"] {
     display: block;
-    margin-top: 6px;
-    color: #94a3b8;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-height: 44px;
+    padding: 6px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: #64748b;
+    font-size: 12px
+}
+
+#modalUngVien input[type="file"]::file-selector-button {
+    height: 30px;
+    margin-right: 12px;
+    padding: 0 12px;
+    border: 1px solid #d8e1ee;
+    border-radius: 6px;
+    background: #eef4ff;
+    color: #245bd6;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer
+}
+
+#modalUngVien input[type="file"]::file-selector-button:hover {
+    background: #e1ebff
+}
+
+#modalUngVien .cv-file-help,
+#modalUngVien .cv-replace-cv small,
+#modalUngVien .cv-replace-file-section small {
+    display: block;
+    margin-top: 8px;
+    color: #8993a4;
     font-size: 11px;
+    line-height: 1.5
+}
+
+#modalUngVien .cv-modal-footer {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-top: 22px;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, .97);
+    border-top: 1px solid #edf0f5
+}
+
+#modalUngVien .cv-modal-footer .cv-tool-btn {
+    min-width: 94px;
+    height: 39px;
+    padding: 0 15px;
+    border-radius: 8px;
+    font-size: 12px
+}
+
+#modalUngVien .cv-modal-footer .cv-tool-btn.primary {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff
+}
+
+#modalUngVien .cv-modal-footer .cv-tool-btn.primary:hover {
+    background: #1d4ed8
+}
+
+#modalUngVien .cv-form-message {
+    margin: 12px 24px 0;
+    font-size: 12px;
+    line-height: 1.5
+}
+
+#modalUngVien .cv-form-message:empty {
+    display: none
+}
+
+@media(max-width:600px) {
+    #modalUngVien .cv-candidate-modal {
+        width: calc(100vw - 20px);
+        max-height: 92vh
+    }
+
+    #modalUngVien .cv-modal-header {
+        padding: 17px
+    }
+
+    #modalUngVien .cv-candidate-form {
+        padding: 18px 17px 0
+    }
+
+    #modalUngVien .cv-candidate-grid {
+        grid-template-columns: 1fr;
+        gap: 14px
+    }
+
+    #modalUngVien .cv-modal-footer {
+        padding: 13px 17px
+    }
+
+    #modalUngVien .cv-replace-cv,
+    #modalUngVien .cv-replace-file-section,
+    #modalUngVien .cv-cv-replace {
+        padding: 13px
+    }
+}
+
+/* Bố cục ba khu vực theo tỷ lệ 20 : 38 : 42 */
+@media (min-width: 1151px) {
+    .cv-workspace {
+        grid-template-columns: minmax(0, 20fr) minmax(0, 38fr) minmax(0, 42fr) !important;
+        gap: 12px;
+    }
+}
+
+/* Tăng nhẹ cỡ chữ phần Phân tích & đánh giá để dễ đọc hơn */
+.cv-analysis-panel .cv-analysis-header h2,
+.cv-analysis-panel h2 {
+    font-size: 17px;
+    line-height: 1.4;
+}
+
+.cv-analysis-panel .cv-analysis-content {
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.cv-analysis-panel .cv-analysis-content p,
+.cv-analysis-panel .cv-analysis-content li,
+.cv-analysis-panel .cv-analysis-content label,
+.cv-analysis-panel .cv-analysis-content .cv-score-label,
+.cv-analysis-panel .cv-analysis-content .cv-analysis-section-title {
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.cv-analysis-panel .cv-analysis-content h3 {
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+@media (max-width: 1150px) {
+    .cv-workspace {
+        grid-template-columns: 240px minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 850px) {
+    .cv-workspace {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Polished upload and candidate edit forms */
+#modalThemCV .cv-upload-modal {
+    width: min(560px, calc(100vw - 32px));
+    border: 1px solid #e4eaf2;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .2)
+}
+
+#modalThemCV .cv-modal-header {
+    padding: 22px 24px;
+    background: linear-gradient(135deg, #f5f8ff 0%, #ffffff 78%);
+    border-bottom: 1px solid #edf1f7
+}
+
+#modalThemCV .cv-modal-header h2 {
+    margin: 0;
+    color: #172033;
+    font-size: 21px;
+    font-weight: 750;
+    letter-spacing: -.25px;
+    line-height: 1.35
+}
+
+#modalThemCV .cv-modal-header p {
+    margin: 6px 0 0;
+    color: #758198;
+    font-size: 13px;
+    line-height: 1.55
+}
+
+#modalThemCV #formThemCV {
+    padding: 22px 24px 0
+}
+
+#modalThemCV .cv-form-group {
+    margin: 0 0 20px
+}
+
+#modalThemCV .cv-form-group label {
+    display: block;
+    margin: 0 0 8px;
+    color: #344054;
+    font-size: 13px;
+    font-weight: 700
+}
+
+#modalThemCV .cv-form-group select {
+    box-sizing: border-box;
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 1px solid #d8e1ed;
+    border-radius: 9px;
+    background: #fff;
+    color: #243047;
+    font: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s
+}
+
+#modalThemCV .cv-form-group select:focus {
+    border-color: #80a5f8;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .1)
+}
+
+#modalThemCV .cv-form-group input[type=file] {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 78px;
+    padding: 14px;
+    border: 1px dashed #aebfda;
+    border-radius: 11px;
+    background: #f8faff;
+    color: #52627a;
+    font-size: 12px;
+    transition: border-color .15s, background .15s
+}
+
+#modalThemCV .cv-form-group input[type=file]:hover {
+    border-color: #7ea2f5;
+    background: #f2f6ff
+}
+
+#modalThemCV .cv-form-group input[type=file]::file-selector-button {
+    height: 34px;
+    margin-right: 12px;
+    padding: 0 13px;
+    border: 1px solid #cbd9f5;
+    border-radius: 7px;
+    background: #eaf1ff;
+    color: #245bd6;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer
+}
+
+#modalThemCV .cv-form-group small {
+    display: block;
+    margin-top: 9px;
+    color: #8994a7;
+    font-size: 11px;
+    line-height: 1.6
+}
+
+#modalThemCV .cv-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin: 20px -24px 0;
+    padding: 16px 24px;
+    background: #fbfcfe;
+    border-top: 1px solid #edf1f6
+}
+
+#modalThemCV .cv-modal-footer .cv-tool-btn,
+#modalUngVien .cv-candidate-footer .cv-tool-btn {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 16px;
+    margin: 0;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1;
+    white-space: nowrap;
+    transform: none;
+    position: static
+}
+
+#modalThemCV .cv-modal-footer .cv-tool-btn.primary,
+#modalUngVien .cv-candidate-footer .cv-tool-btn.primary {
+    background: #2563eb;
+    border: 1px solid #2563eb;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, .16)
+}
+
+#modalThemCV .cv-modal-footer .cv-tool-btn.primary:hover,
+#modalUngVien .cv-candidate-footer .cv-tool-btn.primary:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8
+}
+
+#modalUngVien .cv-replace-cv {
+    box-sizing: border-box;
+    margin: 22px 0 0;
+    padding: 17px;
+    border: 1px solid #d9e6ff;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f7faff 0%, #fbfdff 100%)
+}
+
+#modalUngVien .cv-replace-cv-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 15px
+}
+
+#modalUngVien .cv-replace-cv-icon {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #e5edff;
+    color: #285fd4;
+    font-size: 22px;
+    font-weight: 700
+}
+
+#modalUngVien .cv-replace-cv h3 {
+    margin: 0 0 5px;
+    color: #263449;
+    font-size: 14px;
+    font-weight: 750;
+    line-height: 1.4
+}
+
+#modalUngVien .cv-replace-cv p {
+    margin: 0;
+    color: #718096;
+    font-size: 12px;
+    line-height: 1.6
+}
+
+#modalUngVien .cv-replace-file-label {
+    display: block;
+    margin: 0 0 8px;
+    color: #344054;
+    font-size: 12px;
+    font-weight: 700
+}
+
+#modalUngVien #fileCVThayThe {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 48px;
+    padding: 7px;
+    border: 1px dashed #b9c9e2;
+    border-radius: 9px;
+    background: #fff;
+    color: #64748b;
+    font-size: 12px
+}
+
+#modalUngVien #fileCVThayThe::file-selector-button {
+    height: 32px;
+    margin-right: 10px;
+    padding: 0 12px;
+    border: 1px solid #d5e1f8;
+    border-radius: 7px;
+    background: #edf3ff;
+    color: #245bd6;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer
+}
+
+#modalUngVien #fileCVThayThe::file-selector-button:hover {
+    background: #e1ebff
+}
+
+#modalUngVien .cv-replace-cv small {
+    display: block;
+    margin-top: 8px;
+    color: #8591a5;
+    font-size: 11px;
+    line-height: 1.55
+}
+
+#modalUngVien .cv-candidate-footer {
+    box-sizing: border-box;
+    min-height: 72px;
+    padding: 15px 24px;
+    margin-left: -24px;
+    margin-right: -24px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px
+}
+
+#modalUngVien .cv-candidate-footer .cv-tool-btn {
+    line-height: 1 !important;
+    letter-spacing: 0;
+    top: auto !important;
+    bottom: auto !important
+}
+
+#modalUngVien .cv-candidate-footer .cv-tool-btn:focus {
+    outline-offset: 2px
+}
+
+@media(max-width:600px) {
+    #modalThemCV #formThemCV {
+        padding: 18px 17px 0
+    }
+
+    #modalThemCV .cv-modal-header {
+        padding: 18px 17px
+    }
+
+    #modalThemCV .cv-modal-footer {
+        margin-left: -17px;
+        margin-right: -17px;
+        padding: 14px 17px
+    }
+
+    #modalUngVien .cv-candidate-footer {
+        margin-left: -17px;
+        margin-right: -17px;
+        padding: 13px 17px
+    }
+}
+
+
+/* Thông báo khi điểm đánh giá nằm ngoài khoảng cho phép */
+.cv-score-validation {
+    margin: 10px 0 14px;
+    padding: 10px 12px;
+    border: 1px solid #f3b5b5;
+    border-radius: 9px;
+    background: #fff1f1;
+    color: #b42318;
+    font-size: 13px;
     line-height: 1.5;
 }
 
-.cv-candidate-file input:disabled {
+.cv-score-validation[hidden] {
     display: none;
 }
 
-.cv-candidate-file:has(input:disabled) {
-    display: none;
+#phanTichAI input[aria-invalid="true"],
+#noiDungXacNhanPhanTich input[aria-invalid="true"] {
+    border-color: #d92d20 !important;
+    box-shadow: 0 0 0 2px rgba(217, 45, 32, .10);
 }

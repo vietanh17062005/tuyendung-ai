@@ -490,7 +490,11 @@ async function guiUploadCVTheoDot(event) {
     }
     if (!response.ok) throw new Error(result.message || `Lỗi máy chủ (${response.status})`);
     const candidates = Array.isArray(result.candidates) ? result.candidates : [];
-    const failures = [];
+    const failures = Array.isArray(result.errors)
+      ? result.errors.map((item) => `${item.ten_file || "CV"}: ${item.message || "Tải CV thất bại"}`)
+      : [];
+    let successCount = 0;
+
     if (candidates.length) {
       progress.hidden = false;
       progress.max = candidates.length;
@@ -498,7 +502,7 @@ async function guiUploadCVTheoDot(event) {
       for (let index = 0; index < candidates.length; index += 1) {
         const candidate = candidates[index];
         $("thongBaoUploadDot").textContent =
-          `Đã tải ${candidates.length} CV. Đang trích xuất và phân tích ${index + 1}/${candidates.length}: ${candidate.ten_file || "CV"}...`;
+          `Đã tải CV. Đang phân tích và lưu ${index + 1}/${candidates.length}: ${candidate.ten_file || "CV"}...`;
         try {
           const analysisResponse = await fetch(`${API}/cv/review/${candidate.id}/analyze`, {
             method: "POST",
@@ -506,22 +510,27 @@ async function guiUploadCVTheoDot(event) {
               "Content-Type": "application/json",
               ...(layToken() ? { Authorization: `Bearer ${layToken()}` } : {}),
             },
-            body: JSON.stringify({ cv_id: candidate.cv_id }),
+            body: JSON.stringify({ cv_id: candidate.cv_id, auto_save: true }),
           });
           const analysisResult = await analysisResponse.json().catch(() => ({}));
           if (!analysisResponse.ok) {
-            failures.push(`${candidate.ten_file}: ${analysisResult.message || "Phân tích thất bại"}`);
+            failures.push(`${candidate.ten_file || "CV"}: ${analysisResult.message || "Phân tích thất bại"}`);
+          } else if (analysisResult.da_luu !== true) {
+            failures.push(`${candidate.ten_file || "CV"}: AI phân tích xong nhưng chưa lưu được kết quả.`);
+          } else {
+            successCount += 1;
           }
         } catch (error) {
-          failures.push(`${candidate.ten_file}: ${error.message || "Không kết nối được máy chủ AI"}`);
+          failures.push(`${candidate.ten_file || "CV"}: ${error.message || "Không kết nối được máy chủ AI"}`);
         }
         progress.value = index + 1;
       }
     }
+
     $("thongBaoUploadDot").className = failures.length ? "thong-bao hien" : "thong-bao hien thanh-cong";
     $("thongBaoUploadDot").textContent = failures.length
-      ? `${result.message || "Đã tải CV."} Phân tích thành công ${candidates.length - failures.length}/${candidates.length}. Lỗi: ${failures.slice(0, 3).join(" · ")}`
-      : `${result.message || "Đã tải CV thành công."}${candidates.length ? ` Đã phân tích ${candidates.length} CV.` : ""}`;
+      ? `Đã tải ${candidates.length} CV. Phân tích và lưu thành công ${successCount}/${candidates.length}. Có ${failures.length} lỗi: ${failures.slice(0, 3).join(" · ")}`
+      : `${result.message || "Đã tải CV thành công."}${candidates.length ? ` Đã phân tích và lưu ${successCount}/${candidates.length} CV.` : ""}`;
     await taiDuLieu();
     if (!failures.length) setTimeout(dongUploadDot, 1400);
   } catch (error) {

@@ -262,11 +262,20 @@
                         </select></label>
                     <label><span>Nguồn</span><input id="ungVienNguon" /></label>
                 </div>
-                <label class="cv-candidate-file"><span>Thay thế file CV (không bắt buộc)</span><input type="file"
-                        id="ungVienFileCV" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" /><small>Chọn file mới nếu muốn ghi
-                        đè CV hiện tại. PDF, DOC, DOCX, JPG, PNG • tối đa 10 MB.</small></label>
+                <section class="cv-replace-cv" id="khuVucThayCV">
+                    <div class="cv-replace-cv-heading">
+                        <span class="cv-replace-cv-icon" aria-hidden="true">↑</span>
+                        <div>
+                            <h3>Thay thế file CV</h3>
+                            <p>Chọn file CV mới nếu muốn ghi đè hồ sơ CV hiện tại của ứng viên.</p>
+                        </div>
+                    </div>
+                    <label class="cv-replace-file-label" for="fileCVThayThe">Chọn CV mới (không bắt buộc)</label>
+                    <input type="file" id="fileCVThayThe" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                    <small>PDF, DOC, DOCX, JPG, PNG • tối đa 10 MB. Để trống nếu không muốn thay CV.</small>
+                </section>
                 <div id="thongBaoUngVien" class="cv-form-message"></div>
-                <div class="cv-modal-footer">
+                <div class="cv-modal-footer cv-candidate-footer">
                     <button type="button" class="cv-tool-btn" id="btnHuyUngVien">Đóng</button>
                     <button type="submit" class="cv-tool-btn primary" id="btnLuuUngVien">Lưu thay đổi</button>
                 </div>

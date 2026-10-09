@@ -69,7 +69,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const ungVienNguon = document.getElementById("ungVienNguon");
     const thongBaoUngVien = document.getElementById("thongBaoUngVien");
     const btnLuuUngVien = document.getElementById("btnLuuUngVien");
-    const ungVienFileCV = document.getElementById("ungVienFileCV");
+    const fileCVThayThe = document.getElementById("fileCVThayThe");
+    const khuVucThayCV = document.getElementById("khuVucThayCV");
     const btnPhanTich = document.getElementById("btnPhanTich");
     const phanTichAI = document.getElementById("phanTichAI");
 
@@ -81,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let dangPhanTich = false;
     let danhSachUngVien = [];
     let phanTichChoXacNhan = null;
-    let mucZoomHienTai = 1;
+    let mucZoomHienTai = 0.9;
     let ungVienDangMo = null;
 
     function escapeHtml(value) {
@@ -183,13 +184,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function layJDChinh(hoSo) {
-        const danhSachJD = Array.isArray(hoSo?.jd)
-            ? hoSo.jd
-            : hoSo?.jd?.id
-                ? [hoSo.jd]
-                : [];
-
-        return danhSachJD.find(jd => jd?.id) || null;
+        const list = Array.isArray(hoSo?.jd) ? hoSo.jd : [];
+        return list[0] || null;
     }
 
     function renderCampaignFilter() {
@@ -433,11 +429,10 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-
     function renderHoSo() {
         const ungVien = hoSoHienTai?.ung_vien || {};
+        const cvs = Array.isArray(hoSoHienTai?.cv) ? hoSoHienTai.cv : [];
         const selected = cvHienTai || layCVChinh(hoSoHienTai);
-        const jdChinh = layJDChinh(hoSoHienTai);
 
         tenFilePreview.textContent = layTenFile(selected);
         metaCV.textContent = selected
@@ -448,16 +443,7 @@ document.addEventListener("DOMContentLoaded", function () {
         emailUngVienPreview.textContent = ungVien.email || "Chưa có email";
         dotTuyenPreview.textContent = ungVien.ten_dot_tuyen || "Chưa có đợt tuyển dụng";
 
-        btnPhanTich.disabled = !selected?.id || !jdChinh?.id || dangPhanTich;
-
-        console.log("Kiểm tra phân tích CV:", {
-            ungVienId: ungVien.id,
-            cvId: selected?.id,
-            dotTuyenId: ungVien.dot_tuyen_id,
-            danhSachJD: hoSoHienTai?.jd,
-            jdChinh,
-            nutBiKhoa: btnPhanTich.disabled
-        });
+        btnPhanTich.disabled = !selected || !hoSoHienTai?.jd?.length || dangPhanTich;
     }
 
     async function taiPreviewCV() {
@@ -557,7 +543,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function datLaiZoom() {
-        mucZoomHienTai = 1;
+        mucZoomHienTai = 0.9;
         requestAnimationFrame(capNhatZoom);
     }
 
@@ -586,8 +572,10 @@ document.addEventListener("DOMContentLoaded", function () {
         ungVienGithub.value = item.github || "";
         ungVienTrangThai.value = item.trang_thai || "moi";
         ungVienNguon.value = item.nguon || "";
-        if (ungVienFileCV) ungVienFileCV.value = "";
-        [ungVienHoTen, ungVienEmail, ungVienSoDienThoai, ungVienDiaChi, ungVienLinkedin, ungVienGithub, ungVienTrangThai, ungVienNguon, ungVienFileCV].filter(Boolean).forEach((el) => el.disabled = view);
+        [ungVienHoTen, ungVienEmail, ungVienSoDienThoai, ungVienDiaChi, ungVienLinkedin, ungVienGithub, ungVienTrangThai, ungVienNguon].forEach((el) => el.disabled = view);
+        if (fileCVThayThe) fileCVThayThe.disabled = view;
+        if (khuVucThayCV) khuVucThayCV.style.display = view ? "none" : "block";
+        if (fileCVThayThe) fileCVThayThe.value = "";
         btnLuuUngVien.style.display = view ? "none" : "inline-flex";
         thongBaoUngVien.textContent = "";
         thongBaoUngVien.className = "cv-form-message";
@@ -600,31 +588,41 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!id) return;
         const body = { ho_ten: ungVienHoTen.value.trim(), email: ungVienEmail.value.trim(), so_dien_thoai: ungVienSoDienThoai.value.trim(), dia_chi: ungVienDiaChi.value.trim(), linkedin: ungVienLinkedin.value.trim(), github: ungVienGithub.value.trim(), trang_thai: ungVienTrangThai.value, nguon: ungVienNguon.value.trim() };
         if (!body.ho_ten) { thongBaoUngVien.textContent = "Họ và tên là bắt buộc."; thongBaoUngVien.className = "cv-form-message error"; return; }
-        const file = ungVienFileCV?.files?.[0];
-        if (file && file.size > 10 * 1024 * 1024) { thongBaoUngVien.textContent = "File CV không được vượt quá 10 MB."; thongBaoUngVien.className = "cv-form-message error"; return; }
+        const fileMoi = fileCVThayThe?.files?.[0];
+        if (fileMoi && fileMoi.size > 10 * 1024 * 1024) {
+            thongBaoUngVien.textContent = "File CV không được vượt quá 10 MB.";
+            thongBaoUngVien.className = "cv-form-message error";
+            return;
+        }
         try {
             btnLuuUngVien.disabled = true;
-            btnLuuUngVien.textContent = "Đang lưu...";
+            btnLuuUngVien.textContent = fileMoi ? "Đang lưu và thay CV..." : "Đang lưu...";
             const response = await fetch(`/api/ung-vien/${id}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || "Không thể cập nhật ứng viên.");
-            if (file) {
+            if (fileMoi) {
                 const formData = new FormData();
                 formData.append("ung_vien_id", String(id));
-                formData.append("file", file);
                 formData.append("la_ban_chinh", "1");
-                if (cvHienTai?.id) formData.append("cv_id", String(cvHienTai.id));
-                const cvResponse = await fetch("/api/cv/upload", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
-                const cvData = await cvResponse.json();
-                if (!cvResponse.ok) throw new Error(cvData.message || "Đã lưu thông tin ứng viên nhưng không thể cập nhật file CV.");
+                formData.append("file", fileMoi);
+                const uploadResponse = await fetch("/api/cv/upload", {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData,
+                });
+                const uploadData = await uploadResponse.json();
+                if (!uploadResponse.ok) throw new Error(uploadData.message || "Đã lưu thông tin ứng viên nhưng không thể thay thế CV.");
             }
             dongModal(modalUngVien);
-            hienThongBao(file ? "Đã cập nhật thông tin và ghi đè CV." : "Cập nhật ứng viên thành công.", "success");
+            hienThongBao(fileMoi ? "Đã cập nhật ứng viên và thay thế CV thành công." : "Cập nhật ứng viên thành công.", "success");
             await taiDanhSach();
         } catch (error) {
             thongBaoUngVien.textContent = error.message || "Không thể cập nhật ứng viên.";
             thongBaoUngVien.className = "cv-form-message error";
-        } finally { btnLuuUngVien.disabled = false; btnLuuUngVien.textContent = "Lưu thay đổi"; }
+        } finally {
+            btnLuuUngVien.disabled = false;
+            btnLuuUngVien.textContent = "Lưu thay đổi";
+        }
     }
 
     async function xoaUngVien(id) {
@@ -772,8 +770,35 @@ document.addEventListener("DOMContentLoaded", function () {
     function moModalXacNhanPhanTich() {
         if (!phanTichChoXacNhan || !noiDungXacNhanPhanTich) return;
         const score = phanTichChoXacNhan.score || {};
+        const extraction = phanTichChoXacNhan.extraction || {};
         const tong = Number(score.tong) || 0;
-        noiDungXacNhanPhanTich.innerHTML = `<div class="cv-confirm-note">Bạn đang chỉnh sửa kết quả AI. Kết quả chỉ được lưu khi bấm <strong>Xác nhận & lưu</strong>.</div><div class="cv-confirm-grid"><label><span>Điểm tổng (%)</span><input id="xacNhanTong" type="number" min="0" max="100" value="${tong}"></label><label><span>Kỹ năng (%)</span><input id="xacNhanKyNang" type="number" min="0" max="100" value="${Number(score.ky_nang) || 0}"></label><label><span>Kinh nghiệm (%)</span><input id="xacNhanKinhNghiem" type="number" min="0" max="100" value="${Number(score.kinh_nghiem) || 0}"></label><label><span>Học vấn (%)</span><input id="xacNhanHocVan" type="number" min="0" max="100" value="${Number(score.hoc_van) || 0}"></label><label><span>Kỹ năng mềm (%)</span><input id="xacNhanKyNangMem" type="number" min="0" max="100" value="${Number(score.ky_nang_mem) || 0}"></label><label><span>Đề xuất</span><select id="xacNhanDeXuat"><option value="nen_phong_van" ${score.de_xuat === "nen_phong_van" ? "selected" : ""}>Nên phỏng vấn</option><option value="can_nhac" ${score.de_xuat === "can_nhac" ? "selected" : ""}>Cân nhắc</option><option value="chua_phu_hop" ${score.de_xuat === "chua_phu_hop" ? "selected" : ""}>Chưa phù hợp</option></select></label></div><label class="cv-confirm-reason"><span>Lý do sửa / xác nhận</span><textarea id="xacNhanLyDo" rows="4" placeholder="Nhập lý do nếu bạn ghi đè đánh giá AI..."></textarea></label>`;
+        const asLines = (value) => Array.isArray(value) ? value.join("\n") : (value || "");
+        noiDungXacNhanPhanTich.innerHTML = `
+            <div class="cv-confirm-note">Bạn có thể chỉnh sửa thông tin trích xuất và điểm đánh giá. Dữ liệu chỉ được lưu khi bấm <strong>Xác nhận & lưu</strong>.</div>
+            <h4>Thông tin ứng viên trích xuất từ CV</h4>
+            <div class="cv-confirm-grid">
+                <label><span>Họ tên</span><input id="xacNhanHoTen" maxlength="150" value="${escapeHtml(extraction.ho_ten || "")}"></label>
+                <label><span>Email</span><input id="xacNhanEmail" type="email" maxlength="190" value="${escapeHtml(extraction.email || "")}"></label>
+                <label><span>Số điện thoại</span><input id="xacNhanSoDienThoai" maxlength="30" value="${escapeHtml(extraction.so_dien_thoai || "")}"></label>
+                <label><span>Số năm kinh nghiệm</span><input id="xacNhanSoNamKinhNghiem" type="number" min="0" max="60" step="0.5" value="${Number(extraction.so_nam_kinh_nghiem) || 0}"></label>
+                <label class="wide"><span>Kỹ năng (mỗi dòng một kỹ năng)</span><textarea id="xacNhanKyNangText" rows="3">${escapeHtml(asLines(extraction.ky_nang))}</textarea></label>
+                <label class="wide"><span>Kinh nghiệm làm việc (mỗi dòng một mục)</span><textarea id="xacNhanKinhNghiemText" rows="3">${escapeHtml(asLines(extraction.kinh_nghiem))}</textarea></label>
+                <label class="wide"><span>Học vấn (mỗi dòng một mục)</span><textarea id="xacNhanHocVanText" rows="3">${escapeHtml(asLines(extraction.hoc_van))}</textarea></label>
+                <label class="wide"><span>Ngôn ngữ (mỗi dòng một mục)</span><textarea id="xacNhanNgonNguText" rows="2">${escapeHtml(asLines(extraction.ngon_ngu))}</textarea></label>
+                <label class="wide"><span>Chứng chỉ (mỗi dòng một mục)</span><textarea id="xacNhanChungChiText" rows="2">${escapeHtml(asLines(extraction.chung_chi))}</textarea></label>
+                <label class="wide"><span>Liên kết (mỗi dòng một liên kết)</span><textarea id="xacNhanLienKetText" rows="2">${escapeHtml(asLines(extraction.lien_ket))}</textarea></label>
+            </div>
+            <h4>Đánh giá mức độ phù hợp với JD</h4>
+            <div class="cv-confirm-grid">
+                <label><span>Điểm tổng (%)</span><input id="xacNhanTong" type="number" min="0" max="100" value="${tong}"></label>
+                <label><span>Kỹ năng (%)</span><input id="xacNhanKyNang" type="number" min="0" max="100" value="${Number(score.ky_nang) || 0}"></label>
+                <label><span>Kinh nghiệm (%)</span><input id="xacNhanKinhNghiem" type="number" min="0" max="100" value="${Number(score.kinh_nghiem) || 0}"></label>
+                <label><span>Học vấn (%)</span><input id="xacNhanHocVan" type="number" min="0" max="100" value="${Number(score.hoc_van) || 0}"></label>
+                <label><span>Kỹ năng mềm (%)</span><input id="xacNhanKyNangMem" type="number" min="0" max="100" value="${Number(score.ky_nang_mem) || 0}"></label>
+                <label><span>Đề xuất</span><select id="xacNhanDeXuat"><option value="nen_phong_van" ${score.de_xuat === "nen_phong_van" ? "selected" : ""}>Nên phỏng vấn</option><option value="can_nhac" ${score.de_xuat === "can_nhac" ? "selected" : ""}>Cân nhắc</option><option value="chua_phu_hop" ${score.de_xuat === "chua_phu_hop" ? "selected" : ""}>Chưa phù hợp</option></select></label>
+            </div>
+            <div id="xacNhanDiemLoi" class="cv-score-validation" role="alert" hidden></div>
+            <label class="cv-confirm-reason"><span>Lý do sửa / xác nhận</span><textarea id="xacNhanLyDo" rows="4" placeholder="Nhập lý do nếu bạn ghi đè đánh giá AI..."></textarea></label>`;
         moModal(modalXacNhanPhanTich);
     }
 
@@ -784,21 +809,73 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function xacNhanPhanTich() {
         if (!phanTichChoXacNhan || !hoSoHienTai?.ung_vien?.id || !cvHienTai?.id) return;
-        const getNumber = (id) => Math.max(0, Math.min(100, Number(document.getElementById(id)?.value) || 0));
+        const scoreFields = [
+            ["xacNhanTong", "Điểm tổng"],
+            ["xacNhanKyNang", "Điểm kỹ năng"],
+            ["xacNhanKinhNghiem", "Điểm kinh nghiệm"],
+            ["xacNhanHocVan", "Điểm học vấn"],
+            ["xacNhanKyNangMem", "Điểm kỹ năng mềm"],
+        ];
+        const invalidScores = scoreFields.filter(([id]) => {
+            const input = document.getElementById(id);
+            const raw = input?.value?.trim() ?? "";
+            const value = Number(raw);
+            return raw === "" || !Number.isFinite(value) || value < 0 || value > 100;
+        });
+        const scoreError = document.getElementById("xacNhanDiemLoi");
+        if (invalidScores.length) {
+            const message = `${invalidScores.map(([, label]) => label).join(", ")} phải nằm trong khoảng từ 0 đến 100.`;
+            if (scoreError) { scoreError.textContent = message; scoreError.hidden = false; }
+            hienThongBao(message);
+            const firstInvalid = document.getElementById(invalidScores[0][0]);
+            firstInvalid?.focus();
+            firstInvalid?.setAttribute("aria-invalid", "true");
+            return;
+        }
+        if (scoreError) { scoreError.textContent = ""; scoreError.hidden = true; }
+        scoreFields.forEach(([id]) => document.getElementById(id)?.removeAttribute("aria-invalid"));
+        const getNumber = (id) => Number(document.getElementById(id).value);
         const finalScore = getNumber("xacNhanTong");
         const recommendation = document.getElementById("xacNhanDeXuat")?.value || "can_nhac";
         const reason = (document.getElementById("xacNhanLyDo")?.value || "").trim() || "Xác nhận kết quả phân tích AI.";
+        const saveButton = document.getElementById("btnXacNhanPhanTichInline") || btnLuuXacNhanPhanTich;
         const finalAnalysis = JSON.parse(JSON.stringify(phanTichChoXacNhan));
+        finalAnalysis.extraction = finalAnalysis.extraction || {};
+        finalAnalysis.extraction.ho_ten = (document.getElementById("xacNhanHoTen")?.value || "").trim();
+        finalAnalysis.extraction.email = (document.getElementById("xacNhanEmail")?.value || "").trim();
+        finalAnalysis.extraction.so_dien_thoai = (document.getElementById("xacNhanSoDienThoai")?.value || "").trim();
+        finalAnalysis.extraction.so_nam_kinh_nghiem = Math.max(0, Math.min(60, Number(document.getElementById("xacNhanSoNamKinhNghiem")?.value) || 0));
+        const getLines = (id) => (document.getElementById(id)?.value || "").split(/\n|,/).map((item) => item.trim()).filter(Boolean);
+        finalAnalysis.extraction.ky_nang = getLines("xacNhanKyNangText");
+        finalAnalysis.extraction.kinh_nghiem = getLines("xacNhanKinhNghiemText");
+        finalAnalysis.extraction.hoc_van = getLines("xacNhanHocVanText");
+        finalAnalysis.extraction.ngon_ngu = getLines("xacNhanNgonNguText");
+        finalAnalysis.extraction.chung_chi = getLines("xacNhanChungChiText");
+        finalAnalysis.extraction.lien_ket = getLines("xacNhanLienKetText");
+        if (!finalAnalysis.extraction.ho_ten) {
+            hienThongBao("Vui lòng nhập họ tên ứng viên trước khi lưu.");
+            return;
+        }
+        finalAnalysis.cv_id = cvHienTai.id;
+        finalAnalysis.jd_id = layJDChinh(hoSoHienTai)?.id;
+        finalAnalysis.score = finalAnalysis.score || {};
         finalAnalysis.score.tong = finalScore;
         finalAnalysis.score.ky_nang = getNumber("xacNhanKyNang");
         finalAnalysis.score.kinh_nghiem = getNumber("xacNhanKinhNghiem");
         finalAnalysis.score.hoc_van = getNumber("xacNhanHocVan");
         finalAnalysis.score.ky_nang_mem = getNumber("xacNhanKyNangMem");
         finalAnalysis.score.de_xuat = recommendation;
+        finalAnalysis.score.tom_tat = (document.getElementById("xacNhanTomTat")?.value || "").trim();
+        finalAnalysis.score.diem_manh = getLines("xacNhanDiemManh");
+        finalAnalysis.score.diem_yeu = getLines("xacNhanDiemYeu");
+        finalAnalysis.score.canh_bao = getLines("xacNhanCanhBao");
+        finalAnalysis.ly_do_xac_nhan = reason;
 
         try {
-            btnLuuXacNhanPhanTich.disabled = true;
-            btnLuuXacNhanPhanTich.textContent = "Đang lưu...";
+            if (saveButton) {
+                saveButton.disabled = true;
+                saveButton.innerHTML = "<span class=\"cv-inline-spinner\"></span> Đang lưu...";
+            }
             const response = await fetch(`/api/cv/review/${hoSoHienTai.ung_vien.id}/confirm`, {
                 method: "POST",
                 headers: {
@@ -823,8 +900,10 @@ document.addEventListener("DOMContentLoaded", function () {
         } catch (error) {
             hienThongBao(error.message || "Không thể lưu kết quả phân tích.");
         } finally {
-            btnLuuXacNhanPhanTich.disabled = false;
-            btnLuuXacNhanPhanTich.textContent = "Xác nhận & lưu";
+            if (saveButton) {
+                saveButton.disabled = false;
+                saveButton.innerHTML = "<span>✓</span> Xác nhận &amp; lưu";
+            }
         }
     }
 
@@ -855,8 +934,65 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
     }
 
+    function renderFormPhanTich(analysis) {
+        const score = analysis.score || {};
+        const extraction = analysis.extraction || {};
+        const asLines = (value) => Array.isArray(value) ? value.join("\n") : (value || "");
+        phanTichAI.innerHTML = `
+            <section class="cv-review-editor">
+                <div class="cv-review-editor-head">
+                    <div class="cv-review-editor-icon">✦</div>
+                    <div><span class="cv-review-kicker">AI CV REVIEW</span><h3>${hoSoHienTai?.phan_tich ? "Chỉnh sửa kết quả phân tích" : "Kiểm tra kết quả AI"}</h3><p>Kiểm tra và chỉnh sửa thông tin trước khi lưu. Chưa có thay đổi nào được lưu.</p></div>
+                </div>
+                <div class="cv-review-editor-section">
+                    <h4><span>01</span> Thông tin ứng viên</h4>
+                    <div class="cv-review-form-grid">
+                        <label><span>Họ và tên *</span><input id="xacNhanHoTen" maxlength="150" value="${escapeHtml(extraction.ho_ten || "")}" placeholder="Nhập họ tên" /></label>
+                        <label><span>Email</span><input id="xacNhanEmail" type="email" maxlength="190" value="${escapeHtml(extraction.email || "")}" placeholder="email@example.com" /></label>
+                        <label><span>Số điện thoại</span><input id="xacNhanSoDienThoai" maxlength="30" value="${escapeHtml(extraction.so_dien_thoai || "")}" placeholder="Nhập số điện thoại" /></label>
+                        <label><span>Số năm kinh nghiệm</span><input id="xacNhanSoNamKinhNghiem" type="number" min="0" max="60" step="0.5" value="${Number(extraction.so_nam_kinh_nghiem) || 0}" /></label>
+                        <label class="full"><span>Kỹ năng <small>(mỗi dòng một kỹ năng)</small></span><textarea id="xacNhanKyNangText" rows="3" placeholder="JavaScript&#10;Node.js&#10;MySQL">${escapeHtml(asLines(extraction.ky_nang))}</textarea></label>
+                        <label class="full"><span>Kinh nghiệm làm việc <small>(mỗi dòng một mục)</small></span><textarea id="xacNhanKinhNghiemText" rows="3" placeholder="Công ty, vị trí, thời gian và mô tả">${escapeHtml(asLines(extraction.kinh_nghiem))}</textarea></label>
+                        <label class="full"><span>Học vấn <small>(mỗi dòng một mục)</small></span><textarea id="xacNhanHocVanText" rows="2">${escapeHtml(asLines(extraction.hoc_van))}</textarea></label>
+                        <label><span>Ngôn ngữ</span><textarea id="xacNhanNgonNguText" rows="2">${escapeHtml(asLines(extraction.ngon_ngu))}</textarea></label>
+                        <label><span>Chứng chỉ</span><textarea id="xacNhanChungChiText" rows="2">${escapeHtml(asLines(extraction.chung_chi))}</textarea></label>
+                        <label class="full"><span>Liên kết cá nhân</span><textarea id="xacNhanLienKetText" rows="2" placeholder="LinkedIn, GitHub, portfolio...">${escapeHtml(asLines(extraction.lien_ket))}</textarea></label>
+                    </div>
+                </div>
+                <div class="cv-review-editor-section">
+                    <h4><span>02</span> Đánh giá mức độ phù hợp với JD</h4>
+                    <div class="cv-review-score-grid">
+                        <label class="cv-review-score-main"><span>Mức độ phù hợp tổng thể</span><div class="cv-review-score-input"><input id="xacNhanTong" type="number" min="0" max="100" step="1" value="${Math.max(0, Math.min(100, Number(score.tong) || 0))}" /><b>%</b></div><small>Được phép nhập đè điểm AI đề xuất (0–100%).</small></label>
+                        <label><span>Kỹ năng (%)</span><input id="xacNhanKyNang" type="number" min="0" max="100" value="${Number(score.ky_nang) || 0}" /></label>
+                        <label><span>Kinh nghiệm (%)</span><input id="xacNhanKinhNghiem" type="number" min="0" max="100" value="${Number(score.kinh_nghiem) || 0}" /></label>
+                        <label><span>Học vấn (%)</span><input id="xacNhanHocVan" type="number" min="0" max="100" value="${Number(score.hoc_van) || 0}" /></label>
+                        <label><span>Kỹ năng mềm (%)</span><input id="xacNhanKyNangMem" type="number" min="0" max="100" value="${Number(score.ky_nang_mem) || 0}" /></label>
+                        <label><span>Đề xuất tuyển dụng</span><select id="xacNhanDeXuat"><option value="nen_phong_van" ${score.de_xuat === "nen_phong_van" ? "selected" : ""}>Nên phỏng vấn</option><option value="can_nhac" ${!score.de_xuat || score.de_xuat === "can_nhac" ? "selected" : ""}>Cân nhắc</option><option value="chua_phu_hop" ${score.de_xuat === "chua_phu_hop" ? "selected" : ""}>Chưa phù hợp</option></select></label>
+                    </div>
+                    <div id="xacNhanDiemLoi" class="cv-score-validation" role="alert" hidden></div>
+                    <div class="cv-review-form-grid cv-review-details-grid">
+                        <label class="full"><span>Tóm tắt đánh giá</span><textarea id="xacNhanTomTat" rows="3">${escapeHtml(score.tom_tat || "")}</textarea></label>
+                        <label><span>Điểm mạnh <small>(mỗi dòng một ý)</small></span><textarea id="xacNhanDiemManh" rows="3">${escapeHtml(asLines(score.diem_manh))}</textarea></label>
+                        <label><span>Điểm cần lưu ý <small>(mỗi dòng một ý)</small></span><textarea id="xacNhanDiemYeu" rows="3">${escapeHtml(asLines(score.diem_yeu))}</textarea></label>
+                        <label class="full"><span>Cảnh báo / ghi chú</span><textarea id="xacNhanCanhBao" rows="2">${escapeHtml(asLines(score.canh_bao))}</textarea></label>
+                        <label class="full"><span>Lý do xác nhận / chỉnh sửa</span><textarea id="xacNhanLyDo" rows="2" placeholder="Ví dụ: Điều chỉnh điểm dựa trên kinh nghiệm thực tế...">${escapeHtml(analysis.ly_do_xac_nhan || "")}</textarea></label>
+                    </div>
+                </div>
+                <div class="cv-review-editor-footer"><span><i></i> Hãy kiểm tra thông tin trước khi lưu</span><div><button type="button" class="cv-review-cancel-btn" id="btnHuySuaPhanTich">Hủy</button><button type="button" class="cv-review-save-btn" id="btnXacNhanPhanTichInline"><span>✓</span> Xác nhận &amp; lưu</button></div></div>
+            </section>`;
+        document.getElementById("btnXacNhanPhanTichInline")?.addEventListener("click", xacNhanPhanTich);
+        document.getElementById("btnHuySuaPhanTich")?.addEventListener("click", function () {
+            phanTichChoXacNhan = null;
+            renderPhanTich();
+        });
+    }
+
     function renderPhanTich() {
-        const analysisRecord = phanTichChoXacNhan || hoSoHienTai?.phan_tich;
+        if (phanTichChoXacNhan) {
+            renderFormPhanTich(phanTichChoXacNhan);
+            return;
+        }
+        const analysisRecord = hoSoHienTai?.phan_tich;
         const analysis = layPhanTich(analysisRecord);
 
         if (!analysis?.score) {
@@ -934,7 +1070,7 @@ document.addEventListener("DOMContentLoaded", function () {
             phanTichChoXacNhan = JSON.parse(JSON.stringify(analysis));
             phanTichChoXacNhan.cv_id = cvHienTai?.id;
             phanTichChoXacNhan.jd_id = layJDChinh(hoSoHienTai)?.id;
-            moModalXacNhanPhanTich();
+            renderPhanTich();
         });
     }
 
@@ -985,7 +1121,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             phanTichChoXacNhan = data.phan_tich;
             renderPhanTich();
-            hienThongBao("AI đã phân tích xong. Bạn có thể bấm Sửa để ghi đè rồi xác nhận lưu.", "success");
+            hienThongBao("AI đã phân tích xong. Kiểm tra thông tin bên dưới, chỉnh sửa nếu cần rồi bấm “Xác nhận & lưu”.", "success");
         } catch (error) {
             console.error("Lỗi phân tích CV:", error);
             hienThongBao(error.message || "Không thể phân tích CV.");
