@@ -1658,3 +1658,56 @@
         padding: 8px
     }
 }
+
+
+/* Căn nút và trường thay CV */
+.cv-candidate-form .cv-modal-footer .cv-tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.cv-candidate-file {
+    display: block;
+    margin: 16px 20px 0;
+}
+
+.cv-candidate-file>span {
+    display: block;
+    margin-bottom: 7px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.cv-candidate-file input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px;
+    border: 1px solid #dbe2ea;
+    border-radius: 7px;
+    background: #fff;
+    color: #334155;
+    font: inherit;
+    font-size: 12px;
+}
+
+.cv-candidate-file small {
+    display: block;
+    margin-top: 6px;
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.cv-candidate-file input:disabled {
+    display: none;
+}
+
+.cv-candidate-file:has(input:disabled) {
+    display: none;
+}

@@ -1,0 +1,76 @@
+{
+  "che_do": "APPLY",
+  "bat_dau": "2026-10-09T04:25:50.728Z",
+  "tong_ban_ghi": 13,
+  "san_sang": [],
+  "da_co_blob": [
+    {
+      "id": 20002,
+      "ten_file": "mau-cv-xin-viec-don-gian-image-1.jpg"
+    },
+    {
+      "id": 20003,
+      "ten_file": "mau-cv-xin-viec-don-gian-image-1.jpg"
+    },
+    {
+      "id": 28001,
+      "ten_file": "mau-cv-xin-viec-don-gian-image-1.jpg"
+    },
+    {
+      "id": 32002,
+      "ten_file": "mau-cv-xin-viec-don-gian-image-1.jpg"
+    },
+    {
+      "id": 40001,
+      "ten_file": "chi-tiet-mau-cv-so-72.png"
+    },
+    {
+      "id": 44001,
+      "ten_file": "mau-cv-lap-trinh-vien-1-scaled.jpg"
+    },
+    {
+      "id": 44002,
+      "ten_file": "mau-cv-lap-trinh-vien-5.jpg"
+    },
+    {
+      "id": 44003,
+      "ten_file": "655223b5327a33e579ec95b9_Viet-thu-xin-viec-lap-trinh-vien-khong-he-kho-nhu-ban-nghi.png"
+    },
+    {
+      "id": 44004,
+      "ten_file": "chi-tiet-mau-cv-so-72.png"
+    },
+    {
+      "id": 48001,
+      "ten_file": "chi-tiet-mau-cv-so-72.png"
+    },
+    {
+      "id": 52001,
+      "ten_file": "JOBOKO-CV ATS WORD.docx"
+    }
+  ],
+  "thieu_file": [],
+  "duong_dan_khong_hop_le": [],
+  "loi": [],
+  "thanh_cong": [
+    {
+      "id": 16001,
+      "ten_file": "mau-cv-cho-sinh-vien-chua-co-kinh-nghiem-6.jpg",
+      "kich_thuoc": 98901
+    },
+    {
+      "id": 36003,
+      "ten_file": "chi-tiet-mau-cv-so-72.png",
+      "kich_thuoc": 345603
+    }
+  ],
+  "ket_thuc": "2026-10-09T04:25:56.539Z",
+  "tong_ket": {
+    "san_sang": 0,
+    "da_co_blob": 11,
+    "thieu_file": 0,
+    "duong_dan_khong_hop_le": 0,
+    "thanh_cong": 2,
+    "loi": 0
+  }
+}

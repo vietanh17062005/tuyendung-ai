@@ -13,6 +13,13 @@ const db = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 5,
   queueLimit: 0,
+  connectTimeout: 15000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
+});
+
+db.on("connection", function () {
+  console.log("Đã kết nối tới TiDB Cloud.");
 });
 
 module.exports = db;
