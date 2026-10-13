@@ -221,21 +221,39 @@ let cotBangPhanTichPromise;
 let hoSoHRTablePromise;
 let cotNguoiPhongVanPromise;
 
+
 async function layCotBang(tenBang) {
-    const cachedPromise = {
+    const getPromise = () => ({
         ung_vien: cotBangUngVienPromise,
         cv: cotBangCVPromise,
         phan_tich_ai: cotBangPhanTichPromise,
-    }[tenBang];
-    if (cachedPromise) return cachedPromise;
+    }[tenBang]);
 
-    const promise = db.query(`SHOW COLUMNS FROM ${tenBang}`)
-        .then(([rows]) => new Set(rows.map((row) => row.Field)));
-    if (tenBang === "ung_vien") cotBangUngVienPromise = promise;
-    if (tenBang === "cv") cotBangCVPromise = promise;
-    if (tenBang === "phan_tich_ai") cotBangPhanTichPromise = promise;
-    return promise;
+    const setPromise = (value) => {
+        if (tenBang === "ung_vien") cotBangUngVienPromise = value;
+        if (tenBang === "cv") cotBangCVPromise = value;
+        if (tenBang === "phan_tich_ai") cotBangPhanTichPromise = value;
+    };
+
+    if (!["ung_vien", "cv", "phan_tich_ai"].includes(tenBang)) {
+        throw new Error(`Tên bảng không được hỗ trợ: ${tenBang}`);
+    }
+
+    if (!getPromise()) {
+        const promise = db
+            .query(`SHOW COLUMNS FROM ${tenBang}`)
+            .then(([rows]) => new Set(rows.map((row) => row.Field)))
+            .catch((error) => {
+                setPromise(null);
+                throw error;
+            });
+
+        setPromise(promise);
+    }
+
+    return getPromise();
 }
+
 
 async function layCotNguoiPhongVan() {
     if (!cotNguoiPhongVanPromise) {
@@ -2255,5 +2273,26 @@ router.delete(
         }
     },
 );
+
+
+router.post("/review/:id/decision", kiemTraDangNhap, async function (req, res) {
+    try {
+        const id = Number(req.params.id);
+        const ketQua = req.body?.ket_qua;
+        if (!Number.isInteger(id) || id <= 0 || !["dat", "rot"].includes(ketQua)) {
+            return res.status(400).json({ message: "Thông tin quyết định ứng viên không hợp lệ." });
+        }
+        const [columns] = await db.query("SHOW COLUMNS FROM ung_vien");
+        const names = new Set(columns.map((column) => column.Field));
+        if (!names.has("trang_thai")) return res.status(400).json({ message: "Bảng ung_vien chưa có cột trang_thai." });
+        const status = ketQua === "dat" ? "cho_phong_van" : "tu_choi";
+        const [result] = await db.query("UPDATE ung_vien SET trang_thai = ? WHERE id = ?", [status, id]);
+        if (!result.affectedRows) return res.status(404).json({ message: "Không tìm thấy ứng viên." });
+        res.json({ message: ketQua === "dat" ? "Đã cập nhật ứng viên sang trạng thái chờ phỏng vấn." : "Đã cập nhật trạng thái từ chối ứng viên.", trang_thai: status });
+    } catch (error) {
+        console.error("POST /api/cv/review/:id/decision:", error);
+        res.status(500).json({ message: "Không cập nhật được quyết định ứng viên." });
+    }
+});
 
 module.exports = router;

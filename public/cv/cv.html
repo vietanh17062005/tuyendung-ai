@@ -164,6 +164,11 @@
                             <p>Chọn CV có JD để AI đánh giá mức độ phù hợp.</p>
                         </div>
                     </div>
+                    <div class="cv-hr-decision-actions">
+                        <button type="button" class="cv-decision-reject" id="btnTuChoiCV">✕ Từ chối CV</button>
+                        <button type="button" class="cv-decision-interview" id="btnNhanPhongVan">▣ Nhận phỏng
+                            vấn</button>
+                    </div>
                 </aside>
             </section>
         </main>
@@ -296,6 +301,50 @@
             <div class="cv-modal-footer">
                 <button type="button" class="cv-tool-btn" id="btnHuyXacNhanPhanTich">Hủy</button>
                 <button type="button" class="cv-tool-btn primary" id="btnLuuXacNhanPhanTich">Xác nhận & lưu</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="modalKetQuaUngVien" class="cv-modal-overlay">
+        <div class="cv-modal-box cv-result-modal">
+            <div class="cv-modal-header">
+                <div>
+                    <h2 id="tieuDeKetQua">Kết quả phỏng vấn & thông báo</h2>
+                    <p id="moTaKetQua">Soạn email gửi ứng viên</p>
+                </div>
+                <button type="button" class="cv-modal-close" id="btnDongKetQua">×</button>
+            </div>
+            <div class="cv-result-body">
+                <div class="cv-result-choice">
+                    <label class="cv-result-option" id="luaChonDat"><input type="radio" name="ketQuaUngVien" value="dat"
+                            checked><span><strong>✓ Đạt / Mời phỏng vấn</strong><small>Gửi lời mời và xác nhận lịch
+                                phỏng vấn</small></span></label>
+                    <label class="cv-result-option" id="luaChonRot"><input type="radio" name="ketQuaUngVien"
+                            value="rot"><span><strong>✕ Từ chối</strong><small>Gửi email thông báo kết quả lịch
+                                sự</small></span></label>
+                </div>
+                <div class="cv-result-fields">
+                    <label><span>Email người nhận</span><input id="emailKetQua" type="email"
+                            placeholder="ungvien@example.com" required></label>
+                    <label><span>Mẫu email</span><select id="mauEmailKetQua">
+                            <option value="dat">Mời phỏng vấn</option>
+                            <option value="rot">Thông báo từ chối</option>
+                        </select></label>
+                    <label><span>Thời gian phỏng vấn (nếu có)</span><input id="thoiGianPhongVan"
+                            type="datetime-local"></label>
+                    <label><span>Hình thức / đường dẫn</span><input id="diaDiemPhongVan"
+                            placeholder="Online qua Google Meet hoặc tại văn phòng"></label>
+                    <label class="wide"><span>Tiêu đề email</span><input id="tieuDeEmailKetQua" required></label>
+                    <label class="wide"><span>Nội dung email</span><textarea id="noiDungEmailKetQua" rows="9"
+                            required></textarea></label>
+                </div>
+                <p class="cv-result-note">Nội dung email được điền sẵn và có thể chỉnh sửa trước khi gửi. Khi bấm gửi,
+                    hệ thống cập nhật trạng thái và mở ứng dụng email mặc định để gửi thư.</p>
+                <div id="thongBaoKetQua" class="cv-form-message"></div>
+            </div>
+            <div class="cv-modal-footer"><button type="button" class="cv-tool-btn" id="btnHuyKetQua">Hủy</button><button
+                    type="button" class="cv-tool-btn primary" id="btnGuiEmailKetQua">✉ Gửi email thông báo</button>
             </div>
         </div>
     </div>

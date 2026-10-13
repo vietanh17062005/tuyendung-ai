@@ -797,7 +797,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 <label><span>Kỹ năng mềm (%)</span><input id="xacNhanKyNangMem" type="number" min="0" max="100" value="${Number(score.ky_nang_mem) || 0}"></label>
                 <label><span>Đề xuất</span><select id="xacNhanDeXuat"><option value="nen_phong_van" ${score.de_xuat === "nen_phong_van" ? "selected" : ""}>Nên phỏng vấn</option><option value="can_nhac" ${score.de_xuat === "can_nhac" ? "selected" : ""}>Cân nhắc</option><option value="chua_phu_hop" ${score.de_xuat === "chua_phu_hop" ? "selected" : ""}>Chưa phù hợp</option></select></label>
             </div>
-            <div id="xacNhanDiemLoi" class="cv-score-validation" role="alert" hidden></div>
             <label class="cv-confirm-reason"><span>Lý do sửa / xác nhận</span><textarea id="xacNhanLyDo" rows="4" placeholder="Nhập lý do nếu bạn ghi đè đánh giá AI..."></textarea></label>`;
         moModal(modalXacNhanPhanTich);
     }
@@ -809,32 +808,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     async function xacNhanPhanTich() {
         if (!phanTichChoXacNhan || !hoSoHienTai?.ung_vien?.id || !cvHienTai?.id) return;
-        const scoreFields = [
-            ["xacNhanTong", "Điểm tổng"],
-            ["xacNhanKyNang", "Điểm kỹ năng"],
-            ["xacNhanKinhNghiem", "Điểm kinh nghiệm"],
-            ["xacNhanHocVan", "Điểm học vấn"],
-            ["xacNhanKyNangMem", "Điểm kỹ năng mềm"],
-        ];
-        const invalidScores = scoreFields.filter(([id]) => {
-            const input = document.getElementById(id);
-            const raw = input?.value?.trim() ?? "";
-            const value = Number(raw);
-            return raw === "" || !Number.isFinite(value) || value < 0 || value > 100;
-        });
-        const scoreError = document.getElementById("xacNhanDiemLoi");
-        if (invalidScores.length) {
-            const message = `${invalidScores.map(([, label]) => label).join(", ")} phải nằm trong khoảng từ 0 đến 100.`;
-            if (scoreError) { scoreError.textContent = message; scoreError.hidden = false; }
-            hienThongBao(message);
-            const firstInvalid = document.getElementById(invalidScores[0][0]);
-            firstInvalid?.focus();
-            firstInvalid?.setAttribute("aria-invalid", "true");
-            return;
-        }
-        if (scoreError) { scoreError.textContent = ""; scoreError.hidden = true; }
-        scoreFields.forEach(([id]) => document.getElementById(id)?.removeAttribute("aria-invalid"));
-        const getNumber = (id) => Number(document.getElementById(id).value);
+        const getNumber = (id) => Math.max(0, Math.min(100, Number(document.getElementById(id)?.value) || 0));
         const finalScore = getNumber("xacNhanTong");
         const recommendation = document.getElementById("xacNhanDeXuat")?.value || "can_nhac";
         const reason = (document.getElementById("xacNhanLyDo")?.value || "").trim() || "Xác nhận kết quả phân tích AI.";
@@ -969,7 +943,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         <label><span>Kỹ năng mềm (%)</span><input id="xacNhanKyNangMem" type="number" min="0" max="100" value="${Number(score.ky_nang_mem) || 0}" /></label>
                         <label><span>Đề xuất tuyển dụng</span><select id="xacNhanDeXuat"><option value="nen_phong_van" ${score.de_xuat === "nen_phong_van" ? "selected" : ""}>Nên phỏng vấn</option><option value="can_nhac" ${!score.de_xuat || score.de_xuat === "can_nhac" ? "selected" : ""}>Cân nhắc</option><option value="chua_phu_hop" ${score.de_xuat === "chua_phu_hop" ? "selected" : ""}>Chưa phù hợp</option></select></label>
                     </div>
-                    <div id="xacNhanDiemLoi" class="cv-score-validation" role="alert" hidden></div>
                     <div class="cv-review-form-grid cv-review-details-grid">
                         <label class="full"><span>Tóm tắt đánh giá</span><textarea id="xacNhanTomTat" rows="3">${escapeHtml(score.tom_tat || "")}</textarea></label>
                         <label><span>Điểm mạnh <small>(mỗi dòng một ý)</small></span><textarea id="xacNhanDiemManh" rows="3">${escapeHtml(asLines(score.diem_manh))}</textarea></label>
@@ -1210,7 +1183,95 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!event.target.closest(".cv-list-item-wrap")) document.querySelectorAll(".cv-candidate-menu.show").forEach((menu) => menu.classList.remove("show"));
     });
 
+
+    const modalKetQuaUngVien = document.getElementById("modalKetQuaUngVien");
+    const emailKetQua = document.getElementById("emailKetQua");
+    const mauEmailKetQua = document.getElementById("mauEmailKetQua");
+    const tieuDeEmailKetQua = document.getElementById("tieuDeEmailKetQua");
+    const noiDungEmailKetQua = document.getElementById("noiDungEmailKetQua");
+    const thoiGianPhongVan = document.getElementById("thoiGianPhongVan");
+    const diaDiemPhongVan = document.getElementById("diaDiemPhongVan");
+    let loaiQuyetDinhCV = "dat";
+
+    function moFormKetQua(loai) {
+        if (!hoSoHienTai?.ung_vien) { hienThongBao("Vui lòng chọn hồ sơ ứng viên trước."); return; }
+        loaiQuyetDinhCV = loai;
+        const uv = hoSoHienTai.ung_vien;
+        const ten = uv.ho_ten || layTenUngVien(uv) || "bạn";
+        const jd = layJDChinh(hoSoHienTai);
+        const viTri = jd?.tieu_de || jd?.ten_vi_tri || "vị trí ứng tuyển";
+        emailKetQua.value = uv.email || hoSoHienTai.email || hoSoHienTai.phan_tich?.extraction?.email || "";
+        mauEmailKetQua.value = loai;
+        document.querySelector(`input[name="ketQuaUngVien"][value="${loai}"]`).checked = true;
+        capNhatMauEmail();
+        document.getElementById("tieuDeKetQua").textContent = loai === "dat" ? "Xác nhận phỏng vấn & gửi thông báo" : "Từ chối hồ sơ & gửi thông báo";
+        document.getElementById("moTaKetQua").textContent = `${ten} · ${viTri}`;
+        moModal(modalKetQuaUngVien);
+    }
+
+    function capNhatMauEmail() {
+        const dat = mauEmailKetQua.value === "dat";
+        loaiQuyetDinhCV = dat ? "dat" : "rot";
+        document.querySelector(`input[name="ketQuaUngVien"][value="${loaiQuyetDinhCV}"]`).checked = true;
+        const uv = hoSoHienTai?.ung_vien || {};
+        const ten = uv.ho_ten || layTenUngVien(uv) || "bạn";
+        const jd = layJDChinh(hoSoHienTai);
+        const viTri = jd?.tieu_de || jd?.ten_vi_tri || "vị trí ứng tuyển";
+        if (dat) {
+            tieuDeEmailKetQua.value = `Thư mời phỏng vấn – ${viTri}`;
+            noiDungEmailKetQua.value = `Chào ${ten},\n\nCảm ơn bạn đã ứng tuyển vị trí ${viTri}. Chúng tôi vui mừng thông báo hồ sơ của bạn phù hợp để tiếp tục quy trình tuyển dụng và trân trọng mời bạn tham gia phỏng vấn.\n\nThời gian: ${thoiGianPhongVan.value ? new Date(thoiGianPhongVan.value).toLocaleString("vi-VN") : "Sẽ được xác nhận với bạn"}\nHình thức/địa điểm: ${diaDiemPhongVan.value || "Sẽ được xác nhận qua email"}\n\nVui lòng phản hồi email này để xác nhận tham gia.\n\nTrân trọng,\nBộ phận Tuyển dụng`;
+        } else {
+            tieuDeEmailKetQua.value = `Thông báo kết quả ứng tuyển – ${viTri}`;
+            noiDungEmailKetQua.value = `Chào ${ten},\n\nCảm ơn bạn đã quan tâm và dành thời gian ứng tuyển vị trí ${viTri}. Sau khi xem xét hồ sơ, rất tiếc chúng tôi chưa thể tiếp tục với hồ sơ của bạn ở đợt tuyển dụng này.\n\nChúng tôi trân trọng sự quan tâm của bạn và chúc bạn nhiều thành công trong hành trình nghề nghiệp sắp tới. Hy vọng có cơ hội hợp tác với bạn trong tương lai.\n\nTrân trọng,\nBộ phận Tuyển dụng`;
+        }
+    }
+
+    async function guiEmailKetQua() {
+        const email = emailKetQua.value.trim();
+        const subject = tieuDeEmailKetQua.value.trim();
+        const body = noiDungEmailKetQua.value.trim();
+        const message = document.getElementById("thongBaoKetQua");
+        if (!hoSoHienTai?.ung_vien?.id || !email || !subject || !body) {
+            message.textContent = "Vui lòng kiểm tra ứng viên, email, tiêu đề và nội dung thư.";
+            message.className = "cv-form-message error"; return;
+        }
+        const button = document.getElementById("btnGuiEmailKetQua");
+        button.disabled = true; button.textContent = "Đang cập nhật...";
+        try {
+            const response = await fetch(`/api/cv/review/${hoSoHienTai.ung_vien.id}/decision`, {
+                method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ ket_qua: loaiQuyetDinhCV, email, thoi_gian: thoiGianPhongVan.value || null, dia_diem: diaDiemPhongVan.value.trim() })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Không cập nhật được trạng thái ứng viên.");
+            // Mở màn hình soạn thư Gmail trên trình duyệt hiện tại, không dùng mailto.
+            const gmailCompose = new URL("https://mail.google.com/mail/");
+            gmailCompose.searchParams.set("view", "cm");
+            gmailCompose.searchParams.set("fs", "1");
+            gmailCompose.searchParams.set("to", email);
+            gmailCompose.searchParams.set("su", subject);
+            gmailCompose.searchParams.set("body", body);
+            window.open(gmailCompose.toString(), "_blank", "noopener,noreferrer");
+            message.textContent = "Đã cập nhật trạng thái. Gmail đã được mở để ông kiểm tra và gửi thư.";
+            message.className = "cv-form-message success";
+            setTimeout(() => dongModal(modalKetQuaUngVien), 900);
+            await taiDanhSach();
+        } catch (error) {
+            message.textContent = error.message || "Có lỗi khi xử lý kết quả.";
+            message.className = "cv-form-message error";
+        } finally { button.disabled = false; button.textContent = "✉ Gửi email thông báo"; }
+    }
+
     btnPhanTich?.addEventListener("click", phanTichCV);
+    document.getElementById("btnTuChoiCV")?.addEventListener("click", () => moFormKetQua("rot"));
+    document.getElementById("btnNhanPhongVan")?.addEventListener("click", () => moFormKetQua("dat"));
+    document.getElementById("btnDongKetQua")?.addEventListener("click", () => dongModal(modalKetQuaUngVien));
+    document.getElementById("btnHuyKetQua")?.addEventListener("click", () => dongModal(modalKetQuaUngVien));
+    document.getElementById("btnGuiEmailKetQua")?.addEventListener("click", guiEmailKetQua);
+    mauEmailKetQua?.addEventListener("change", capNhatMauEmail);
+    document.querySelectorAll('input[name="ketQuaUngVien"]').forEach((radio) => radio.addEventListener("change", () => { mauEmailKetQua.value = radio.value; capNhatMauEmail(); }));
+    thoiGianPhongVan?.addEventListener("change", () => { if (loaiQuyetDinhCV === "dat") capNhatMauEmail(); });
+    diaDiemPhongVan?.addEventListener("input", () => { if (loaiQuyetDinhCV === "dat") capNhatMauEmail(); });
     btnTaiXuong?.addEventListener("click", taiXuongCV);
 
     btnThuNho?.addEventListener("click", function () { thayDoiZoom(-0.1); });
@@ -1236,7 +1297,7 @@ document.addEventListener("DOMContentLoaded", function () {
     btnHuyXacNhanPhanTich?.addEventListener("click", dongModalXacNhan);
     btnLuuXacNhanPhanTich?.addEventListener("click", xacNhanPhanTich);
 
-    [modalThemCV, modalHoiAI, modalThongBaoCV, modalXacNhanPhanTich, modalUngVien].forEach(function (modal) {
+    [modalThemCV, modalHoiAI, modalThongBaoCV, modalXacNhanPhanTich, modalUngVien, modalKetQuaUngVien].forEach(function (modal) {
         modal?.addEventListener("click", function (event) {
             if (event.target === modal) dongModal(modal);
         });

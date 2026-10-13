@@ -2649,24 +2649,175 @@
 }
 
 
-/* Thông báo khi điểm đánh giá nằm ngoài khoảng cho phép */
-.cv-score-validation {
-    margin: 10px 0 14px;
-    padding: 10px 12px;
-    border: 1px solid #f3b5b5;
-    border-radius: 9px;
-    background: #fff1f1;
-    color: #b42318;
+/* Quyết định HR và mẫu email kết quả ứng viên */
+.cv-hr-decision-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 10px;
+    margin: 18px 0 6px;
+    padding-top: 14px;
+    border-top: 1px solid #e6ebf3
+}
+
+.cv-hr-decision-actions button {
+    min-height: 44px;
+    border-radius: 10px;
+    font: 600 14px inherit;
+    cursor: pointer;
+    transition: .18s
+}
+
+.cv-decision-reject {
+    background: #fff;
+    color: #dc2626;
+    border: 1px solid #fecaca
+}
+
+.cv-decision-reject:hover {
+    background: #fff1f2
+}
+
+.cv-decision-interview {
+    background: #2563eb;
+    color: #fff;
+    border: 1px solid #2563eb
+}
+
+.cv-decision-interview:hover {
+    background: #1d4ed8
+}
+
+.cv-result-modal {
+    width: min(820px, calc(100vw - 28px));
+    max-height: 92vh;
+    overflow: auto
+}
+
+.cv-result-body {
+    padding: 18px 24px
+}
+
+.cv-result-choice {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px
+}
+
+.cv-result-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid #dbe3ef;
+    border-radius: 12px;
+    cursor: pointer
+}
+
+.cv-result-option:has(input:checked) {
+    border: 2px solid #16a34a;
+    background: #f0fdf4;
+    padding: 13px
+}
+
+.cv-result-option input {
+    accent-color: #16a34a;
+    width: 18px;
+    height: 18px
+}
+
+.cv-result-option span {
+    display: grid;
+    gap: 4px
+}
+
+.cv-result-option strong {
+    font-size: 14px;
+    color: #172033
+}
+
+.cv-result-option small {
+    font-size: 12px;
+    color: #64748b
+}
+
+.cv-result-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px
+}
+
+.cv-result-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
     font-size: 13px;
+    font-weight: 600;
+    color: #334155
+}
+
+.cv-result-fields .wide {
+    grid-column: 1/-1
+}
+
+.cv-result-fields input,
+.cv-result-fields select,
+.cv-result-fields textarea {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #dbe3ef;
+    border-radius: 9px;
+    padding: 11px 12px;
+    background: #fff;
+    color: #172033;
+    font: 400 14px inherit;
+    outline: none
+}
+
+.cv-result-fields input:focus,
+.cv-result-fields select:focus,
+.cv-result-fields textarea:focus {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px #ede9fe
+}
+
+.cv-result-fields textarea {
+    resize: vertical;
+    line-height: 1.6;
+    white-space: pre-wrap
+}
+
+.cv-result-note {
+    font-size: 12px;
     line-height: 1.5;
+    color: #64748b;
+    background: #f8fafc;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin: 14px 0
 }
 
-.cv-score-validation[hidden] {
-    display: none;
+.cv-form-message.error {
+    color: #b91c1c
 }
 
-#phanTichAI input[aria-invalid="true"],
-#noiDungXacNhanPhanTich input[aria-invalid="true"] {
-    border-color: #d92d20 !important;
-    box-shadow: 0 0 0 2px rgba(217, 45, 32, .10);
+.cv-form-message.success {
+    color: #15803d
+}
+
+@media(max-width:640px) {
+
+    .cv-hr-decision-actions,
+    .cv-result-choice,
+    .cv-result-fields {
+        grid-template-columns: 1fr
+    }
+
+    .cv-result-fields .wide {
+        grid-column: auto
+    }
+
+    .cv-result-body {
+        padding: 14px
+    }
 }
