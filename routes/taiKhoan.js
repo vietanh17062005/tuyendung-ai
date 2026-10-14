@@ -157,4 +157,50 @@ router.put("/mat-khau", kiemTraDangNhap, async function (req, res) {
   }
 });
 
+/* Lấy danh sách người phỏng vấn */
+
+router.get(
+  "/nguoi-phong-van",
+  kiemTraDangNhap,
+  async function (req, res) {
+    try {
+      const [rows] = await db.query(`
+                SELECT
+                    id,
+                    ho_ten,
+                    email,
+                    vai_tro
+                FROM nguoi_dung
+                WHERE LOWER(
+                    REPLACE(
+                        REPLACE(TRIM(vai_tro), ' ', '_'),
+                        '-',
+                        '_'
+                    )
+                ) IN (
+                    'admin',
+                    'manager',
+                    'interview',
+                    'interviewer',
+                    'nguoi_phong_van'
+                )
+                ORDER BY ho_ten ASC
+            `);
+
+      res.json(rows);
+
+    } catch (error) {
+      console.error(
+        "Lỗi lấy danh sách người phỏng vấn:",
+        error
+      );
+
+      res.status(500).json({
+        message: "Không lấy được danh sách người phỏng vấn",
+        error: error.message
+      });
+    }
+  }
+);
+
 module.exports = router;

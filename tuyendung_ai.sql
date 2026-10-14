@@ -555,6 +555,26 @@ CREATE TABLE `ung_vien_review` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 COMMIT;
 
+ALTER TABLE phong_van
+    ADD COLUMN IF NOT EXISTS vong_phong_van VARCHAR(100) NOT NULL DEFAULT 'Vòng 1',
+    ADD COLUMN IF NOT EXISTS email_trang_thai VARCHAR(30) NOT NULL DEFAULT 'chua_gui',
+    ADD COLUMN IF NOT EXISTS email_loi TEXT NULL,
+    ADD COLUMN IF NOT EXISTS email_da_gui_luc DATETIME NULL;
+
+CREATE TABLE IF NOT EXISTS phong_van_nguoi_tham_gia (
+    phong_van_id INT NOT NULL,
+    nguoi_dung_id INT NOT NULL,
+    ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (phong_van_id, nguoi_dung_id),
+    KEY idx_pv_tham_gia_nguoi_dung (nguoi_dung_id),
+    CONSTRAINT fk_pv_tham_gia_lich
+        FOREIGN KEY (phong_van_id) REFERENCES phong_van(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_pv_tham_gia_nguoi_dung
+        FOREIGN KEY (nguoi_dung_id) REFERENCES nguoi_dung(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

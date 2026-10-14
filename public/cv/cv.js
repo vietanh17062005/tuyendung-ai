@@ -1121,7 +1121,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 try {
                     const data = await response.json();
                     message = data.message || message;
-                } catch (error) { }
+                } catch (error) {}
                 throw new Error(message);
             }
 
@@ -1244,7 +1244,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || "Không cập nhật được trạng thái ứng viên.");
-            // Mở màn hình soạn thư Gmail trên trình duyệt hiện tại, không dùng mailto.
+            // Mở màn hình soạn thư Gmail ở tab mới, vẫn giữ nguyên trang CV hiện tại.
             const gmailCompose = new URL("https://mail.google.com/mail/");
             gmailCompose.searchParams.set("view", "cm");
             gmailCompose.searchParams.set("fs", "1");
@@ -1254,7 +1254,6 @@ document.addEventListener("DOMContentLoaded", function () {
             window.open(gmailCompose.toString(), "_blank", "noopener,noreferrer");
             message.textContent = "Đã cập nhật trạng thái. Gmail đã được mở để ông kiểm tra và gửi thư.";
             message.className = "cv-form-message success";
-            setTimeout(() => dongModal(modalKetQuaUngVien), 900);
             await taiDanhSach();
         } catch (error) {
             message.textContent = error.message || "Có lỗi khi xử lý kết quả.";
@@ -1264,7 +1263,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     btnPhanTich?.addEventListener("click", phanTichCV);
     document.getElementById("btnTuChoiCV")?.addEventListener("click", () => moFormKetQua("rot"));
-    document.getElementById("btnNhanPhongVan")?.addEventListener("click", () => moFormKetQua("dat"));
+    document.getElementById("btnNhanPhongVan")?.addEventListener("click", function () {
+        // Mở biểu mẫu ngay trên trang CV, không chuyển sang trang khác.
+        moFormKetQua("dat");
+    });
     document.getElementById("btnDongKetQua")?.addEventListener("click", () => dongModal(modalKetQuaUngVien));
     document.getElementById("btnHuyKetQua")?.addEventListener("click", () => dongModal(modalKetQuaUngVien));
     document.getElementById("btnGuiEmailKetQua")?.addEventListener("click", guiEmailKetQua);

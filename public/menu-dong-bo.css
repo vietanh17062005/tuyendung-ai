@@ -1,0 +1,114 @@
+/* Đồng bộ thanh điều hướng theo Dashboard */
+.menu, .dashboard-sidebar {
+  background:#fff !important; border-right:1px solid #dbe3ee !important;
+  color:#52647f !important; box-shadow:none !important;
+}
+.menu { width:275px; min-width:275px; padding:25px 18px !important; }
+.dashboard-sidebar { position:fixed !important; inset:0 auto 0 0 !important; width:275px !important; min-height:100vh; padding:25px 18px !important; overflow-y:auto; z-index:20; display:flex; flex-direction:column; }
+.menu .logo, .dashboard-sidebar .logo { display:flex; align-items:center; gap:11px; padding:4px 8px 34px !important; }
+.menu .logo-icon, .dashboard-sidebar .logo-icon { width:48px; height:48px; min-width:48px; display:grid; place-items:center; border-radius:13px; background:linear-gradient(145deg,#785cff,#2164ed) !important; color:#fff; font-size:23px; font-weight:800; }
+.menu .logo-title, .dashboard-sidebar .logo-title { color:#101a31 !important; font-size:16px !important; font-weight:700; line-height:1.3; }
+.menu .logo-subtitle, .dashboard-sidebar .logo-subtitle { margin-top:3px; color:#647894 !important; font-size:11px !important; }
+.menu .menu-list, .dashboard-sidebar .menu-list { display:flex; flex-direction:column; gap:5px; }
+.menu .menu-list a, .dashboard-sidebar .menu-list a { display:flex; align-items:center; gap:12px; padding:13px !important; border-radius:11px !important; color:#52647f !important; font-size:14px !important; font-weight:600; text-decoration:none; transition:background .15s,color .15s; }
+.menu .menu-list a span, .dashboard-sidebar .menu-list a span { width:20px; min-width:20px; text-align:center; font-size:18px; }
+.menu .menu-list a:hover, .dashboard-sidebar .menu-list a:hover { background:#f1f6ff !important; color:#2058dd !important; }
+.menu .menu-list a.active, .dashboard-sidebar .menu-list a.active { background:#eef5ff !important; color:#2058dd !important; }
+/* Trang dùng layout sidebar cố định */
+body:has(.dashboard-sidebar) .app, body:has(.dashboard-sidebar) .main-content { margin-left:275px !important; }
+@media(max-width:750px) {
+ .menu { width:100%; min-width:0; min-height:auto; padding:12px !important; }
+ .menu .logo { padding:4px 8px 12px !important; }
+ .menu .menu-list { flex-direction:row; flex-wrap:wrap; }
+ .menu .menu-list a { padding:9px 10px !important; font-size:12px !important; }
+ .dashboard-sidebar { position:relative !important; inset:auto !important; width:100% !important; min-height:0; padding:12px !important; }
+ .dashboard-sidebar .logo { padding:4px 8px 12px !important; }
+ .dashboard-sidebar .menu-list { flex-direction:row; flex-wrap:wrap; }
+ .dashboard-sidebar .menu-list a { padding:9px 10px !important; font-size:12px !important; }
+ body:has(.dashboard-sidebar) .app, body:has(.dashboard-sidebar) .main-content { margin-left:0 !important; }
+}
+
+/* Đồng bộ typography theo Dashboard (Inter) trên tất cả trang */
+html, body, button, input, select, textarea {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important;
+}
+body { color: #0f172a; background: #f8fafc; }
+.menu .logo-title, .dashboard-sidebar .logo-title { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important; }
+main h1, .noi-dung h1, .main-content h1, .app h1 { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important; font-weight: 750; letter-spacing: -.65px; }
+main h2, main h3, .modal h2, .modal-card h2 { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important; }
+
+/* Thanh công cụ chung theo Dashboard */
+.shared-dashboard-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-left:auto; }
+.shared-dashboard-actions .shared-ai-btn, .shared-dashboard-actions .shared-bell-btn { min-height:40px; border:1px solid #e2e8f0; border-radius:10px; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:9px 13px; background:#fff; color:#334155; font:600 13px Inter, sans-serif; cursor:pointer; text-decoration:none; transition:background .15s,border-color .15s; }
+.shared-dashboard-actions .shared-ai-btn { background:#6257e8; border-color:#6257e8; color:#fff; }
+.shared-dashboard-actions .shared-ai-btn:hover { background:#5046d5; border-color:#5046d5; }
+.shared-dashboard-actions .shared-bell-btn { width:42px; padding:8px; font-size:17px; }
+.shared-dashboard-actions .shared-bell-btn:hover { background:#f1f5f9; border-color:#cbd5e1; }
+.shared-ai-overlay { position:fixed; inset:0; z-index:9999; display:none; align-items:center; justify-content:center; padding:18px; background:#0f172a80; backdrop-filter:blur(3px); }
+.shared-ai-overlay.open { display:flex; }
+.shared-ai-card { width:min(560px,100%); max-height:85vh; display:flex; flex-direction:column; background:#fff; border:1px solid #e2e8f0; border-radius:18px; box-shadow:0 24px 70px #0f172a35; overflow:hidden; }
+.shared-ai-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:22px 24px; border-bottom:1px solid #edf2f7; }
+.shared-ai-head h2 { margin:0 0 5px; font-size:20px; color:#0f172a; }
+.shared-ai-head p { margin:0; color:#64748b; font-size:13px; line-height:1.5; }
+.shared-ai-close { border:0; background:#f1f5f9; border-radius:9px; width:34px; height:34px; font-size:22px; cursor:pointer; color:#475569; }
+.shared-ai-messages { padding:18px 24px; overflow:auto; min-height:100px; max-height:45vh; }
+.shared-ai-message { width:fit-content; max-width:100%; margin:0 0 12px; padding:11px 13px; border-radius:12px; background:#f1f5f9; color:#334155; font-size:14px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
+.shared-ai-message.user { margin-left:auto; background:#eff6ff; color:#1d4ed8; }
+.shared-ai-error { color:#b91c1c; padding:0 24px; font-size:13px; }
+.shared-ai-form { display:flex; gap:10px; padding:16px 24px 22px; border-top:1px solid #edf2f7; }
+.shared-ai-form textarea { flex:1; min-width:0; min-height:46px; max-height:130px; resize:vertical; padding:12px; border:1px solid #dbe3ee; border-radius:10px; font:14px Inter,sans-serif; }
+.shared-ai-form button { border:0; border-radius:10px; padding:0 16px; background:#2563eb; color:white; font:600 13px Inter,sans-serif; cursor:pointer; }
+.shared-ai-form button:disabled { opacity:.6; cursor:wait; }
+@media(max-width:650px) { .shared-dashboard-actions { gap:7px; } .shared-dashboard-actions .shared-ai-btn { padding:8px 10px; } .shared-ai-head,.shared-ai-form { padding-left:16px; padding-right:16px; } .shared-ai-messages { padding:16px; } }
+
+/* Menu tài khoản đồng bộ với Dashboard */
+.shared-account-wrap { position:relative; display:flex; align-items:center; flex:0 0 auto; }
+.shared-account-btn { display:flex; align-items:center; gap:9px; border:1px solid transparent; background:transparent; padding:5px 8px; border-radius:11px; cursor:pointer; color:#334155; font:inherit; }
+.shared-account-btn:hover,.shared-account-btn[aria-expanded="true"] { background:#f1f5f9; border-color:#e2e8f0; }
+.shared-account-avatar { display:grid; place-items:center; width:38px; height:38px; border-radius:50%; background:#dbeafe; color:#2563eb; font-weight:750; }
+.shared-account-label { display:flex; flex-direction:column; align-items:flex-start; gap:3px; max-width:145px; }
+.shared-account-label strong { max-width:145px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; color:#0f172a; }
+.shared-account-label small { font-size:10px; color:#64748b; }
+.shared-account-menu { position:absolute; z-index:1000; top:calc(100% + 8px); right:0; width:245px; padding:7px; border:1px solid #e2e8f0; border-radius:13px; background:#fff; box-shadow:0 14px 35px rgba(15,23,42,.14); }
+.shared-account-menu[hidden] { display:none !important; }
+.shared-account-summary { display:flex; flex-direction:column; gap:5px; padding:11px 12px 13px; border-bottom:1px solid #e2e8f0; margin-bottom:5px; }
+.shared-account-summary strong { font-size:13px; color:#0f172a; overflow-wrap:anywhere; }
+.shared-account-summary small { color:#64748b; font-size:11px; overflow-wrap:anywhere; }
+.shared-account-menu a,.shared-account-menu button { display:flex; align-items:center; width:100%; gap:9px; padding:11px 12px; border:0; border-radius:8px; background:transparent; color:#334155; font:500 13px Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; text-align:left; text-decoration:none; cursor:pointer; }
+.shared-account-menu a:hover,.shared-account-menu button:hover { background:#f1f5f9; color:#1d4ed8; }
+.shared-account-menu .shared-account-logout { color:#dc2626; }
+@media(max-width:650px) { .shared-account-label { display:none; } .shared-account-btn { gap:4px; padding:4px; } .shared-account-menu { right:0; } }
+
+/* Modal tài khoản dùng chung, mở ngay trên trang hiện tại */
+.shared-account-overlay{position:fixed;inset:0;z-index:10050;background:rgba(15,23,42,.48);display:none;align-items:center;justify-content:center;padding:20px}
+.shared-account-overlay.open{display:flex}
+.shared-account-dialog{position:relative;width:min(100%,520px);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:28px;box-shadow:0 24px 80px rgba(15,23,42,.24);color:#172033}
+.shared-account-dialog h2{font-size:22px;margin:0 36px 6px 0;color:#172033}
+.shared-account-dialog>div>p{margin:0 0 22px;color:#64748b;font-size:14px}
+.shared-modal-close{position:absolute;right:16px;top:14px;border:0;background:#f1f5f9;border-radius:9px;width:34px;height:34px;font-size:24px;cursor:pointer;color:#475569}
+.shared-account-dialog form{display:grid;gap:14px}
+.shared-account-dialog label{display:grid;gap:7px;font-size:13px;font-weight:600;color:#334155}
+.shared-account-dialog input{box-sizing:border-box;width:100%;min-height:42px;border:1px solid #cbd5e1;border-radius:9px;padding:10px 12px;font:inherit;color:#0f172a;background:#fff}
+.shared-account-dialog input:focus{outline:2px solid #bfdbfe;border-color:#3b82f6}
+.shared-account-dialog input[readonly]{background:#f8fafc;color:#64748b}
+.shared-account-message{min-height:18px;margin:0;color:#b91c1c;font-size:13px}
+.shared-account-message.success{color:#15803d}
+.shared-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}
+.shared-modal-actions button{border:1px solid #cbd5e1;border-radius:9px;padding:10px 15px;background:#fff;color:#334155;font-weight:600;cursor:pointer}
+.shared-modal-actions button[type=submit]{background:#2563eb;border-color:#2563eb;color:#fff}
+.shared-account-menu>button{display:block;width:100%;text-align:left;border:0;background:transparent;padding:11px 14px;font:inherit;color:#334155;cursor:pointer}
+.shared-account-menu>button:hover{background:#f1f5f9}
+@media(max-width:640px){.shared-account-dialog{padding:22px 18px}.shared-account-label{display:none}.shared-dashboard-actions{gap:7px}}
+
+/* Chuông mở bảng thông báo ngay trên trang, đồng bộ cách hiển thị với Dashboard */
+.shared-bell-wrap{position:relative;display:flex;align-items:center}
+.shared-dashboard-actions .shared-bell-btn{position:relative;width:42px;min-width:42px;height:40px;padding:8px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;color:#334155;cursor:pointer}
+.shared-bell-count{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;border:2px solid #fff;border-radius:999px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;line-height:14px;text-align:center}
+.shared-bell-count[hidden],.shared-notification-panel[hidden]{display:none!important}
+.shared-notification-panel{position:absolute;z-index:10020;top:calc(100% + 10px);right:0;width:min(340px,calc(100vw - 28px));overflow:hidden;border:1px solid #e2e8f0;border-radius:14px;background:#fff;box-shadow:0 18px 48px rgba(15,23,42,.18)}
+.shared-notification-heading{display:flex;flex-direction:column;gap:4px;padding:15px 17px;border-bottom:1px solid #edf1f7}
+.shared-notification-heading strong{font-size:14px;color:#0f172a}.shared-notification-heading span{font-size:11px;color:#64748b}
+.shared-notification-list{max-height:340px;overflow:auto;padding:6px}
+.shared-notification-item{display:grid;gap:6px;padding:12px;border-radius:9px;border-bottom:1px solid #f1f5f9}
+.shared-notification-item:last-child{border-bottom:0}.shared-notification-item strong{font-size:12px;line-height:1.45;color:#334155;font-weight:600}.shared-notification-item span{font-size:10px;color:#94a3b8}
+.shared-notification-empty{margin:0;padding:20px 12px;text-align:center;color:#94a3b8;font-size:12px}
