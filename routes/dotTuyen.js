@@ -59,54 +59,75 @@ router.get(
   kiemTraDangNhap,
   async function (req, res) {
     try {
-      await dongDotQuaHan();
+      // Danh sách không phụ thuộc vào việc cập nhật trạng thái quá hạn.
+      // Một lỗi UPDATE không được phép làm cả trang danh sách trắng.
       const columns = await layCotBang("dot_tuyen");
-      const tenField = columns.includes("ten") ? "ten" : "ten_dot";
+      const tenField = columns.includes("ten") ? "ten" : columns.includes("ten_dot") ? "ten_dot" : null;
+      if (!tenField) throw new Error("Bảng dot_tuyen thiếu cột ten hoặc ten_dot.");
+
       const nguoiTaoField = layNguoiTaoField(columns);
       const tenNguoiTaoField = layTenNguoiTaoField(columns);
       const ngayCapNhatField = layNgayCapNhatField(columns);
-      const cotPhanTichAI = await layCotBang("phan_tich_ai");
-      const cotDiemPhanTich = ["diem_phu_hop", "diem"].find((column) =>
-        cotPhanTichAI.includes(column),
-      );
-      const cotUngVienPhanTich = cotPhanTichAI.includes("ung_vien_id")
-        ? "ung_vien_id"
-        : null;
-      const truyVanUngVienHopTieuChi = cotDiemPhanTich && cotUngVienPhanTich
+      const cot = (name, alias = name, table = "dt") =>
+        columns.includes(name) ? `${table}.\`${name}\` AS \`${alias}\`` : `NULL AS \`${alias}\``;
+
+      let cotNguoiDung = [];
+      try { cotNguoiDung = await layCotBang("nguoi_dung"); } catch (_) {}
+      const cotNguoiTaoTen = cotNguoiDung.includes("ho_ten")
+        ? `nd.ho_ten AS nguoi_tao_ten`
+        : "NULL AS nguoi_tao_ten";
+      const joinNguoiTao = cotNguoiDung.includes("id") && columns.includes(tenNguoiTaoField)
+        ? `LEFT JOIN nguoi_dung nd ON nd.id = dt.${tenNguoiTaoField}`
+        : "";
+
+      let cotPhanTichAI = [];
+      try { cotPhanTichAI = await layCotBang("phan_tich_ai"); } catch (_) {}
+      let cotJD = [];
+      try { cotJD = await layCotBang("jd"); } catch (_) {}
+      const cotDiemPhanTich = ["diem_phu_hop", "diem"].find((column) => cotPhanTichAI.includes(column));
+      const cotUngVienPhanTich = cotPhanTichAI.includes("ung_vien_id") ? "ung_vien_id" : null;
+      const coBangUngVien = await layCotBang("ung_vien");
+      const coBangJD = cotJD.includes("id") && cotJD.includes("dot_tuyen_id");
+      const cotJDPhanTich = cotPhanTichAI.includes("jd_id");
+      const truyVanUngVienHopTieuChi = cotDiemPhanTich && cotUngVienPhanTich && cotJDPhanTich && coBangJD && coBangUngVien.includes("dot_tuyen_id")
         ? `(SELECT COUNT(DISTINCT uv.id)
            FROM ung_vien uv
-           INNER JOIN phan_tich_ai pa
-             ON pa.${cotUngVienPhanTich} = uv.id AND pa.${cotDiemPhanTich} >= 80
+           INNER JOIN phan_tich_ai pa ON pa.${cotUngVienPhanTich} = uv.id AND pa.${cotDiemPhanTich} >= 80
            INNER JOIN jd jd_match ON jd_match.id = pa.jd_id AND jd_match.dot_tuyen_id = dt.id
            WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien_hop_tieu_chi`
         : "0 AS so_ung_vien_hop_tieu_chi";
-      const ketQua = `
+      const demUngVien = coBangUngVien.includes("dot_tuyen_id")
+        ? "(SELECT COUNT(*) FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien"
+        : "0 AS so_ung_vien";
+      const kenhNhanCV = coBangUngVien.includes("dot_tuyen_id") && coBangUngVien.includes("nguon")
+        ? "(SELECT GROUP_CONCAT(DISTINCT NULLIF(TRIM(uv.nguon), '') ORDER BY uv.nguon SEPARATOR ', ') FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id AND NULLIF(TRIM(uv.nguon), '') IS NOT NULL) AS kenh_nhan_cv"
+        : "NULL AS kenh_nhan_cv";
+
+      const [rows] = await db.query(`
         SELECT
           dt.id,
-          dt.${tenField} AS ten_dot,
-          dt.${tenField} AS ten,
-          dt.mo_ta,
-          dt.trang_thai,
-          dt.${tenNguoiTaoField} AS nguoi_tao,
-          dt.${nguoiTaoField} AS nguoi_tao_id,
-          dt.ngay_bat_dau,
-          dt.ngay_ket_thuc,
-          dt.ngay_tao,
-          dt.${ngayCapNhatField} AS ngay_cap_nhat,
-          nd.ho_ten AS nguoi_tao_ten,
-          (SELECT COUNT(*) FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id) AS so_ung_vien,
+          dt.\`${tenField}\` AS ten_dot,
+          dt.\`${tenField}\` AS ten,
+          ${cot("mo_ta")},
+          ${cot("trang_thai")},
+          ${columns.includes(tenNguoiTaoField) ? `dt.\`${tenNguoiTaoField}\` AS nguoi_tao` : "NULL AS nguoi_tao"},
+          ${columns.includes(nguoiTaoField) ? `dt.\`${nguoiTaoField}\` AS nguoi_tao_id` : "NULL AS nguoi_tao_id"},
+          ${cot("ngay_bat_dau")},
+          ${cot("ngay_ket_thuc")},
+          ${cot("ngay_tao")},
+          ${columns.includes(ngayCapNhatField) ? `dt.\`${ngayCapNhatField}\` AS ngay_cap_nhat` : "NULL AS ngay_cap_nhat"},
+          ${cotNguoiTaoTen},
+          ${demUngVien},
           ${truyVanUngVienHopTieuChi},
-          (SELECT GROUP_CONCAT(DISTINCT NULLIF(TRIM(uv.nguon), '') ORDER BY uv.nguon SEPARATOR ', ')
-           FROM ung_vien uv WHERE uv.dot_tuyen_id = dt.id AND NULLIF(TRIM(uv.nguon), '') IS NOT NULL) AS kenh_nhan_cv
+          ${kenhNhanCV}
         FROM dot_tuyen dt
-        LEFT JOIN nguoi_dung nd ON nd.id = dt.${tenNguoiTaoField}
-        ORDER BY dt.ngay_tao DESC, dt.id DESC
-      `;
-      const [rows] = await db.query(ketQua);
+        ${joinNguoiTao}
+        ORDER BY ${columns.includes("ngay_tao") ? "dt.ngay_tao DESC," : ""} dt.id DESC
+      `);
       res.json({ success: true, data: rows.map(normalizeDotTuyen) });
     } catch (error) {
       console.error("GET /api/dot-tuyen:", error);
-      res.status(500).json({ message: "Không lấy được danh sách đợt tuyển dụng" });
+      res.status(500).json({ message: error.message || "Không lấy được danh sách đợt tuyển dụng" });
     }
   },
 );
@@ -116,7 +137,6 @@ router.get(
   kiemTraDangNhap,
   async function (req, res) {
     try {
-      await dongDotQuaHan();
       const id = Number(req.params.id);
       if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({ message: "ID đợt tuyển dụng không hợp lệ" });

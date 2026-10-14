@@ -291,10 +291,23 @@
             Authorization: `Bearer ${token}`,
         };
 
-        const response = await fetch(url, {
-            ...options,
-            headers,
-        });
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 20000);
+        let response;
+        try {
+            response = await fetch(url, {
+                ...options,
+                signal: options.signal || controller.signal,
+                headers,
+            });
+        } catch (error) {
+            if (error.name === "AbortError") {
+                throw new Error(`Máy chủ phản hồi quá lâu khi tải dữ liệu. Kiểm tra kết nối cơ sở dữ liệu và log máy chủ.`);
+            }
+            throw error;
+        } finally {
+            window.clearTimeout(timeout);
+        }
 
         const contentType = response.headers.get("content-type") || "";
         const data = contentType.includes("application/json")

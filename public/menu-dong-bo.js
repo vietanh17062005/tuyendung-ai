@@ -26,11 +26,18 @@
   const header = document.querySelector('.topbar, .top, header');
   if (!header) return;
 
-  // Loại bỏ các bộ nút có sẵn trong từng trang để không bị lặp icon.
-  header.querySelectorAll('#btnHoiAI, .nut-ai, .cv-ai-top-btn, .cv-notification-btn, [id^="btnThongBao"], .thong-bao-wrap, .nut-chuong, .tai-khoan, #taiKhoan, .shared-bell-btn, .shared-ai-btn, .shared-account-wrap').forEach(el => el.remove());
-  header.querySelectorAll('.cv-top-actions').forEach(el => { if (!el.children.length) el.remove(); });
-  // Các trang con không hiển thị avatar/tên tài khoản cũ vì cụm tài khoản dùng chung sẽ thay thế.
-  header.querySelectorAll('.topbar-actions .avatar, .topbar-actions .user-meta, .top-actions .avatar, .top-actions .user-meta, .header-actions .avatar, .header-actions .user-meta').forEach(el => el.remove());
+  // Ẩn các nút giao diện cũ để tránh icon trùng, KHÔNG xóa DOM vì JS của từng trang
+  // vẫn cần các phần tử này để gắn sự kiện và khởi tạo dữ liệu.
+  header.querySelectorAll('#btnHoiAI, .nut-ai, .cv-ai-top-btn, .cv-notification-btn, [id^="btnThongBao"], .thong-bao-wrap, .nut-chuong, .tai-khoan, #taiKhoan').forEach(el => {
+    el.style.setProperty('display', 'none', 'important');
+    el.setAttribute('aria-hidden', 'true');
+  });
+  header.querySelectorAll('.cv-top-actions').forEach(el => { if (!el.children.length) el.style.display = 'none'; });
+  // Giữ các phần tử tài khoản trong DOM nhưng ẩn phần hiển thị cũ.
+  header.querySelectorAll('.topbar-actions .avatar, .topbar-actions .user-meta, .top-actions .avatar, .top-actions .user-meta, .header-actions .avatar, .header-actions .user-meta').forEach(el => {
+    el.style.setProperty('display', 'none', 'important');
+    el.setAttribute('aria-hidden', 'true');
+  });
   let actions = header.querySelector('.topbar-actions, .top-actions, .actions, .header-actions');
   if (!actions) {
     actions = document.createElement('div');

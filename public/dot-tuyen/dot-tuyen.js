@@ -67,13 +67,26 @@ function taoHeaders() {
 }
 
 async function api(url, options = {}) {
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      ...taoHeaders(),
-      ...(options.headers || {}),
-    },
-  });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 20000);
+  let response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      signal: options.signal || controller.signal,
+      headers: {
+        ...taoHeaders(),
+        ...(options.headers || {}),
+      },
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(`Máy chủ phản hồi quá lâu khi tải ${url}. Kiểm tra kết nối cơ sở dữ liệu và log máy chủ.`);
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 
   let data = null;
 
