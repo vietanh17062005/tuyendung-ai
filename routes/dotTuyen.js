@@ -3,7 +3,7 @@ const db = require("../database/db");
 const { kiemTraDangNhap, kiemTraVaiTro } = require("../middleware/auth");
 
 const router = express.Router();
-const TRANG_THAI_DOT_TUYEN = new Set(["nhap", "dang_tuyen", "tam_dung", "ket_thuc"]);
+const TRANG_THAI_DOT_TUYEN = new Set(["dang_tuyen", "ket_thuc"]);
 
 function laNgayHopLe(value) {
   if (value === null || value === undefined || value === "") return true;
@@ -48,9 +48,9 @@ async function dongDotQuaHan() {
   await db.query(
     `UPDATE dot_tuyen
      SET trang_thai = 'ket_thuc'
-     WHERE trang_thai IN ('dang_tuyen', 'tam_dung')
+     WHERE trang_thai <> 'ket_thuc'
        AND ngay_ket_thuc IS NOT NULL
-       AND ngay_ket_thuc <= CURDATE()`,
+       AND ngay_ket_thuc < CURDATE()`,
   );
 }
 
@@ -59,6 +59,7 @@ router.get(
   kiemTraDangNhap,
   async function (req, res) {
     try {
+      try { await dongDotQuaHan(); } catch (closeError) { console.warn("Không cập nhật được trạng thái đợt quá hạn:", closeError.message); }
       // Danh sách không phụ thuộc vào việc cập nhật trạng thái quá hạn.
       // Một lỗi UPDATE không được phép làm cả trang danh sách trắng.
       const columns = await layCotBang("dot_tuyen");
@@ -188,11 +189,16 @@ router.post(
   kiemTraVaiTro("admin", "manager"),
   async function (req, res) {
     try {
-      const ten = String(req.body?.ten ?? req.body?.ten_dot ?? "").trim();
-      if (!ten) {
-        return res.status(400).json({ message: "Vui lòng nhập tên đợt tuyển dụng" });
+      const moTaNhap = String(req.body?.mo_ta || "").trim();
+      let ten = String(req.body?.ten ?? req.body?.ten_dot ?? "").trim();
+      if (!ten && moTaNhap) {
+        const viTri = moTaNhap.replace(/\s+/g, " ").replace(/^(tuyển dụng|tuyển|cần tuyển|tìm kiếm)\s+/i, "").split(/[.!?;]/)[0].trim();
+        ten = `Tuyển dụng ${viTri.slice(0, 70)}`;
       }
-      const trangThai = String(req.body?.trang_thai || "nhap");
+      if (!ten || !moTaNhap) {
+        return res.status(400).json({ message: "Vui lòng nhập mô tả vị trí cần tuyển" });
+      }
+      let trangThai = String(req.body?.trang_thai || "dang_tuyen");
       const ngayBatDau = req.body?.ngay_bat_dau || null;
       const ngayKetThuc = req.body?.ngay_ket_thuc || null;
       if (!TRANG_THAI_DOT_TUYEN.has(trangThai)) {
@@ -201,6 +207,10 @@ router.post(
       if (!laNgayHopLe(ngayBatDau) || !laNgayHopLe(ngayKetThuc) ||
           (ngayBatDau && ngayKetThuc && ngayKetThuc < ngayBatDau)) {
         return res.status(400).json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ" });
+      }
+      if (ngayKetThuc) {
+        const [[todayRow]] = await db.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today");
+        trangThai = ngayKetThuc < todayRow.today ? "ket_thuc" : "dang_tuyen";
       }
 
       const columns = await layCotBang("dot_tuyen");
@@ -224,7 +234,7 @@ router.post(
       ];
       const insertValues = [
         ten,
-        req.body?.mo_ta || null,
+        moTaNhap || null,
         trangThai,
         ...nguoiTaoFields.map(() => nguoiTaoValue),
         ngayBatDau,
@@ -259,7 +269,7 @@ router.put(
       if (!ten) {
         return res.status(400).json({ message: "Vui lòng nhập tên đợt tuyển dụng" });
       }
-      const trangThai = String(req.body?.trang_thai || "nhap");
+      let trangThai = String(req.body?.trang_thai || "dang_tuyen");
       const ngayBatDau = req.body?.ngay_bat_dau || null;
       const ngayKetThuc = req.body?.ngay_ket_thuc || null;
       if (!TRANG_THAI_DOT_TUYEN.has(trangThai)) {
@@ -268,6 +278,10 @@ router.put(
       if (!laNgayHopLe(ngayBatDau) || !laNgayHopLe(ngayKetThuc) ||
           (ngayBatDau && ngayKetThuc && ngayKetThuc < ngayBatDau)) {
         return res.status(400).json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ" });
+      }
+      if (req.body?.force_trang_thai !== true && ngayKetThuc) {
+        const [[todayRow]] = await db.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today");
+        trangThai = ngayKetThuc < todayRow.today ? "ket_thuc" : "dang_tuyen";
       }
 
       const columns = await layCotBang("dot_tuyen");

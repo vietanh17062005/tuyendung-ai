@@ -1252,7 +1252,7 @@ document.addEventListener("DOMContentLoaded", function () {
             gmailCompose.searchParams.set("su", subject);
             gmailCompose.searchParams.set("body", body);
             window.open(gmailCompose.toString(), "_blank", "noopener,noreferrer");
-            message.textContent = "Đã cập nhật trạng thái. Gmail đã được mở để ông kiểm tra và gửi thư.";
+            message.textContent = "Đã cập nhật trạng thái. Gmail đã được mở để bạn kiểm tra và gửi thư.";
             message.className = "cv-form-message success";
             await taiDanhSach();
         } catch (error) {

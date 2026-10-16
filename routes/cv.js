@@ -18,11 +18,8 @@ const router = express.Router();
 const dangChayTrenVercel =
     process.env.VERCEL === "1";
 
-const thuMucUpload = path.join(
-    process.cwd(),
-    "uploads",
-    "cv",
-);
+const thuMucDuAn = path.resolve(__dirname, "..");
+const thuMucUpload = path.join(thuMucDuAn, "uploads", "cv");
 
 const thuMucCV = thuMucUpload;
 
@@ -208,8 +205,8 @@ function layTenUngVien(tenFile) {
 
 function xoaFileLocal(duongDan) {
     if (!duongDan || laUrlBlob(duongDan)) return;
-    const filePath = path.resolve(process.cwd(), duongDan);
-    const uploadRoot = path.resolve(process.cwd(), "uploads", "cv");
+    const filePath = path.resolve(thuMucDuAn, duongDan);
+    const uploadRoot = path.resolve(thuMucUpload);
     if (filePath.startsWith(uploadRoot + path.sep) && fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
     }
@@ -220,6 +217,7 @@ let cotBangCVPromise;
 let cotBangPhanTichPromise;
 let hoSoHRTablePromise;
 let cotNguoiPhongVanPromise;
+let cotBangPhongVanPromise;
 
 
 async function layCotBang(tenBang) {
@@ -227,15 +225,17 @@ async function layCotBang(tenBang) {
         ung_vien: cotBangUngVienPromise,
         cv: cotBangCVPromise,
         phan_tich_ai: cotBangPhanTichPromise,
+        phong_van: cotBangPhongVanPromise,
     }[tenBang]);
 
     const setPromise = (value) => {
         if (tenBang === "ung_vien") cotBangUngVienPromise = value;
         if (tenBang === "cv") cotBangCVPromise = value;
         if (tenBang === "phan_tich_ai") cotBangPhanTichPromise = value;
+        if (tenBang === "phong_van") cotBangPhongVanPromise = value;
     };
 
-    if (!["ung_vien", "cv", "phan_tich_ai"].includes(tenBang)) {
+    if (!["ung_vien", "cv", "phan_tich_ai", "phong_van"].includes(tenBang)) {
         throw new Error(`Tên bảng không được hỗ trợ: ${tenBang}`);
     }
 
@@ -260,10 +260,8 @@ async function layCotNguoiPhongVan() {
         cotNguoiPhongVanPromise = db.query("SHOW COLUMNS FROM phong_van")
             .then(([rows]) => {
                 const columns = new Set(rows.map((row) => row.Field));
-                const column = ["nguoi_phong_van_id", "nguoi_phong_van"]
-                    .find((field) => columns.has(field));
-                if (!column) throw new Error("Không xác định được cột người phỏng vấn được phân công.");
-                return column;
+                return ["nguoi_phong_van_id", "nguoi_phong_van", "interviewer_id", "interviewer_user_id"]
+                    .find((field) => columns.has(field)) || null;
             })
             .catch((error) => {
                 cotNguoiPhongVanPromise = null;
@@ -450,7 +448,7 @@ async function layNoiDungFileCV(cv) {
     }
 
     const candidates = [
-        path.resolve(process.cwd(), cv.duong_dan || ""),
+        path.resolve(thuMucDuAn, cv.duong_dan || ""),
         path.resolve(thuMucUpload, path.basename(cv.duong_dan || "")),
         path.resolve(thuMucCV, path.basename(cv.duong_dan || "")),
     ];
@@ -610,16 +608,8 @@ async function xoaFileCV(duongDan) {
             return;
         }
 
-        const duongDanFile = path.resolve(
-            process.cwd(),
-            duongDan,
-        );
-
-        const thuMucGoc = path.resolve(
-            process.cwd(),
-            "uploads",
-            "cv",
-        );
+        const duongDanFile = path.resolve(thuMucDuAn, duongDan);
+        const thuMucGoc = path.resolve(thuMucUpload);
 
         const duongDanChuan =
             path.normalize(duongDanFile);
@@ -657,6 +647,18 @@ router.get(
                 layCotBang("phan_tich_ai"),
             ]);
             const assignmentColumn = await layCotNguoiPhongVan();
+            const interviewColumns = await layCotBang("phong_van");
+            await db.query(`CREATE TABLE IF NOT EXISTS phong_van_nguoi_tham_gia (
+                phong_van_id INT NOT NULL,
+                nguoi_dung_id INT NOT NULL,
+                ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (phong_van_id, nguoi_dung_id),
+                KEY idx_pv_tham_gia_nguoi_dung (nguoi_dung_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+            const interviewTimeColumn = [
+                "thoi_gian_phong_van", "ngay_gio_phong_van", "ngay_phong_van",
+                "thoi_gian_bat_dau", "bat_dau", "thoi_gian", "ngay_gio", "start_time",
+            ].find((column) => interviewColumns.has(column)) || null;
             const phoneColumn = candidateColumns.has("so_dien_thoai")
                 ? "so_dien_thoai"
                 : candidateColumns.has("sdt")
@@ -707,7 +709,7 @@ router.get(
                 const assignmentColumn = await layCotNguoiPhongVan();
                 filters.push(`EXISTS (
                     SELECT 1 FROM phong_van pv
-                    WHERE pv.ung_vien_id = uv.id AND pv.${assignmentColumn} = ?
+                    WHERE pv.ung_vien_id = uv.id AND ${assignmentColumn ? `pv.${assignmentColumn} = ?` : `EXISTS (SELECT 1 FROM phong_van_nguoi_tham_gia pvt WHERE pvt.phong_van_id = pv.id AND pvt.nguoi_dung_id = ?)`}
                 )`);
                 params.push(Number(req.nguoiDung.id));
             }
@@ -716,16 +718,19 @@ router.get(
                 SELECT
                     ${selectCandidates.join(", ")},
                     dt.ten_dot AS ten_dot_tuyen,
-                    (SELECT nd.ho_ten
-                     FROM phong_van pv
-                     INNER JOIN nguoi_dung nd ON nd.id = pv.${assignmentColumn}
-                     WHERE pv.ung_vien_id = uv.id
-                     ORDER BY pv.id DESC
-                     LIMIT 1) AS nguoi_phu_trach,
+                    ${assignmentColumn
+                        ? `(SELECT nd.ho_ten FROM phong_van pv INNER JOIN nguoi_dung nd ON nd.id = pv.${assignmentColumn} WHERE pv.ung_vien_id = uv.id ORDER BY pv.id DESC LIMIT 1)`
+                        : `(SELECT GROUP_CONCAT(DISTINCT nd.ho_ten ORDER BY nd.ho_ten SEPARATOR ', ') FROM phong_van pv INNER JOIN phong_van_nguoi_tham_gia pvt ON pvt.phong_van_id = pv.id INNER JOIN nguoi_dung nd ON nd.id = pvt.nguoi_dung_id WHERE pv.ung_vien_id = uv.id)`} AS nguoi_phu_trach,
                     (SELECT cv.id FROM cv WHERE cv.ung_vien_id = uv.id
                         ORDER BY ${cvOrder || "id DESC"} LIMIT 1) AS cv_id,
                     (SELECT cv.ten_file FROM cv WHERE cv.ung_vien_id = uv.id
-                        ORDER BY ${cvOrder || "id DESC"} LIMIT 1) AS ten_file
+                        ORDER BY ${cvOrder || "id DESC"} LIMIT 1) AS ten_file,
+                    ${interviewColumns.has("trang_thai")
+                        ? `EXISTS (SELECT 1 FROM phong_van pv WHERE pv.ung_vien_id = uv.id AND COALESCE(pv.trang_thai, '') <> 'huy')`
+                        : `EXISTS (SELECT 1 FROM phong_van pv WHERE pv.ung_vien_id = uv.id`} AS co_lich_phong_van,
+                    ${(interviewColumns.has("id") ? `(SELECT pv.id FROM phong_van pv WHERE pv.ung_vien_id = uv.id${interviewColumns.has("trang_thai") ? " AND COALESCE(pv.trang_thai, '') <> 'huy'" : ""} ORDER BY pv.id DESC LIMIT 1)` : "NULL")} AS phong_van_id,
+                    ${(interviewColumns.has("trang_thai") ? `(SELECT pv.trang_thai FROM phong_van pv WHERE pv.ung_vien_id = uv.id ORDER BY pv.id DESC LIMIT 1)` : "NULL")} AS trang_thai_lich_phong_van,
+                    ${interviewTimeColumn ? `(SELECT pv.${interviewTimeColumn} FROM phong_van pv WHERE pv.ung_vien_id = uv.id${interviewColumns.has("trang_thai") ? " AND COALESCE(pv.trang_thai, '') <> 'huy'" : ""} ORDER BY pv.id DESC LIMIT 1)` : "NULL"} AS thoi_gian_phong_van
                     ${scoreSelect},
                     ${analysisDataColumn ? `pa.${analysisDataColumn} AS du_lieu_phan_tich` : "NULL AS du_lieu_phan_tich"}
                 FROM ung_vien uv
@@ -734,10 +739,12 @@ router.get(
                 ${dotFilter}
                 ORDER BY uv.id DESC
             `, params);
-            res.json(rows.map((row) => ({
-                ...row,
-                phan_tich: docDuLieuJSON(row.du_lieu_phan_tich),
-            })));
+            res.json(rows.map((row) => {
+                const analysis = docDuLieuJSON(row.du_lieu_phan_tich);
+                const scoreFromAnalysis = analysis?.score?.tong ?? analysis?.score?.total ?? analysis?.diem_phu_hop ?? analysis?.diem ?? analysis?.score;
+                const score = row.diem_ai !== null && row.diem_ai !== undefined && row.diem_ai !== "" ? row.diem_ai : scoreFromAnalysis;
+                return { ...row, diem_ai: score ?? null, phan_tich: analysis };
+            }));
         } catch (error) {
             console.error("GET /api/cv/review/candidates:", error);
             res.status(500).json({ message: "Không lấy được danh sách hồ sơ ứng viên." });
@@ -774,14 +781,22 @@ router.get(
             const assignmentColumn = req.nguoiDung?.vai_tro === "interviewer"
                 ? await layCotNguoiPhongVan()
                 : null;
+            if (req.nguoiDung?.vai_tro === "interviewer" && !assignmentColumn) {
+                await db.query(`CREATE TABLE IF NOT EXISTS phong_van_nguoi_tham_gia (
+                    phong_van_id INT NOT NULL, nguoi_dung_id INT NOT NULL,
+                    ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (phong_van_id, nguoi_dung_id),
+                    KEY idx_pv_tham_gia_nguoi_dung (nguoi_dung_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+            }
             const [candidateRows] = await db.query(`
                 SELECT ${fields.join(", ")}
                 FROM ung_vien uv
                 INNER JOIN dot_tuyen dt ON dt.id = uv.dot_tuyen_id
                 WHERE uv.id = ?
-                    ${assignmentColumn ? `AND EXISTS (
+                    ${req.nguoiDung?.vai_tro === "interviewer" ? `AND EXISTS (
                         SELECT 1 FROM phong_van pv
-                        WHERE pv.ung_vien_id = uv.id AND pv.${assignmentColumn} = ?
+                        WHERE pv.ung_vien_id = uv.id AND ${assignmentColumn ? `pv.${assignmentColumn} = ?` : `EXISTS (SELECT 1 FROM phong_van_nguoi_tham_gia pvt WHERE pvt.phong_van_id = pv.id AND pvt.nguoi_dung_id = ?)`}
                     )` : ""}
                 LIMIT 1
             `, assignmentColumn ? [id, Number(req.nguoiDung.id)] : [id]);
@@ -1500,7 +1515,7 @@ router.post(
                 duongDanDaLuu =
                     path
                         .relative(
-                            process.cwd(),
+                            thuMucDuAn,
                             req.file.path,
                         )
                         .split(path.sep)
@@ -1684,11 +1699,20 @@ router.post(
             }
 
             const [dotRows] = await db.query(
-                "SELECT id FROM dot_tuyen WHERE id = ? LIMIT 1",
+                "SELECT id, trang_thai, DATE_FORMAT(ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc FROM dot_tuyen WHERE id = ? LIMIT 1",
                 [dotTuyenId],
             );
             if (!dotRows.length) {
                 return res.status(404).json({ message: "Không tìm thấy đợt tuyển dụng." });
+            }
+            const dot = dotRows[0];
+            const [[todayRow]] = await db.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today");
+            const endDate = dot.ngay_ket_thuc ? String(dot.ngay_ket_thuc).slice(0, 10) : null;
+            if (["ket_thuc", "da_dong", "dong", "closed"].includes(String(dot.trang_thai || "").toLowerCase()) || (endDate && endDate < todayRow.today)) {
+                if (endDate && endDate < todayRow.today && dot.trang_thai !== "ket_thuc") {
+                    await db.query("UPDATE dot_tuyen SET trang_thai = 'ket_thuc' WHERE id = ?", [dotTuyenId]);
+                }
+                return res.status(400).json({ message: "Đợt tuyển dụng đã đóng, không thể thêm hoặc cập nhật CV." });
             }
 
             const cvFiles = [];
@@ -1769,7 +1793,7 @@ router.post(
                     if (!fs.existsSync(thuMucUpload)) fs.mkdirSync(thuMucUpload, { recursive: true });
                     const destination = path.join(thuMucUpload, storedFileName);
                     fs.writeFileSync(destination, file.buffer, { flag: "wx" });
-                    storedPath = path.relative(process.cwd(), destination).split(path.sep).join("/");
+                    storedPath = path.relative(thuMucDuAn, destination).split(path.sep).join("/");
                 }
                 duongDanDaLuu.push(storedPath);
 
@@ -1836,6 +1860,73 @@ router.post(
     },
 );
 
+// THAY THẾ CV HIỆN TẠI CỦA ỨNG VIÊN
+router.post(
+    "/ung-vien/:ungVienId/thay-the",
+    kiemTraDangNhap,
+    kiemTraVaiTro("admin", "manager", "hr"),
+    upload.single("file"),
+    async function (req, res) {
+        let connection;
+        let newPath = null;
+        try {
+            const candidateId = Number(req.params.ungVienId);
+            if (!Number.isInteger(candidateId) || candidateId <= 0) {
+                return res.status(400).json({ message: "ID ứng viên không hợp lệ." });
+            }
+            if (!req.file) return res.status(400).json({ message: "Vui lòng chọn file CV mới." });
+
+            const fileName = path.basename(req.file.originalname);
+            const mimeType = req.file.mimetype || layMimeType(null, fileName);
+            if (dangChayTrenVercel) {
+                const blob = await put(`cv/${taoTenFile(fileName)}`, req.file.buffer, { access: "public" });
+                newPath = blob.url;
+            } else {
+                newPath = path.relative(thuMucDuAn, req.file.path).split(path.sep).join("/");
+            }
+
+            connection = await db.getConnection();
+            await connection.beginTransaction();
+            const [candidateRows] = await connection.query(
+                "SELECT id FROM ung_vien WHERE id = ? LIMIT 1", [candidateId]);
+            if (!candidateRows.length) throw new Error("Không tìm thấy ứng viên.");
+
+            const [oldRows] = await connection.query(
+                "SELECT id, duong_dan FROM cv WHERE ung_vien_id = ? ORDER BY la_ban_chinh DESC, ngay_tai_len DESC, id DESC",
+                [candidateId]);
+            let cvId;
+            if (oldRows.length) {
+                cvId = oldRows[0].id;
+                await connection.query(
+                    `UPDATE cv SET ten_file = ?, duong_dan = ?, loai_file = ?, kich_thuoc = ?, noi_dung = NULL, la_ban_chinh = 1, ngay_tai_len = NOW() WHERE id = ?`,
+                    [fileName, newPath, mimeType, req.file.size, cvId]);
+                if (oldRows.length > 1) {
+                    await connection.query("DELETE FROM cv WHERE ung_vien_id = ? AND id <> ?", [candidateId, cvId]);
+                }
+            } else {
+                const [insertResult] = await connection.query(
+                    `INSERT INTO cv (ung_vien_id, ten_file, duong_dan, loai_file, kich_thuoc, noi_dung, la_ban_chinh, ngay_tai_len) VALUES (?, ?, ?, ?, ?, NULL, 1, NOW())`,
+                    [candidateId, fileName, newPath, mimeType, req.file.size]);
+                cvId = insertResult.insertId;
+            }
+            await connection.commit();
+            const oldPaths = oldRows.map(row => row.duong_dan).filter(old => old && old !== newPath);
+            for (const oldPath of oldPaths) await xoaFileCV(oldPath);
+            return res.json({ message: "Đã thay thế CV. Đang tự động phân tích lại…", cv_id: cvId, ung_vien_id: candidateId });
+        } catch (error) {
+            if (connection) { try { await connection.rollback(); } catch (_) {} }
+            if (newPath) await xoaFileCV(newPath);
+            if (!dangChayTrenVercel && req.file?.path && fs.existsSync(req.file.path)) {
+                try { fs.unlinkSync(req.file.path); } catch (_) {}
+            }
+            console.error("Lỗi thay thế CV:", error);
+            return res.status(500).json({ message: error.message || "Không thể thay thế CV." });
+        } finally {
+            if (connection) connection.release();
+        }
+    },
+);
+
 // TẢI CV
 
 router.get(
@@ -1858,6 +1949,14 @@ router.get(
             const assignmentColumn = req.nguoiDung?.vai_tro === "interviewer"
                 ? await layCotNguoiPhongVan()
                 : null;
+            if (req.nguoiDung?.vai_tro === "interviewer" && !assignmentColumn) {
+                await db.query(`CREATE TABLE IF NOT EXISTS phong_van_nguoi_tham_gia (
+                    phong_van_id INT NOT NULL, nguoi_dung_id INT NOT NULL,
+                    ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (phong_van_id, nguoi_dung_id),
+                    KEY idx_pv_tham_gia_nguoi_dung (nguoi_dung_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+            }
             const [rows] =
                 await db.query(
                     `
@@ -1905,18 +2004,9 @@ router.get(
 
             // File local
 
-            const duongDanFile =
-                path.resolve(
-                    process.cwd(),
-                    cv.duong_dan,
-                );
+            const duongDanFile = path.resolve(thuMucDuAn, cv.duong_dan);
 
-            const thuMucGoc =
-                path.resolve(
-                    process.cwd(),
-                    "uploads",
-                    "cv",
-                );
+            const thuMucGoc = path.resolve(thuMucUpload);
 
             const duongDanChuan =
                 path.normalize(

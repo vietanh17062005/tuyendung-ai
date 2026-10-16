@@ -436,10 +436,11 @@ ${chuoi(yTuong, 3000)}
 async function soanJD(dotTuyen, yTuong, hoiDap, ngonNgu) {
     const tiengAnh = layNgonNgu(ngonNgu) === "en";
 
-    const system = `Bạn là chuyên gia tuyển dụng nhân sự. Hãy soạn bản nháp JD hoàn chỉnh từ ý tưởng của người dùng và các câu trả lời làm rõ, đồng thời đề xuất bộ tiêu chí chấm điểm (rubric) suy ra từ JD.
+    const cheDoSua = hoiDap.some((muc) => muc && muc.ma === "__sua_jd");
+    const system = `Bạn là chuyên gia tuyển dụng nhân sự. ${cheDoSua ? "ĐANG Ở CHẾ ĐỘ CHỈNH SỬA JD ĐÃ CÓ: đọc kỹ JD hiện tại và yêu cầu chỉnh sửa; chỉ thay đổi phần được yêu cầu, giữ nguyên các phần còn lại, không tự ý đổi địa điểm, hình thức, lương, kỹ năng hoặc tiêu chí không liên quan. Nếu một trường không cần sửa, hãy sao chép nguyên giá trị từ JD hiện tại. " : "Hãy soạn bản nháp JD hoàn chỉnh từ ý tưởng của người dùng và các câu trả lời làm rõ, đồng thời đề xuất bộ tiêu chí chấm điểm (rubric) suy ra từ JD."}
 Chỉ trả về một đối tượng JSON, không kèm giải thích, theo dạng:
-{"tieu_de":"...","gioi_thieu":"...","mo_ta_cong_viec":"...","yeu_cau_bat_buoc":"...","yeu_cau_uu_tien":"...","quyen_loi":"...","tieu_chi":[{"ten":"...","mo_ta":"...","trong_so":30}]}
-Quy tắc: toàn bộ nội dung viết bằng ${tiengAnh ? "tiếng Anh" : "tiếng Việt"}; tieu_de tối đa 120 ký tự; gioi_thieu là một đoạn văn ngắn; mo_ta_cong_viec, yeu_cau_bat_buoc, yeu_cau_uu_tien, quyen_loi là văn bản thuần, mỗi ý một dòng bắt đầu bằng "- ", không dùng markdown khác; yêu cầu bắt buộc và ưu tiên phải khớp câu trả lời của người dùng; chỉ nêu mức lương nếu người dùng đã cung cấp, không bịa thông tin công ty; tieu_chi gồm 5 đến 7 mục, trong_so là số nguyên có tổng đúng 100, mô tả tối đa 160 ký tự và đánh giá được từ CV hoặc phỏng vấn, kỹ năng bắt buộc có trọng số cao hơn. ${LUU_Y}`;
+{"tieu_de":"...","bo_phan":"...","dia_diem":"tên tỉnh/thành hoặc chuỗi rỗng","loai_hinh":"Toàn thời gian/Bán thời gian/Thực tập/Hợp đồng hoặc chuỗi rỗng","muc_luong":"chỉ ghi khi có thông tin, nếu không thì chuỗi rỗng","ky_nang":"danh sách kỹ năng, nếu không xác định được thì chuỗi rỗng","gioi_thieu":"...","mo_ta_cong_viec":"...","yeu_cau_bat_buoc":"...","yeu_cau_uu_tien":"...","quyen_loi":"...","tieu_chi":[{"ten":"...","mo_ta":"...","trong_so":30}]}
+Quy tắc: toàn bộ nội dung viết bằng ${tiengAnh ? "tiếng Anh" : "tiếng Việt"}; tieu_de tối đa 120 ký tự; tự trích xuất dia_diem nếu ý tưởng/câu trả lời có nêu tỉnh thành, nếu không thì chuỗi rỗng; nếu có từ part-time/bán thời gian thì loai_hinh phải là "Bán thời gian", nếu có full-time/toàn thời gian thì là "Toàn thời gian", nếu không rõ thì chuỗi rỗng; chỉ điền muc_luong khi có thông tin lương, không suy đoán; ky_nang là danh sách kỹ năng thực sự được yêu cầu; bo_phan chỉ điền nếu ngữ cảnh có căn cứ; gioi_thieu là một đoạn văn ngắn; mo_ta_cong_viec, yeu_cau_bat_buoc, yeu_cau_uu_tien, quyen_loi là văn bản thuần, mỗi ý một dòng bắt đầu bằng "- ", không dùng markdown khác; yêu cầu bắt buộc và ưu tiên phải khớp câu trả lời của người dùng; chỉ nêu mức lương nếu người dùng đã cung cấp, không bịa thông tin công ty; tieu_chi gồm 5 đến 7 mục, trong_so là số nguyên có tổng đúng 100, mô tả tối đa 160 ký tự và đánh giá được từ CV hoặc phỏng vấn, kỹ năng bắt buộc có trọng số cao hơn. ${LUU_Y}`;
 
     const dsHoiDap = hoiDap
         .filter(function (muc) {
@@ -463,6 +464,11 @@ ${dsHoiDap || "người dùng bỏ qua phần làm rõ"}
 
     const ketQua = {
         tieu_de: chuoi(data.tieu_de, 200),
+        bo_phan: chuoi(data.bo_phan, 100),
+        dia_diem: chuoi(data.dia_diem, 200),
+        loai_hinh: chuoi(data.loai_hinh, 50),
+        muc_luong: chuoi(data.muc_luong, 150),
+        ky_nang: chuoi(data.ky_nang, 1000),
         gioi_thieu: chuoi(data.gioi_thieu, 3000),
         mo_ta_cong_viec: chuoi(data.mo_ta_cong_viec, 5000),
         yeu_cau_bat_buoc: chuoi(data.yeu_cau_bat_buoc, 5000),

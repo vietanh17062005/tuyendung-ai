@@ -6,6 +6,12 @@
     if (path === target) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
 
+  // Tạm thời ẩn các module chưa sử dụng theo yêu cầu; không xóa phần mã nguồn.
+  document.querySelectorAll('.menu-list a[data-menu-path]').forEach(link => {
+    const target = link.getAttribute('data-menu-path') || '';
+    if (/\/(ung-vien|cv|phong-van|danh-gia|quyet-dinh|thong-bao|nguoi-dung)\//.test(target)) link.style.display = 'none';
+  });
+
   const user = (() => { try { return JSON.parse(localStorage.getItem('nguoi_dung') || 'null'); } catch { return null; } })();
   const role = String(user?.vai_tro || user?.role || '').toLowerCase();
   const userLink = document.querySelector('[data-menu-path="/nguoi-dung/nguoi-dung.html"]');

@@ -8,6 +8,7 @@ const net = require("net");
 const path = require("path");
 const express = require("express");
 const multer = require("multer");
+const { del: xoaBlobCV } = require("@vercel/blob");
 const db = require("../database/db");
 const { kiemTraDangNhap, kiemTraVaiTro } = require("../middleware/auth");
 
@@ -16,7 +17,7 @@ const thuMucCV = process.env.VERCEL
     ? path.join("/tmp", "tuyendung-ai", "cv")
     : path.join(__dirname, "..", "uploads", "cv");
 
-const trangThaiDotTuyenKhoaUngVien = new Set(["tam_dung", "ket_thuc", "da_dong", "dong", "closed"]);
+const trangThaiDotTuyenKhoaUngVien = new Set(["ket_thuc", "da_dong", "dong", "closed"]);
 const trangThaiHopLe = new Set(["moi", "da_phan_tich", "da_chon", "da_lien_he", "da_xep_lich", "da_phong_van", "offer", "da_tuyen", "tu_choi", "talent_pool"]);
 const duoiFileHopLe = new Set([".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png"]);
 const kichThuocCVToiDa = 10 * 1024 * 1024;
@@ -353,9 +354,20 @@ function nhanUploadCV(req, res, next) {
 }
 
 function duongDanFile(duongDan) {
-    const resolved = path.resolve(thuMucCV, duongDan || "");
-    if (!resolved.startsWith(thuMucCV + path.sep)) return null;
-    return resolved;
+    if (!duongDan || /^https?:\/\//i.test(String(duongDan))) return null;
+    const projectRoot = path.resolve(__dirname, "..");
+    const uploadRoot = path.resolve(thuMucCV);
+    const value = String(duongDan).replace(/\\/g, "/");
+    const candidates = [
+        path.resolve(projectRoot, value),
+        path.resolve(uploadRoot, path.basename(value)),
+    ];
+    for (const resolved of candidates) {
+        if (resolved.startsWith(uploadRoot + path.sep) && fs.existsSync(resolved)) return resolved;
+    }
+    // Trả về đường dẫn an toàn để caller có thể báo tệp không còn trên máy chủ.
+    const fallback = candidates.find(item => item.startsWith(uploadRoot + path.sep));
+    return fallback || null;
 }
 
 // Danh sách ứng viên
@@ -727,6 +739,15 @@ router.get("/:id/cv/:cvId", kiemTraDangNhap, async (req, res) => {
             return res.status(404).json({ message: "Không tìm thấy CV" });
         }
 
+        if (/^https:\/\//i.test(String(rows[0].duong_dan || ""))) {
+            let blobUrl;
+            try { blobUrl = new URL(rows[0].duong_dan); } catch (_) { blobUrl = null; }
+            if (!blobUrl || blobUrl.protocol !== "https:" || !/(^|\.)blob\.vercel-storage\.com$/i.test(blobUrl.hostname)) {
+                return res.status(400).json({ message: "Đường dẫn CV lưu trữ không hợp lệ" });
+            }
+            return res.redirect(rows[0].duong_dan);
+        }
+
         const filePath = duongDanFile(rows[0].duong_dan);
 
         if (!filePath || !fs.existsSync(filePath)) {
@@ -740,59 +761,68 @@ router.get("/:id/cv/:cvId", kiemTraDangNhap, async (req, res) => {
     }
 });
 
-// Xóa CV
+// Xóa CV đồng thời xóa ứng viên (mỗi ứng viên chỉ có một CV).
 router.delete("/:id/cv/:cvId", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "hr"), async (req, res) => {
     let connection;
     let transactionStarted = false;
-
     try {
+        const candidateId = Number(req.params.id);
+        const cvId = Number(req.params.cvId);
+        if (!Number.isInteger(candidateId) || candidateId <= 0 || !Number.isInteger(cvId) || cvId <= 0) {
+            return res.status(400).json({ message: "ID ứng viên hoặc CV không hợp lệ." });
+        }
         connection = await db.getConnection();
         await connection.beginTransaction();
         transactionStarted = true;
-
-        const [rows] = await connection.query(`
-            SELECT id, duong_dan, la_ban_chinh
-            FROM cv
-            WHERE id = ? AND ung_vien_id = ?
-        `, [req.params.cvId, req.params.id]);
-
+        const [rows] = await connection.query(
+            "SELECT id, duong_dan FROM cv WHERE id = ? AND ung_vien_id = ? LIMIT 1",
+            [cvId, candidateId],
+        );
         if (!rows.length) {
             await connection.rollback();
             transactionStarted = false;
-            return res.status(404).json({ message: "Không tìm thấy CV" });
+            return res.status(404).json({ message: "Không tìm thấy CV của ứng viên này." });
         }
-
-        const cvCanXoa = rows[0];
-
-        await connection.query(
-            "DELETE FROM cv WHERE id = ? AND ung_vien_id = ?",
-            [req.params.cvId, req.params.id]
-        );
-
-        if (cvCanXoa.la_ban_chinh) {
-            const [cvMoi] = await connection.query(`
-                SELECT id FROM cv
-                WHERE ung_vien_id = ?
-                ORDER BY ngay_tai_len DESC, id DESC
-                LIMIT 1
-            `, [req.params.id]);
-
-            if (cvMoi.length) {
-                await connection.query("UPDATE cv SET la_ban_chinh = 1 WHERE id = ?", [cvMoi[0].id]);
-            }
+        const filePathOrUrl = rows[0].duong_dan;
+        // Dọn dữ liệu liên quan trước để tương thích cả database có/không có ON DELETE CASCADE.
+        const [reviewColumns] = await connection.query("SHOW COLUMNS FROM ung_vien_review");
+        if (reviewColumns.some(column => column.Field === "ung_vien_id")) {
+            await connection.query("DELETE FROM ung_vien_review WHERE ung_vien_id = ?", [candidateId]);
         }
-
+        const [interviewColumns] = await connection.query("SHOW COLUMNS FROM phong_van");
+        if (interviewColumns.some(column => column.Field === "ung_vien_id")) {
+            await connection.query("DELETE FROM phong_van WHERE ung_vien_id = ?", [candidateId]);
+        }
+        const [decisionColumns] = await connection.query("SHOW COLUMNS FROM quyet_dinh");
+        if (decisionColumns.some(column => column.Field === "ung_vien_id")) {
+            await connection.query("DELETE FROM quyet_dinh WHERE ung_vien_id = ?", [candidateId]);
+        }
+        const [analysisColumns] = await connection.query("SHOW COLUMNS FROM phan_tich_ai");
+        if (analysisColumns.some(column => column.Field === "ung_vien_id")) {
+            await connection.query("DELETE FROM phan_tich_ai WHERE ung_vien_id = ?", [candidateId]);
+        }
+        await connection.query("DELETE FROM cv WHERE id = ? AND ung_vien_id = ?", [cvId, candidateId]);
+        const [deleted] = await connection.query("DELETE FROM ung_vien WHERE id = ?", [candidateId]);
+        if (!deleted.affectedRows) {
+            await connection.rollback();
+            transactionStarted = false;
+            return res.status(404).json({ message: "Không tìm thấy ứng viên." });
+        }
         await connection.commit();
         transactionStarted = false;
-
-        const filePath = duongDanFile(cvCanXoa.duong_dan);
-        if (filePath) fs.unlink(filePath, () => { });
-
-        res.json({ message: "Xóa CV thành công" });
+        if (filePathOrUrl && /^https?:\/\//i.test(filePathOrUrl)) {
+            try { await xoaBlobCV(filePathOrUrl); } catch (error) { console.error("Không xóa được CV trên Blob:", error); }
+        } else {
+            const localPath = duongDanFile(filePathOrUrl);
+            if (localPath) fs.unlink(localPath, () => {});
+        }
+        res.json({ message: "Đã xóa CV và ứng viên thành công." });
     } catch (error) {
-        if (connection && transactionStarted) await connection.rollback();
+        if (connection && transactionStarted) {
+            try { await connection.rollback(); } catch (rollbackError) { console.error("Rollback xóa CV/ứng viên thất bại:", rollbackError); }
+        }
         console.error("DELETE /api/ung-vien/:id/cv/:cvId:", error);
-        res.status(500).json({ message: "Không xóa được CV" });
+        res.status(500).json({ message: "Không xóa được CV và ứng viên. Hãy kiểm tra dữ liệu liên quan trong database." });
     } finally {
         if (connection) connection.release();
     }

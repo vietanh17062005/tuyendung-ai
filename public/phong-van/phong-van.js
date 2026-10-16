@@ -857,7 +857,7 @@
     async function capNhatTrangThai(id, status) {
         const label = nhanTrangThai[status] || status;
 
-        if (status === "huy" && !window.confirm("Ông có chắc muốn hủy lịch phỏng vấn này không?")) {
+        if (status === "huy" && !window.confirm("bạn có chắc muốn hủy lịch phỏng vấn này không?")) {
             return;
         }
 

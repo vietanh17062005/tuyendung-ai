@@ -184,9 +184,7 @@
 
                 let tenHienThi = dotTuyen.ten_dot || dotTuyen.ten || "";
 
-                if (dotTuyen.trang_thai === "tam_dung") {
-                    tenHienThi += " (Tạm dừng)";
-                } else if (khoa) {
+                if (khoa) {
                     tenHienThi += " (Đã kết thúc)";
                 }
 

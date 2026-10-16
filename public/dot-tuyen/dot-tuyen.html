@@ -8,7 +8,7 @@
 
   <title>Quản lý đợt tuyển dụng</title>
 
-  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css" />
+  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css?v=20261015-cv-ai-inline-fix4" />
   <link rel="stylesheet" href="/account/account.css" />
 <link rel="stylesheet" href="/menu-dong-bo.css">
 </head>
@@ -89,7 +89,7 @@
           <p>Theo dõi các đợt tuyển dụng, bản mô tả công việc và tiến độ tìm kiếm ứng viên tại một nơi.</p>
         </div>
         <div class="hanh-dong-dau-trang">
-          <button id="btnChonDotTaoJD" class="btn-tao-jd-nhanh">✦ Soạn bản mô tả bằng AI</button>
+          <button id="btnChonDotTaoJD" class="btn-tao-jd-nhanh" type="button" hidden>Soạn bản mô tả bằng AI</button>
           <button id="btnThem" class="btn-them nut-tao-dot">＋ Tạo đợt tuyển dụng</button>
         </div>
       </section>
@@ -99,11 +99,6 @@
           <div class="the-dau-the"><span class="the-icon">◉</span><span class="the-label">Đang tuyển</span></div>
           <strong id="thongKeDangTuyen">0</strong>
           <div class="the-phu"><span class="the-trang-thai">Đang tiếp nhận hồ sơ</span></div>
-        </article>
-        <article class="the-item the-tam-dung">
-          <div class="the-dau-the"><span class="the-icon">Ⅱ</span><span class="the-label">Tạm dừng</span></div>
-          <strong id="thongKeTamDung">0</strong>
-          <div class="the-phu"><span class="the-trang-thai">Chiến dịch đang tạm ngưng</span></div>
         </article>
         <article class="the-item the-ket-thuc">
           <div class="the-dau-the"><span class="the-icon">✓</span><span class="the-label">Đã kết thúc</span></div>
@@ -134,12 +129,8 @@
           <div class="tab-trang-thai" role="tablist" aria-label="Lọc đợt tuyển dụng">
             <button type="button" class="tab-trang-thai-nut active" data-status="">Tất cả <span
                 id="demTatCa">0</span></button>
-            <button type="button" class="tab-trang-thai-nut" data-status="nhap">Nháp <span
-                id="demNhap">0</span></button>
             <button type="button" class="tab-trang-thai-nut" data-status="dang_tuyen">Đang tuyển <span
                 id="demDangTuyen">0</span></button>
-            <button type="button" class="tab-trang-thai-nut" data-status="tam_dung">Tạm dừng <span
-                id="demTamDung">0</span></button>
             <button type="button" class="tab-trang-thai-nut" data-status="ket_thuc">Đã đóng <span
                 id="demKetThuc">0</span></button>
           </div>
@@ -151,9 +142,7 @@
           <p id="tongSo" class="so-ket-qua">0 đợt tuyển dụng</p>
           <select id="locTrangThai" class="loc-an" aria-label="Lọc theo trạng thái">
             <option value="">Tất cả trạng thái</option>
-            <option value="nhap">Nháp</option>
             <option value="dang_tuyen">Đang tuyển</option>
-            <option value="tam_dung">Tạm dừng</option>
             <option value="ket_thuc">Đã đóng</option>
           </select>
         </div>
@@ -175,7 +164,6 @@
                 <th>Trạng thái</th>
                 <th>Kênh nhận CV</th>
                 <th>Ngày tạo</th>
-                <th id="cotThaoTac">Thao tác</th>
               </tr>
             </thead>
 
@@ -342,21 +330,17 @@
           <p>Nhập thông tin đợt tuyển dụng</p>
         </div>
 
+        <div class="chi-tiet-actions" id="hanhDongChiTiet" hidden>
+          <button type="button" class="btn-trang-thai-dot" id="btnDoiTrangThaiDot">Đang tuyển</button>
+          <button type="button" class="btn-huy" id="btnSuaTrongXem">Sửa</button>
+          <button type="button" class="btn-xoa-chi-tiet" id="btnXoaTrongXem">Xóa</button>
+        </div>
         <button type="button" class="btn-dong" id="btnDong">×</button>
       </div>
 
       <form id="form">
         <input type="hidden" id="id" />
-
-        <section class="jd-ai-nhanh-dot">
-          <div>
-            <strong>✦ Trợ lý JD bằng AI</strong>
-            <p>Mô tả nhanh vị trí; AI sẽ hỗ trợ soạn tiêu đề, nhiệm vụ, yêu cầu và kỹ năng.</p>
-          </div>
-          <label class="an-tren-man-hinh" for="jdYTuongNhanh">Mô tả vị trí cần tuyển</label>
-          <textarea id="jdYTuongNhanh" rows="2" maxlength="1000"
-            placeholder="Ví dụ: Senior Product Designer, 5 năm kinh nghiệm, fintech, Hà Nội, hybrid"></textarea>
-        </section>
+        <textarea id="jdYTuongNhanh" hidden></textarea>
 
         <!-- <div class="form-section-heading">
           <span class="form-section-number">01</span>
@@ -365,16 +349,14 @@
           </div>
         </div> -->
 
-        <div class="form-group">
-          <label for="ten">Tên đợt tuyển dụng <span>*</span></label>
-
-          <input type="text" id="ten" placeholder="Ví dụ: Tuyển dụng nhân viên CNTT 2026" required />
+        <div class="form-group" id="nhomMoTaDot">
+          <label for="moTa">Mô tả đợt tuyển dụng <span>*</span></label>
+          <textarea id="moTa" rows="4" placeholder="Ví dụ: Tuyển nhân viên bán hàng part-time tại Hà Nội, xoay ca linh hoạt..." required></textarea>
         </div>
 
-        <div class="form-group">
-          <label for="moTa">Mô tả chiến dịch</label>
-
-          <textarea id="moTa" rows="4" placeholder="Mô tả ngắn về đợt tuyển dụng..."></textarea>
+        <div class="form-group" id="nhomTenDot" hidden>
+          <label for="ten">Tên đợt tuyển dụng <span class="nhan-phu">(AI gợi ý, có thể chỉnh sửa)</span></label>
+          <input type="text" id="ten" placeholder="Tên đợt tuyển dụng" maxlength="200" />
         </div>
 
         <div class="form-row">
@@ -406,25 +388,22 @@
           </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" hidden>
           <label for="trangThai">Trạng thái chiến dịch</label>
 
           <select id="trangThai">
-            <option value="nhap">Nháp</option>
             <option value="dang_tuyen">Đang tuyển</option>
-            <option value="tam_dung">Tạm dừng</option>
-            <option value="ket_thuc">Kết thúc</option>
+            <option value="ket_thuc">Đã đóng</option>
           </select>
         </div>
 
         <section id="jdThongTin" class="jd-thong-tin" hidden>
-          <h3>Bản mô tả công việc đã tạo</h3>
           <div id="jdThongTinNoiDung"></div>
         </section>
 
         <section id="jdChinhSua" class="jd-chinh-sua" hidden>
           <div class="jd-chinh-sua-tieu-de">
-            <h3>Chỉnh sửa bản mô tả</h3>
+            <h3>Chỉnh sửa nội dung</h3>
             <span>Thay đổi nội dung và bộ tiêu chí đánh giá</span>
           </div>
 
@@ -492,18 +471,9 @@
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="jdSuaHanNhan">Hạn nhận hồ sơ</label>
-              <input type="date" id="jdSuaHanNhan" />
-            </div>
-            <div class="form-group">
               <label for="jdSuaKyNang">Kỹ năng yêu cầu</label>
               <input type="text" id="jdSuaKyNang" maxlength="1000" placeholder="Node.js, MySQL, giao tiếp..." />
             </div>
-          </div>
-
-          <div class="form-group">
-            <label for="jdSuaTieuDe">Tiêu đề bản mô tả</label>
-            <input type="text" id="jdSuaTieuDe" maxlength="200" />
           </div>
 
           <div class="form-group">
@@ -521,6 +491,13 @@
             <textarea id="jdSuaQuyenLoi" rows="4"></textarea>
           </div>
 
+          <section class="sua-jd-bang-ai">
+            <label for="yeuCauSuaJD">Sửa với AI</label>
+            <textarea id="yeuCauSuaJD" rows="3" placeholder="Ví dụ: bổ sung yêu cầu biết Excel, giữ nguyên mức lương và các phần còn lại..."></textarea>
+            <button type="button" class="btn-luu-jd" id="btnSuaJDVoiAI">Sửa JD với AI</button>
+            <p class="thong-bao" id="thongBaoSuaJD" role="status"></p>
+          </section>
+
           <div class="jd-ai-tieu-de">
             <strong>Bộ tiêu chí chấm điểm</strong>
             <button type="button" class="btn-them-tieu-chi" id="btnThemTieuChiSua">
@@ -535,7 +512,6 @@
 
         <div class="modal-footer">
           <button type="button" class="btn-huy" id="btnHuy">Hủy</button>
-          <button type="button" class="btn-luu-jd" id="btnLuuVaTaoJD">Lưu &amp; tạo JD bằng AI</button>
           <button type="submit" class="btn-luu">Lưu đợt tuyển dụng</button>
         </div>
       </form>
@@ -550,7 +526,6 @@
         <div>
           <h2>Soạn bản mô tả bằng AI</h2>
 
-          <p id="jdTenDot">-</p>
         </div>
 
         <button type="button" class="btn-dong" id="btnDongJD">×</button>
@@ -558,16 +533,15 @@
 
       <div class="jd-ai-body">
         <div class="jd-chi-bao" id="jdChiBao">
-          <span class="dang">1. Ý tưởng</span>
-          <span>2. Làm rõ</span>
-          <span>3. Duyệt nội dung</span>
+          <span>1. Làm rõ</span>
+          <span>2. Duyệt nội dung</span>
         </div>
 
         <div class="thong-bao" id="thongBaoJD"></div>
 
         <!-- BƯỚC 1 -->
 
-        <div class="jd-buoc hien" id="jdBuoc1">
+        <div class="jd-buoc" id="jdBuoc1" hidden>
           <label class="jd-nhan" for="jdTemplate">Bắt đầu từ mẫu có sẵn</label>
 
           <select id="jdTemplate">
@@ -601,6 +575,10 @@
         <!-- BƯỚC 2 -->
 
         <div class="jd-buoc" id="jdBuoc2">
+          <div class="jd-ten-dot-khu-vuc">
+            <label class="jd-ten-dot-label" for="jdTenDot">Tên đợt tuyển dụng</label>
+            <input type="text" id="jdTenDot" class="jd-ten-dot-input" maxlength="200" aria-label="Tên đợt tuyển dụng" />
+          </div>
           <p class="jd-ai-huong-dan">
             Chọn nhanh các đáp án phù hợp hoặc tự nhập ở ô bên dưới mỗi câu. Câu nào chưa cần có thể để trống.
           </p>
@@ -684,10 +662,6 @@
               <label class="jd-nhan" for="jdMucLuong">Khoảng lương</label>
               <input type="text" id="jdMucLuong" maxlength="150" placeholder="Ví dụ: 20–30 triệu VND/tháng" />
             </div>
-            <div class="form-group">
-              <label class="jd-nhan" for="jdHanNhan">Hạn nhận hồ sơ</label>
-              <input type="date" id="jdHanNhan" />
-            </div>
           </div>
 
           <label class="jd-nhan" for="jdGioiThieu">Giới thiệu vị trí</label>
@@ -728,7 +702,7 @@
           <div class="modal-footer">
             <button type="button" class="btn-huy" id="btnJDQuayLai2">← Quay lại câu hỏi</button>
             <button type="button" class="btn-huy" id="btnJDSoanLai">Soạn lại</button>
-            <button type="button" class="btn-luu" id="btnJDLuu">Lưu bản mô tả nháp</button>
+            <button type="button" class="btn-luu" id="btnJDLuu">Lưu nội dung JD</button>
           </div>
         </div>
       </div>
@@ -773,7 +747,7 @@
   </div>
 
   <script src="/account/account.js"></script>
-  <script src="/dot-tuyen/dot-tuyen.js"></script>
+  <script src="/dot-tuyen/dot-tuyen.js?v=20261015-cv-ai-inline-fix4"></script>
 <script src="/menu-dong-bo.js"></script>
 </body>
 

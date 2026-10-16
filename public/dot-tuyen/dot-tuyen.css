@@ -814,7 +814,8 @@ td:nth-child(8) {
 .jd-chinh-sua-tieu-de h3 {
   margin: 0 0 4px;
   color: #4c1d95;
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .jd-chinh-sua-tieu-de span {
@@ -3561,3 +3562,213 @@ tbody tr:hover {
     width: 100% !important;
   }
 }
+/* Tên đợt tuyển dụng mở chi tiết */
+.ten-dot-link { border: 0; padding: 0; background: transparent; color: #4338ca; font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.ten-dot-link:hover { text-decoration: underline; }
+.jd-ai-nhanh-dot { display: none !important; }
+.danh-sach-cv-dot { margin-top: 22px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+.danh-sach-cv-dot h3 { margin: 0 0 12px; font-size: 15px; }
+.cv-dot-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; margin-top: 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.cv-dot-row p { margin: 5px 0 0; color: #64748b; font-size: 12px; }
+.cv-dot-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.cv-dot-actions a, .cv-dot-actions button { border: 1px solid #c7d2fe; border-radius: 7px; padding: 7px 10px; color: #4338ca; background: #eef2ff; cursor: pointer; text-decoration: none; font-size: 12px; }
+.cv-dot-actions button { color: #b91c1c; background: #fff1f2; border-color: #fecdd3; }
+
+/* Danh sách CV trong chi tiết đợt tuyển dụng */
+.cv-dot-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 0 12px}.cv-dot-heading h3{margin:0}.btn-them-cv-dot{background:#2563eb!important;color:#fff!important;border:0!important;border-radius:8px;padding:9px 13px;cursor:pointer;font-weight:600}.cv-dot-table-wrap{width:100%;overflow-x:auto}.cv-dot-table{width:100%;border-collapse:collapse;background:#fff}.cv-dot-table th,.cv-dot-table td{padding:12px 10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:middle}.cv-dot-table th{background:#f8fafc;color:#334155;font-size:13px;white-space:nowrap}.cv-dot-table td:nth-child(1),.cv-dot-table td:nth-child(3){white-space:nowrap}.cv-dot-table td:nth-child(2) strong,.cv-dot-table td:nth-child(2) small{display:block}.cv-dot-table td:nth-child(2) small{margin-top:4px;color:#64748b;font-size:12px;overflow-wrap:anywhere}.cv-dot-actions{display:flex;flex-wrap:wrap;gap:6px}.cv-dot-actions button{border:1px solid #cbd5e1;background:#fff;color:#1e293b;border-radius:7px;padding:7px 9px;cursor:pointer;white-space:nowrap}.cv-dot-actions button:hover{background:#f1f5f9}.cv-dot-actions .btn-tu-choi-cv{color:#b91c1c;border-color:#fecaca}.ten-dot-link{border:0;background:transparent;color:#1d4ed8;font:inherit;font-weight:700;text-align:left;padding:0;cursor:pointer}.ten-dot-link:hover{text-decoration:underline}
+
+
+/* Hành vi tương tác đợt tuyển dụng */
+.dot-tuyen-row-clickable { cursor: pointer; }
+.dot-tuyen-row-clickable:hover { background: rgba(59, 130, 246, .055); }
+.dot-tuyen-row-clickable button, .dot-tuyen-row-clickable a { cursor: pointer; }
+.sua-jd-bang-ai { margin: 18px 0; padding: 16px; border: 1px solid #dbeafe; border-radius: 12px; background: #f8fbff; }
+.sua-jd-bang-ai label { display: block; margin-bottom: 8px; font-weight: 700; }
+.sua-jd-bang-ai textarea { width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+.sua-jd-bang-ai .btn-luu-jd { margin-top: 2px; }
+
+/* Bố cục gọn: hành động quản lý nằm trong cửa sổ chi tiết */
+.chi-tiet-actions { display:flex; align-items:center; gap:8px; margin-left:auto; }
+.chi-tiet-actions[hidden] { display:none !important; }
+.btn-xoa-chi-tiet { border:1px solid #fecaca; color:#b91c1c; background:#fff; border-radius:8px; padding:8px 13px; cursor:pointer; font-weight:600; }
+.btn-xoa-chi-tiet:hover { background:#fff1f2; }
+.modal-header { gap:12px; }
+.sua-jd-bang-ai textarea { border:1px solid #cbd5e1 !important; border-radius:8px !important; padding:11px 12px !important; background:#fff !important; color:#0f172a; font:inherit; resize:vertical; outline:none; }
+.sua-jd-bang-ai textarea:focus { border-color:#64748b !important; box-shadow:0 0 0 3px rgba(100,116,139,.12); }
+
+/* Form thêm/sửa đợt tuyển dụng: nhãn gọn và nhất quán */
+#nhomTenDot .nhan-phu { color: #7c8496; font-size: 11px; font-weight: 400; }
+#nhomMoTaDot textarea { width: 100%; min-height: 100px; resize: vertical; }
+
+/* Tinh chỉnh phần yêu cầu sửa JD và tiêu đề đợt tuyển trong bước làm rõ */
+.sua-jd-bang-ai { padding: 12px 14px; }
+.sua-jd-bang-ai label { font-size: 14px !important; font-weight: 600; margin-bottom: 6px; }
+.sua-jd-bang-ai textarea { font-size: 14px !important; line-height: 1.5; min-height: 72px; }
+.sua-jd-bang-ai .btn-luu-jd { font-size: 13px !important; padding: 9px 14px; }
+.jd-ten-dot-label { display:block; margin: 8px 0 4px; font-size:12px; color:#64748b; font-weight:600; }
+.jd-ten-dot-input { width:min(100%, 520px); box-sizing:border-box; padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px; font:inherit; font-size:14px; color:#0f172a; background:#fff; }
+.jd-ten-dot-input:focus { outline:none; border-color:#64748b; box-shadow:0 0 0 3px rgba(100,116,139,.12); }
+
+/* Nút trạng thái đợt tuyển dụng trong cửa sổ chi tiết */
+.btn-trang-thai-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 7px 12px;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-trang-thai-dot.da-dong {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+.btn-trang-thai-dot:disabled { opacity: .65; cursor: wait; }
+.btn-them-cv-dot:disabled { opacity: .6; cursor: not-allowed; }
+
+/* Bố cục gọn theo yêu cầu: chỉ dùng trạng thái đang tuyển/đã đóng */
+.thong-ke-dot .the-tam-dung { display: none !important; }
+.tab-trang-thai-nut[data-status="nhap"],
+.tab-trang-thai-nut[data-status="tam_dung"] { display: none !important; }
+.table-scroll th:first-child,
+.table-scroll td.cot-stt { text-align: center !important; vertical-align: middle; }
+.table-scroll td.cot-stt { width: 64px; min-width: 64px; font-variant-numeric: tabular-nums; }
+.table-scroll th:first-child { width: 64px; }
+.sua-jd-bang-ai { margin: 24px 0 !important; padding: 16px !important; }
+.jd-ten-dot-khu-vuc { margin: 0 0 18px; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+.jd-ten-dot-khu-vuc .jd-ten-dot-label { margin-top: 0; font-size: 13px; }
+.jd-ten-dot-khu-vuc .jd-ten-dot-input { width: 100%; max-width: none; }
+.cv-dot-table th:first-child,
+.cv-dot-table td:first-child { width: 48px; text-align: center; white-space: nowrap; }
+.cv-dot-table th:nth-child(2) { min-width: 0; }
+.cv-dot-table th:nth-child(3),
+.cv-dot-table td:nth-child(3) { width: 100px; text-align: center; }
+.cv-dot-table th:last-child { width: 250px; }
+.cv-dot-table td { overflow-wrap: anywhere; }
+.cv-dot-table .cv-dot-actions { justify-content: flex-start; }
+.upload-dot-inline, .cv-preview-inline { margin: 14px 0; padding: 16px; border: 1px solid #dbe3ee; border-radius: 12px; background: #fff; }
+.upload-dot-inline-header, .cv-preview-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.upload-dot-inline-caption, .cv-preview-status { color: #64748b; font-size: 13px; margin: 8px 0 12px; }
+.upload-dot-inline input[type="file"] { display: block; width: 100%; box-sizing: border-box; padding: 12px; border: 1px dashed #94a3b8; border-radius: 8px; background: #f8fafc; }
+.upload-dot-inline-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.btn-dong-upload-inline, .btn-dong-cv-preview { border: 0; border-radius: 8px; width: 32px; height: 32px; font-size: 22px; color: #475569; background: #f1f5f9; cursor: pointer; }
+.cv-preview-frame { display: block; width: 100%; height: min(72vh, 760px); border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+.cv-preview-download { margin-left: 8px; color: #1d4ed8; font-weight: 600; }
+@media (max-width: 760px) {
+  .cv-dot-table th:last-child { width: auto; }
+  .cv-dot-actions { min-width: 170px; }
+  .upload-dot-inline-actions { flex-wrap: wrap; }
+}
+
+
+/* CV trong chi tiết đợt tuyển dụng: modal nổi, không đẩy bảng xuống dưới */
+.cv-dot-modal-overlay { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15, 23, 42, .58); backdrop-filter: blur(3px); }
+.cv-dot-modal { width: min(760px, 100%); max-height: min(90vh, 900px); overflow: auto; background: #fff; border: 1px solid #dbe3ee; border-radius: 16px; padding: 20px; box-shadow: 0 24px 80px rgba(15, 23, 42, .28); }
+.cv-dot-modal-preview { width: min(1100px, 100%); }
+.cv-dot-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 14px; }
+.cv-dot-modal-header strong { color: #0f172a; font-size: 19px; }
+.cv-dot-modal-close { flex: 0 0 36px; width: 36px; height: 36px; border: 0; border-radius: 10px; background: #f1f5f9; color: #334155; font-size: 25px; cursor: pointer; }
+.cv-dot-modal .cv-preview-frame { height: min(72vh, 760px); }
+.cv-dot-modal-subtitle { margin: 0 0 14px; color: #64748b; font-size: 13px; }
+.cv-dot-interview-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.cv-dot-interview-form > p:first-child, .cv-dot-interview-form label:nth-of-type(3), .cv-dot-interview-form label:nth-of-type(5), .cv-dot-interview-form label:nth-of-type(6), .cv-dot-interview-error, .cv-dot-modal-actions { grid-column: 1 / -1; }
+.cv-dot-interview-form label { display: flex; flex-direction: column; gap: 7px; color: #334155; font-size: 13px; font-weight: 600; }
+.cv-dot-interview-form label span { color: #dc2626; }
+.cv-dot-interview-form input, .cv-dot-interview-form select, .cv-dot-interview-form textarea { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 9px; padding: 10px 11px; background: #fff; color: #0f172a; font: inherit; }
+.cv-dot-interview-form select[multiple] { min-height: 110px; }
+.cv-dot-interview-form small { color: #64748b; font-weight: 400; }
+.cv-dot-interview-error { margin: 0; color: #b91c1c; font-size: 13px; }
+.cv-dot-modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+.cv-dot-modal-actions button { border: 1px solid #cbd5e1; border-radius: 9px; padding: 10px 15px; background: #fff; color: #334155; font-weight: 600; cursor: pointer; }
+.cv-dot-modal-actions .cv-dot-save { border-color: #2563eb; background: #2563eb; color: #fff; }
+.cv-dot-modal-actions button:disabled { opacity: .6; cursor: wait; }
+.cv-dot-actions .btn-xoa-cv { color: #b91c1c; border-color: #fecaca; background: #fff7f7; }
+.cv-dot-actions button:disabled { opacity: .55; cursor: wait; }
+.cv-dot-table { table-layout: fixed; width: 100%; }
+.cv-dot-table th:first-child, .cv-dot-table td:first-child { width: 40px !important; min-width: 40px !important; max-width: 40px; padding-left: 5px; padding-right: 5px; }
+.cv-dot-table th:nth-child(2), .cv-dot-table td:nth-child(2) { width: 230px; max-width: 230px; }
+.cv-dot-table th:nth-child(3), .cv-dot-table td:nth-child(3) { width: 105px; }
+.cv-dot-table th:last-child { width: 290px; }
+@media (max-width: 760px) {
+  .cv-dot-modal-overlay { padding: 10px; }
+  .cv-dot-modal { padding: 14px; }
+  .cv-dot-interview-form { grid-template-columns: 1fr; }
+  .cv-dot-interview-form > p:first-child, .cv-dot-interview-form label, .cv-dot-interview-error, .cv-dot-modal-actions { grid-column: 1; }
+  .cv-dot-table th:last-child { width: 190px; }
+}
+
+/* Thu gọn cột thông tin ứng viên để dành chỗ cho thao tác. */
+.cv-dot-table th:nth-child(2), .cv-dot-table td:nth-child(2) { width: 220px !important; max-width: 220px; }
+.cv-dot-table td:nth-child(2) strong { overflow-wrap: anywhere; }
+@media (max-width: 760px) { .cv-dot-table th:nth-child(2), .cv-dot-table td:nth-child(2) { width: 180px !important; max-width: 180px; } }
+
+/* Bảng CV: thêm cột trạng thái và tối ưu chiều rộng các cột */
+.cv-dot-table { table-layout: fixed; width: 100%; }
+.cv-dot-table th:first-child, .cv-dot-table td:first-child { width: 40px !important; min-width: 40px !important; max-width: 40px; padding-left: 5px; padding-right: 5px; text-align: center; }
+.cv-dot-table th:nth-child(2), .cv-dot-table td:nth-child(2) { width: 205px !important; max-width: 205px; }
+.cv-dot-table th:nth-child(3), .cv-dot-table td:nth-child(3) { width: 95px !important; }
+.cv-dot-table th:nth-child(4), .cv-dot-table td:nth-child(4) { width: 112px !important; }
+.cv-dot-table th:nth-child(5), .cv-dot-table td:nth-child(5) { width: 275px !important; }
+.cv-dot-status-cell { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.cv-dot-status-cell.is-rejected { color: #b91c1c; }
+.cv-dot-status-cell.is-hired { color: #047857; }
+.cv-dot-status-cell.is-scheduled { color: #1d4ed8; }
+.cv-dot-status-cell.is-unscheduled { color: #64748b; }
+.cv-dot-interview-form .cv-dot-label-title { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 7px; color: #334155; font-size: 13px; font-weight: 600; }
+.cv-dot-interview-form .cv-dot-label-title b { color: #dc2626; font-weight: 700; }
+.cv-dot-datetime-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .75fr); gap: 8px; }
+.cv-dot-interview-form .cv-dot-datetime-fields input { min-width: 0; }
+@media (max-width: 760px) {
+  .cv-dot-table th:nth-child(2), .cv-dot-table td:nth-child(2) { width: 180px !important; max-width: 180px; }
+  .cv-dot-table th:nth-child(5), .cv-dot-table td:nth-child(5) { width: 190px !important; }
+  .cv-dot-interview-form .cv-dot-label-title { grid-column: 1; }
+}
+
+.btn-upload-cv-inline { display:inline-flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid #cbd5e1; border-radius:7px; padding:6px 9px; font:inherit; font-size:12px; color:#334155; background:#fff; white-space:nowrap; }
+.btn-upload-cv-inline:hover { background:#f1f5f9; }
+
+/* Tinh chỉnh bảng CV và khung xem trước */
+.cv-dot-modal-preview { width: min(920px, 100%); }
+.cv-dot-modal .cv-preview-frame { height: min(64vh, 650px); }
+.cv-dot-table th:nth-child(2), .cv-dot-table td:nth-child(2) { width: 190px !important; max-width: 190px; }
+.cv-dot-table th:nth-child(3), .cv-dot-table td:nth-child(3) { width: 115px !important; }
+.cv-dot-table th:nth-child(4), .cv-dot-table td:nth-child(4) { width: 95px !important; }
+.cv-dot-table th:nth-child(5), .cv-dot-table td:nth-child(5) { width: 135px !important; }
+.cv-dot-table th:nth-child(6), .cv-dot-table td:nth-child(6) { width: 190px !important; }
+.cv-dot-appointment-cell { font-size: 12px; white-space: nowrap; color: #334155; }
+@media (max-width: 760px) {
+  .cv-dot-table th:nth-child(2), .cv-dot-table td:nth-child(2) { width: 170px !important; max-width: 170px; }
+  .cv-dot-table th:nth-child(6), .cv-dot-table td:nth-child(6) { width: 180px !important; }
+  .cv-dot-modal-preview { width: 100%; }
+  .cv-dot-modal .cv-preview-frame { height: 60vh; }
+}
+
+/* Chi tiết ứng viên mở ngay trong bảng, không cần nút Xem CV riêng */
+.cv-dot-candidate-toggle { display: block; max-width: 100%; padding: 0; border: 0; background: transparent; color: #1d4ed8; font: inherit; font-weight: 700; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.cv-dot-candidate-toggle:hover, .cv-dot-candidate-toggle.is-open { text-decoration: underline; color: #1e40af; }
+.cv-dot-expanded-row > td { padding: 14px !important; background: #f8fafc; }
+.cv-dot-candidate-detail { display: grid; gap: 14px; }
+.cv-dot-detail-section { min-width: 0; padding: 14px; background: #fff; border: 1px solid #dbe3ee; border-radius: 10px; }
+.cv-dot-detail-section h4 { margin: 0 0 12px; color: #0f172a; font-size: 14px; }
+.cv-dot-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cv-dot-detail-item { min-width: 0; display: grid; gap: 4px; font-size: 13px; overflow-wrap: anywhere; }
+.cv-dot-detail-item strong { color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.cv-dot-detail-item span { color: #0f172a; }
+.cv-dot-ai-detail { display: grid; gap: 10px; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.cv-dot-ai-score { display: inline-flex; justify-self: start; padding: 7px 11px; border-radius: 8px; background: #dbeafe; color: #1d4ed8; font-weight: 800; }
+.cv-dot-ai-item { padding: 8px 10px; background: #f8fafc; border-radius: 7px; }
+.cv-dot-ai-item strong { color: #334155; }
+.cv-dot-ai-group { display: grid; gap: 7px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.cv-dot-ai-group > strong { color: #334155; }
+.cv-dot-inline-preview { display: grid; gap: 10px; }
+.cv-dot-inline-frame { width: 100%; height: min(62vh, 650px); border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; }
+.cv-dot-download-link { justify-self: start; color: #1d4ed8; font-weight: 600; }
+@media (max-width: 760px) { .cv-dot-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cv-dot-inline-frame { height: 55vh; } }
+@media (max-width: 480px) { .cv-dot-detail-grid { grid-template-columns: 1fr; } }

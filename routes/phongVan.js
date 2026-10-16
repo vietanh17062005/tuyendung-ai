@@ -100,18 +100,22 @@ async function khoiTaoSchemaPhongVan() {
         const cotNguoiPhongVan = layTenCot(names, [
             "nguoi_phong_van",
             "nguoi_phong_van_id",
-            "interviewer_id",
             "nguoi_phong_van_chinh",
+            "nguoi_phong_van_chinh_id",
             "nguoi_phu_trach",
-        ]);
+            "interviewer_id",
+            "interviewer_user_id",
+            "interview_user_id",
+        ]) || columns.find((column) => /interviewer|nguoi.*phong.*van|nguoi.*phu.*trach/i.test(String(column.Field || "")))?.Field || null;
         const cotNguoiTao = layTenCot(names, [
             "nguoi_tao",
             "nguoi_tao_id",
             "nguoi_lap",
             "nguoi_lap_id",
             "created_by",
+            "created_by_id",
             "hr_id",
-        ]);
+        ]) || columns.find((column) => /nguoi.*tao|nguoi.*lap|created.*by|hr_id/i.test(String(column.Field || "")))?.Field || null;
 
         // Danh sách lịch chỉ cần cột thời gian. Các cột người tạo/người
         // phỏng vấn được kiểm tra riêng ở API tạo/sửa lịch để không chặn GET.
@@ -484,11 +488,6 @@ router.post("/", kiemTraDangNhap, kiemTraVaiTro(...vaiTroQuanLy), async function
 
     try {
         const schema = await khoiTaoSchemaPhongVan();
-        if (!schema.cotNguoiTao || !schema.cotNguoiPhongVan) {
-            throw new Error(
-                "Bảng phong_van chưa có cột người tạo/người phỏng vấn phù hợp. Hãy kiểm tra tên cột trong database.",
-            );
-        }
         const ungVienId = Number(req.body?.ung_vien_id);
         const dotTuyenId = Number(req.body?.dot_tuyen_id);
         const thoiGian = chuanHoaNgay(req.body?.thoi_gian || req.body?.bat_dau);
@@ -547,8 +546,6 @@ router.post("/", kiemTraDangNhap, kiemTraVaiTro(...vaiTroQuanLy), async function
 
         const insertData = {
             ung_vien_id: ungVienId,
-            [schema.cotNguoiTao]: Number(req.nguoiDung.id),
-            [schema.cotNguoiPhongVan]: interviewerIds[0],
             [schema.cotThoiGian]: thoiGian,
             hinh_thuc: hinhThuc,
             dia_diem: diaDiem,
@@ -556,6 +553,10 @@ router.post("/", kiemTraDangNhap, kiemTraVaiTro(...vaiTroQuanLy), async function
             ghi_chu: ghiChu,
             vong_phong_van: vong,
         };
+        // Một số database triển khai không lưu người tạo/người phỏng vấn trực tiếp
+        // trong phong_van; danh sách người phỏng vấn được lưu ở bảng liên kết.
+        if (schema.cotNguoiTao) insertData[schema.cotNguoiTao] = Number(req.nguoiDung.id);
+        if (schema.cotNguoiPhongVan) insertData[schema.cotNguoiPhongVan] = interviewerIds[0];
 
         if (schema.cotKetThuc) {
             insertData[schema.cotKetThuc] = ketThuc;
@@ -605,7 +606,7 @@ router.post("/", kiemTraDangNhap, kiemTraVaiTro(...vaiTroQuanLy), async function
 
         let emailResult = {
             email_trang_thai: "chua_gui",
-            message: "Đã lưu lịch phỏng vấn. Ông có thể gửi thư mời riêng khi sẵn sàng.",
+            message: "Đã lưu lịch phỏng vấn. bạn có thể gửi thư mời riêng khi sẵn sàng.",
         };
 
         if (req.body?.gui_email === true) {
