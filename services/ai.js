@@ -4,12 +4,16 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-// Đọc Service Account từ Vercel hoặc dùng file local
-if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+const serviceAccountRaw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64
+    ? Buffer.from(
+        process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64,
+        "base64"
+    ).toString("utf8")
+    : process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+if (serviceAccountRaw) {
     try {
-        const credentials = JSON.parse(
-            process.env.GOOGLE_SERVICE_ACCOUNT_JSON
-        );
+        const credentials = JSON.parse(serviceAccountRaw);
 
         if (!credentials.client_email || !credentials.private_key) {
             throw new Error("Service Account thiếu client_email hoặc private_key");
@@ -29,7 +33,7 @@ if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
         process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialPath;
     } catch (error) {
         throw new Error(
-            "Không thể đọc GOOGLE_SERVICE_ACCOUNT_JSON: " + error.message
+            "Không thể đọc Service Account: " + error.message
         );
     }
 }
