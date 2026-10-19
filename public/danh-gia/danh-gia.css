@@ -32,3 +32,49 @@ h1,h2,h3,.brand b,.stats strong{font-family:'Plus Jakarta Sans','Inter',sans-ser
   #editorCampaign { margin-bottom: 20px; }
   #feedbackForm { gap: 15px; }
 }
+
+/* Biểu mẫu đánh giá nhúng trong dialog của trang đợt tuyển dụng. */
+body.evaluation-embedded{background:transparent;overflow:hidden}
+body.evaluation-embedded .sidebar,body.evaluation-embedded .app{display:none!important}
+body.evaluation-embedded #feedbackModal{display:flex!important;position:static;inset:auto;background:transparent;padding:0;width:100%;height:100%;min-height:0;align-items:stretch;justify-content:stretch}
+body.evaluation-embedded #feedbackModal .modal-card{width:100%;max-width:none;max-height:none;height:100%;overflow:auto;border-radius:0;padding:22px 24px;box-shadow:none}
+body.evaluation-embedded #feedbackModal .modal-head{margin-bottom:14px}
+body.evaluation-embedded #feedbackModal .modal-card form{padding-bottom:4px}
+body.evaluation-embedded #feedbackModal .score-fields{margin:12px 0}
+@media(max-width:700px){body.evaluation-embedded #feedbackModal .modal-card{padding:16px}}
+
+/* Khi nhúng trong dialog của đợt tuyển dụng, chỉ dùng tiêu đề của dialog cha. */
+body.evaluation-embedded #feedbackModal .modal-head{display:none!important}
+body.evaluation-embedded #feedbackModal .modal-card{padding:20px 24px}
+body.evaluation-embedded #interviewReadonly{margin-top:8px}
+body.evaluation-embedded #interviewReadonly div{padding:10px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px}
+
+/* Thông tin lịch ở dạng ô nhập chỉ đọc, đồng bộ với form hẹn phỏng vấn. */
+body.evaluation-embedded #interviewReadonly{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;padding:0;border:0;background:transparent}
+body.evaluation-embedded #interviewReadonly .readonly-item{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:12px;font-weight:700;color:#44506a}
+body.evaluation-embedded #interviewReadonly .readonly-item input{width:100%;min-width:0;min-height:39px;padding:10px 11px;border:1px solid #d9e0ec;border-radius:8px;background:#f8fafc;color:#334155;font:14px 'DM Sans',sans-serif;outline:none;cursor:default}
+body.evaluation-embedded #interviewReadonly .readonly-item input[readonly]{opacity:1}
+@media(max-width:600px){body.evaluation-embedded #interviewReadonly{grid-template-columns:1fr}}
+
+/* Embedded interview evaluation: scroll the form vertically inside the dialog. */
+body.evaluation-embedded{overflow:auto!important;min-height:100%;height:auto}
+body.evaluation-embedded #feedbackModal{height:auto!important;min-height:100%;overflow:visible!important;align-items:stretch}body.evaluation-embedded #feedbackModal .modal-card{height:auto!important;max-height:none!important;overflow:visible!important;overscroll-behavior:contain;scrollbar-gutter:stable;}
+body.evaluation-embedded #feedbackForm{min-height:0;padding-bottom:18px}
+body.evaluation-embedded #feedbackForm .form-actions{position:sticky;bottom:-1px;background:#fff;padding:12px 0 4px;margin-top:8px;z-index:2}
+.interview-readonly{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}
+.interview-readonly .readonly-item{display:flex;flex-direction:column;gap:4px;min-width:0}
+.interview-readonly .readonly-item span{font-size:12px;color:#64748b;font-weight:600}
+.interview-readonly .readonly-item input[readonly]{width:100%;min-width:0;min-height:39px;padding:9px 11px;background:#f8fafc;border:1px solid #d9e0ec;border-radius:8px;color:#334155;font:500 13px 'Inter',sans-serif}
+@media(max-width:600px){.interview-readonly{grid-template-columns:1fr}}
+
+/* Điểm phỏng vấn tự tính theo điểm tiêu chí và trọng số */
+.interview-score-total{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:7px 10px;margin:8px 0 10px;border:1px solid #dbe2f2;border-radius:8px;background:#f8f9fc;color:#26334c;font-size:12px}.interview-score-total span{font-weight:700}.interview-score-total strong{font-size:16px;color:#315efb}.interview-score-total small{font-size:11px;color:#667085}
+
+/* Bản nháp email kết quả: cho phép chỉnh sửa trước khi gửi. */
+.modal-card.email-draft-card{width:min(760px,100%)}
+#emailDraftForm{display:flex;flex-direction:column;gap:16px}
+#emailDraftForm .field{margin:0}
+#emailDraftForm input[readonly]{background:#f5f7fb;color:#526079}
+#emailDraftBody{min-height:300px;resize:vertical;line-height:1.65;white-space:pre-wrap}
+#emailDraftForm small{display:block;margin-top:6px;font-size:11px}
+@media(max-width:760px){#emailDraftBody{min-height:260px}}

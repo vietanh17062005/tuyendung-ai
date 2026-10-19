@@ -790,29 +790,25 @@ function moFormSua(item) {
   $("ngayKetThuc").value = dinhDangNgayInput(dot.ngay_ket_thuc);
   $("trangThai").value = laDotDaDong(dot) ? "ket_thuc" : "dang_tuyen";
 
-  if (item.jd) {
-    $("yeuCauSuaJD").value = "";
-    $("thongBaoSuaJD").className = "thong-bao";
-    $("thongBaoSuaJD").textContent = "";
-    $("jdChinhSua").hidden = false;
-    $("jdSuaBoPhan").value = item.jd.bo_phan || "";
-    chonDiaDiem($("jdSuaDiaDiem"), item.jd.dia_diem);
-    $("jdSuaLoaiHinh").value = item.jd.loai_hinh || "";
-    $("jdSuaMucLuong").value = item.jd.muc_luong || "";
-    $("jdSuaKyNang").value = item.jd.ky_nang || "";
-    $("jdSuaMoTa").value = item.jd.mo_ta || "";
-    $("jdSuaYeuCau").value = item.jd.yeu_cau || "";
-    $("jdSuaQuyenLoi").value = item.jd.quyen_loi || "";
-    $("danhSachTieuChiSua").replaceChildren();
-    parseTieuChi(item.jd.tieu_chi).forEach((criterion) => {
-      themTieuChiSua(
-        criterion.ten || "",
-        criterion.trong_so ?? 0,
-        criterion.mo_ta || ""
-      );
-    });
-    capNhatTongTrongSoSua();
-  }
+  $("yeuCauSuaJD").value = "";
+  $("thongBaoSuaJD").className = "thong-bao";
+  $("thongBaoSuaJD").textContent = "";
+  $("jdChinhSua").hidden = false;
+  const jd = item.jd || {};
+  $("jdSuaBoPhan").value = jd.bo_phan || "";
+  chonDiaDiem($("jdSuaDiaDiem"), jd.dia_diem || "");
+  $("jdSuaLoaiHinh").value = jd.loai_hinh || "";
+  $("jdSuaMucLuong").value = jd.muc_luong || "";
+  $("jdSuaKyNang").value = jd.ky_nang || "";
+  $("jdSuaMoTa").value = jd.mo_ta || "";
+  $("jdSuaYeuCau").value = jd.yeu_cau || "";
+  $("jdSuaQuyenLoi").value = jd.quyen_loi || "";
+  $("danhSachTieuChiSua").replaceChildren();
+  parseTieuChi(jd.tieu_chi).forEach((criterion) => {
+    themTieuChiSua(criterion.ten || "", criterion.trong_so ?? 0, criterion.mo_ta || "");
+  });
+  if (!parseTieuChi(jd.tieu_chi).length) themTieuChiSua();
+  capNhatTongTrongSoSua();
 
   moModal();
 }
@@ -893,12 +889,22 @@ async function taiCVTheoDot(dot) {
       const empty = document.createElement("p"); empty.textContent = "Chưa nhận CV cho đợt tuyển dụng này.";
       section.appendChild(empty); return;
     }
+    const rankingControls = document.createElement("div"); rankingControls.className = "cv-dot-ranking-controls";
+    rankingControls.innerHTML = '<label>Lọc trạng thái<select data-filter="status"><option value="all">Tất cả trạng thái</option><option value="moi">Chưa hẹn</option><option value="scheduled">Đã hẹn</option><option value="hired">Đã tuyển</option><option value="rejected">Đã từ chối</option></select></label><label>Sắp xếp<select data-filter="sort"><option value="score-desc">Điểm: cao đến thấp</option><option value="score-asc">Điểm: thấp đến cao</option><option value="name-asc">Tên A–Z</option></select></label>';
+    section.appendChild(rankingControls);
     const table = document.createElement("div"); table.className = "cv-dot-table-wrap";
     const tableEl = document.createElement("table"); tableEl.className = "cv-dot-table";
-    tableEl.innerHTML = "<thead><tr><th>STT</th><th>Ứng viên</th><th>Điểm tương thích</th><th>Trạng thái</th><th>Ngày hẹn PV</th><th>Thao tác</th></tr></thead>";
+    tableEl.innerHTML = "<thead><tr><th>STT</th><th>Ứng viên</th><th>Điểm tương thích</th><th>Trạng thái</th><th>Ngày hẹn phỏng vấn</th><th>Thao tác</th></tr></thead>";
     const tbody = document.createElement("tbody");
     candidates.forEach((candidate, index) => {
       const tr = document.createElement("tr");
+      const scoreForSort = [candidate.diem_ai, candidate.diem_ghi_de, candidate.phan_tich?.score?.tong, candidate.phan_tich?.score?.total, candidate.phan_tich?.diem_phu_hop, candidate.phan_tich?.diem].map(Number).find(Number.isFinite);
+      const analysisForFilter = JSON.stringify(candidate.phan_tich || candidate.du_lieu_phan_tich || {});
+      tr.dataset.score = Number.isFinite(scoreForSort) ? String(scoreForSort) : "-1";
+      tr.dataset.name = String(candidate.ho_ten || "").toLocaleLowerCase("vi");
+      tr.dataset.status = ["tu_choi", "tu-choi", "rejected"].includes(String(candidate.trang_thai || "").toLowerCase()) ? "rejected" : ["da_tuyen", "hired"].includes(String(candidate.trang_thai || "").toLowerCase()) ? "hired" : [true, 1, "1", "true"].includes(candidate.co_lich_phong_van) ? "scheduled" : "moi";
+      tr.dataset.skills = analysisForFilter.toLocaleLowerCase("vi");
+      tr.dataset.experience = String(Number(candidate.so_nam_kinh_nghiem ?? candidate.phan_tich?.so_nam_kinh_nghiem ?? candidate.phan_tich?.years_of_experience ?? 0) || 0);
       const stt = document.createElement("td"); stt.textContent = String(index + 1);
       const details = document.createElement("td");
       const name = document.createElement("button");
@@ -919,12 +925,13 @@ async function taiCVTheoDot(dot) {
       const hasActiveAppointment = [true, 1, "1", "true"].includes(candidate.co_lich_phong_van);
       if (["tu_choi", "tu-choi", "rejected"].includes(statusValue)) statusLabel = "Đã từ chối";
       else if (["da_tuyen", "hired"].includes(statusValue)) statusLabel = "Đã tuyển";
+      else if (["da_phong_van", "da_phong_van_xong", "interviewed"].includes(statusValue)) statusLabel = "Đã phỏng vấn";
       else if (hasActiveAppointment) statusLabel = "Đã hẹn";
       statusCell.textContent = statusLabel === "Chưa hẹn" ? "" : statusLabel;
-      statusCell.className = `cv-dot-status-cell ${statusLabel === "Đã từ chối" ? "is-rejected" : statusLabel === "Đã tuyển" ? "is-hired" : statusLabel === "Đã hẹn" ? "is-scheduled" : "is-unscheduled"}`;
+      statusCell.className = `cv-dot-status-cell ${statusLabel === "Đã từ chối" ? "is-rejected" : statusLabel === "Đã tuyển" ? "is-hired" : statusLabel === "Đã hẹn" ? "is-scheduled" : statusLabel === "Đã phỏng vấn" ? "is-interviewed" : "is-unscheduled"}`;
       const appointmentCell = document.createElement("td");
       appointmentCell.className = "cv-dot-appointment-cell";
-      if (statusLabel === "Đã hẹn" && candidate.thoi_gian_phong_van) {
+      if (["Đã hẹn", "Đã phỏng vấn"].includes(statusLabel) && candidate.thoi_gian_phong_van) {
         const rawTime = String(candidate.thoi_gian_phong_van);
         const match = rawTime.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
         if (match && /Z$/i.test(rawTime)) {
@@ -958,7 +965,7 @@ async function taiCVTheoDot(dot) {
       }
       const daTuChoi = statusLabel === "Đã từ chối";
       if (!daTuChoi && statusLabel !== "Đã tuyển") {
-        if (statusLabel === "Đã hẹn") {
+        if (["Đã hẹn", "Đã phỏng vấn"].includes(statusLabel)) {
           const reschedule = document.createElement("button"); reschedule.type = "button"; reschedule.textContent = "Đổi ngày hẹn";
           reschedule.addEventListener("click", async () => {
             let resolvedId = interviewId;
@@ -988,29 +995,97 @@ async function taiCVTheoDot(dot) {
             }
           });
           actions.appendChild(cancelAppointment);
+          const evaluate = document.createElement("button");
+          evaluate.type = "button";
+          evaluate.className = "btn-danh-gia-cv";
+          evaluate.textContent = "Đánh giá";
+          evaluate.addEventListener("click", async () => {
+            let resolvedId = interviewId;
+            if (!resolvedId) {
+              try {
+                const schedules = await api(`${API}/phong-van`);
+                const rows = Array.isArray(schedules) ? schedules : (schedules.data || []);
+                const found = rows.find(item => Number(item.ung_vien_id) === Number(candidate.id) && String(item.trang_thai || "").toLowerCase() !== "huy");
+                resolvedId = found?.id || null;
+              } catch (_) {}
+            }
+            if (!resolvedId) { alert("Không tìm thấy lịch phỏng vấn đang hoạt động. Hãy tải lại danh sách CV."); return; }
+            const dialog = document.getElementById("modalDanhGiaNhanh");
+            const frame = document.getElementById("iframeDanhGiaNhanh");
+            if (!dialog || !frame) { alert("Không mở được biểu mẫu đánh giá. Hãy tải lại trang."); return; }
+            frame.src = `/danh-gia/danh-gia.html?phong_van_id=${encodeURIComponent(resolvedId)}&embed=1`;
+            dialog.classList.add("show");
+            dialog.setAttribute("aria-hidden", "false");
+          });
+          actions.appendChild(evaluate);
         } else {
           const schedule = document.createElement("button"); schedule.type = "button"; schedule.textContent = "Hẹn phỏng vấn";
           schedule.addEventListener("click", () => moFormHenPhongVan(candidate, dot)); actions.appendChild(schedule);
         }
       }
+      if (actions.children.length > 0) {
+        const menuWrap = document.createElement("div"); menuWrap.className = "cv-more-wrap";
+        const toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "cv-more-toggle"; toggle.textContent = "…"; toggle.title = "Thao tác khác"; toggle.setAttribute("aria-label", "Thao tác khác"); toggle.setAttribute("aria-expanded", "false");
+        const menu = document.createElement("div"); menu.className = "cv-more-menu";
+        [...actions.children].forEach(button => menu.appendChild(button));
+        toggle.addEventListener("click", event => {
+          event.stopPropagation();
+          document.querySelectorAll(".cv-more-wrap.open").forEach(el => { if (el !== menuWrap) { el.classList.remove("open"); el.querySelector(".cv-more-toggle")?.setAttribute("aria-expanded", "false"); } });
+          const open = menuWrap.classList.toggle("open"); toggle.setAttribute("aria-expanded", String(open));
+          if (open) {
+            const rect = toggle.getBoundingClientRect();
+            menu.style.position = "fixed";
+            menu.style.left = Math.max(8, Math.min(rect.right - 190, window.innerWidth - 198)) + "px";
+            menu.style.top = Math.max(8, Math.min(rect.bottom + 5, window.innerHeight - 260)) + "px";
+          }
+        });
+        document.addEventListener("click", event => { if (!menuWrap.contains(event.target)) { menuWrap.classList.remove("open"); toggle.setAttribute("aria-expanded", "false"); menu.style.left = ""; menu.style.top = ""; } });
+        menuWrap.append(toggle, menu); actions.appendChild(menuWrap);
+      }
       actionsCell.appendChild(actions);
       tr.append(stt, details, score, statusCell, appointmentCell, actionsCell); tbody.appendChild(tr);
-      name.addEventListener("click", () => {
-        const existing = tr.nextElementSibling;
-        if (existing?.classList.contains("cv-dot-expanded-row")) {
-          existing.remove(); name.setAttribute("aria-expanded", "false"); name.classList.remove("is-open"); return;
-        }
-        tbody.querySelectorAll(".cv-dot-expanded-row").forEach(row => row.remove());
-        tbody.querySelectorAll(".cv-dot-candidate-toggle").forEach(button => { button.setAttribute("aria-expanded", "false"); button.classList.remove("is-open"); });
-        const detailRow = document.createElement("tr"); detailRow.className = "cv-dot-expanded-row";
-        const detailCell = document.createElement("td"); detailCell.colSpan = 6; detailCell.className = "cv-dot-expanded-cell";
-        detailCell.textContent = "Đang tải thông tin CV và đánh giá AI...";
-        detailRow.appendChild(detailCell); tr.after(detailRow);
-        name.setAttribute("aria-expanded", "true"); name.classList.add("is-open");
-        hienThiChiTietUngVien(detailCell, candidate, dot).catch(error => { detailCell.textContent = error.message || "Không tải được thông tin CV và đánh giá AI."; });
+      const moRecap = () => {
+        if (document.querySelector(".cv-dot-modal-ai-review")) return;
+        const { modal } = taoModalCV("", "cv-dot-modal-ai-review");
+        const content = document.createElement("div");
+        content.className = "cv-dot-review-content";
+        content.textContent = "Đang tải CV và kết quả phân tích...";
+        modal.appendChild(content);
+        hienThiChiTietUngVien(content, candidate, dot).catch(error => {
+          content.textContent = error.message || "Không tải được CV và kết quả đánh giá.";
+        });
+      };
+      details.classList.add("cv-dot-candidate-click-area");
+      details.setAttribute("role", "button");
+      details.setAttribute("tabindex", "0");
+      details.setAttribute("aria-label", `Mở CV và đánh giá của ${candidate.ho_ten || "ứng viên"}`);
+      details.addEventListener("click", moRecap);
+      details.addEventListener("keydown", event => {
+        if (event.target === details && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); moRecap(); }
+      });
+      tr.classList.add("cv-dot-row-clickable");
+      tr.setAttribute("tabindex", "0");
+      tr.setAttribute("aria-label", `Mở CV và đánh giá của ${candidate.ho_ten || "ứng viên"}`);
+      tr.addEventListener("click", event => {
+        if (event.target.closest("button, a, input, select, textarea, label, [role='button']")) return;
+        moRecap();
+      });
+      tr.addEventListener("keydown", event => {
+        if ((event.key === "Enter" || event.key === " ") && event.target === tr) { event.preventDefault(); moRecap(); }
       });
     });
     tableEl.appendChild(tbody); table.appendChild(tableEl); section.appendChild(table);
+    const applyCandidateFilters = () => {
+      const statusFilter = rankingControls.querySelector('[data-filter="status"]').value;
+      const sortMode = rankingControls.querySelector('[data-filter="sort"]').value;
+      const rows = [...tbody.querySelectorAll("tr")];
+      rows.sort((a, b) => sortMode === "score-asc" ? Number(a.dataset.score) - Number(b.dataset.score) : sortMode === "name-asc" ? a.dataset.name.localeCompare(b.dataset.name, "vi") : Number(b.dataset.score) - Number(a.dataset.score));
+      let visibleIndex = 0;
+      rows.forEach(row => { const visible = statusFilter === "all" || row.dataset.status === statusFilter; row.hidden = !visible; if (visible) visibleIndex += 1; row.cells[0].textContent = String(visible ? visibleIndex : "—"); tbody.appendChild(row); });
+    };
+    rankingControls.addEventListener("input", applyCandidateFilters);
+    rankingControls.addEventListener("change", applyCandidateFilters);
+    applyCandidateFilters();
   } catch (error) {
     section.replaceChildren(); section.appendChild(heading);
     const message = document.createElement("p"); message.textContent = error.message || "Không tải được danh sách CV"; section.appendChild(message);
@@ -1020,18 +1095,17 @@ async function taiCVTheoDot(dot) {
 async function hienThiChiTietUngVien(container, candidate, dot) {
   container.replaceChildren();
   const panel = document.createElement("div"); panel.className = "cv-dot-candidate-detail";
-  const info = document.createElement("section"); info.className = "cv-dot-detail-section";
-  const infoTitle = document.createElement("h4"); infoTitle.textContent = "Thông tin ứng viên / CV"; info.appendChild(infoTitle);
-  const infoGrid = document.createElement("div"); infoGrid.className = "cv-dot-detail-grid";
+  const info = document.createElement("section"); info.className = "cv-dot-detail-section cv-dot-candidate-info-strip";
+  const infoGrid = document.createElement("div"); infoGrid.className = "cv-dot-detail-grid"; info.appendChild(infoGrid); panel.appendChild(info);
   const addInfo = (label, value) => { if (value === null || value === undefined || String(value).trim() === "") return; const item = document.createElement("div"); item.className = "cv-dot-detail-item"; const key = document.createElement("strong"); key.textContent = label; const val = document.createElement("span"); val.textContent = String(value); item.append(key, val); infoGrid.appendChild(item); };
-  addInfo("Họ và tên", candidate.ho_ten); addInfo("Email", candidate.email); addInfo("Số điện thoại", candidate.so_dien_thoai || candidate.sdt); addInfo("Địa chỉ", candidate.dia_chi); addInfo("LinkedIn", candidate.linkedin); addInfo("GitHub", candidate.github); addInfo("Nguồn ứng viên", candidate.nguon); addInfo("Tệp CV", candidate.ten_file);
-  info.appendChild(infoGrid); panel.appendChild(info);
-  const analysisSection = document.createElement("section"); analysisSection.className = "cv-dot-detail-section";
-  const analysisTitle = document.createElement("h4"); analysisTitle.textContent = "Phân tích và đánh giá của AI"; analysisSection.appendChild(analysisTitle);
-  const analysisContent = document.createElement("div"); analysisContent.className = "cv-dot-ai-detail"; analysisContent.textContent = "Đang tải kết quả phân tích..."; analysisSection.appendChild(analysisContent); panel.appendChild(analysisSection);
-  const cvSection = document.createElement("section"); cvSection.className = "cv-dot-detail-section";
-  const cvTitle = document.createElement("h4"); cvTitle.textContent = "Nội dung CV"; cvSection.appendChild(cvTitle);
+  const cvSection = document.createElement("section"); cvSection.className = "cv-dot-detail-section cv-dot-cv-section";
+  const cvTitle = document.createElement("h4"); cvTitle.textContent = "CV ứng viên"; cvSection.appendChild(cvTitle);
   const cvContent = document.createElement("div"); cvContent.className = "cv-dot-inline-preview"; cvContent.textContent = "Đang tải tệp CV..."; cvSection.appendChild(cvContent); panel.appendChild(cvSection);
+  const analysisSection = document.createElement("section"); analysisSection.className = "cv-dot-detail-section cv-dot-ai-section";
+  const analysisHeader = document.createElement("div"); analysisHeader.className = "cv-dot-analysis-header";
+  const analysisTitle = document.createElement("h4"); analysisTitle.textContent = "Phân tích và đánh giá"; analysisHeader.appendChild(analysisTitle);
+  const editButton = document.createElement("button"); editButton.type = "button"; editButton.className = "cv-dot-edit-ai-button"; editButton.textContent = "Sửa"; analysisSection.appendChild(analysisHeader);
+  const analysisContent = document.createElement("div"); analysisContent.className = "cv-dot-ai-detail"; analysisContent.textContent = "Đang tải kết quả phân tích..."; analysisSection.appendChild(analysisContent); panel.appendChild(analysisSection);
   container.appendChild(panel);
   let detail = null;
   let detailLoadError = null;
@@ -1061,28 +1135,297 @@ async function hienThiChiTietUngVien(container, candidate, dot) {
       else analysis[key] = value;
     }
   }
-  const scoreRaw = detail?.phan_tich?.diem_phu_hop ?? detail?.phan_tich?.diem ?? candidate.diem_ai ?? candidate.diem_ghi_de ?? analysis?.score?.tong ?? analysis?.score?.total;
+  let scoreRaw = detail?.phan_tich?.diem_phu_hop ?? detail?.phan_tich?.diem ?? candidate.diem_ai ?? candidate.diem_ghi_de ?? analysis?.score?.tong ?? analysis?.score?.total;
   analysisContent.replaceChildren();
-  if (scoreRaw !== null && scoreRaw !== undefined && scoreRaw !== "" && Number.isFinite(Number(scoreRaw))) { const scoreBadge = document.createElement("div"); scoreBadge.className = "cv-dot-ai-score"; scoreBadge.textContent = `Điểm tương thích: ${Math.round(Number(scoreRaw) * 10) / 10}/100`; analysisContent.appendChild(scoreBadge); }
   const preferredLabels = {
-    summary: "Tóm tắt", tom_tat: "Tóm tắt", summary_candidate: "Tóm tắt ứng viên", strengths: "Điểm mạnh", diem_manh: "Điểm mạnh", weaknesses: "Điểm cần cải thiện", diem_yeu: "Điểm cần cải thiện", matched_skills: "Kỹ năng phù hợp", ky_nang_phu_hop: "Kỹ năng phù hợp", missing_skills: "Kỹ năng còn thiếu", ky_nang_thieu: "Kỹ năng còn thiếu", recommendation: "Đề xuất của AI", de_xuat: "Đề xuất của AI", explanation: "Giải thích điểm số", ly_do: "Lý do đánh giá", flags: "Lưu ý", canh_bao: "Lưu ý", experience: "Kinh nghiệm", kinh_nghiem: "Kinh nghiệm", education: "Học vấn", hoc_van: "Học vấn", skills: "Kỹ năng", ky_nang: "Kỹ năng"
+    summary: "Tóm tắt", tom_tat: "Tóm tắt", summary_candidate: "Tóm tắt ứng viên", strengths: "Điểm mạnh", diem_manh: "Điểm mạnh", weaknesses: "Điểm yếu", diem_yeu: "Điểm yếu", matched_skills: "Kỹ năng phù hợp", ky_nang_phu_hop: "Kỹ năng phù hợp", missing_skills: "Kỹ năng còn thiếu", ky_nang_thieu: "Kỹ năng còn thiếu", recommendation: "Đề xuất", de_xuat: "Đề xuất", explanation: "Giải thích điểm số", ly_do: "Lý do đánh giá", flags: "Lưu ý", canh_bao: "Lưu ý", experience: "Kinh nghiệm", kinh_nghiem: "Kinh nghiệm", education: "Học vấn", hoc_van: "Học vấn", skills: "Kỹ năng", ky_nang: "Kỹ năng", certifications: "Chứng chỉ", projects: "Dự án", languages: "Ngoại ngữ", achievements: "Thành tựu", work_experience: "Kinh nghiệm làm việc", education_level: "Trình độ học vấn", contact: "Thông tin liên hệ", overall: "Đánh giá tổng quan", criteria: "Tiêu chí đánh giá", match_reason: "Mức độ phù hợp", details: "Chi tiết đánh giá"
   };
-  const labels = value => preferredLabels[value] || String(value).replace(/[_-]+/g, " ").replace(/\b\w/g, char => char.toUpperCase());
-  const appendValue = (parent, key, value, depth = 0) => {
-    if (value === null || value === undefined || value === "" || key === "score" || key === "tong" || key === "total") return;
-    if (typeof value === "object") {
-      if (depth >= 2) { const item = document.createElement("p"); item.textContent = `${labels(key)}: ${Array.isArray(value) ? value.map(x => typeof x === "object" ? JSON.stringify(x) : String(x)).join(", ") : JSON.stringify(value)}`; parent.appendChild(item); return; }
-      const group = document.createElement("div"); group.className = "cv-dot-ai-group"; const heading = document.createElement("strong"); heading.textContent = labels(key); group.appendChild(heading);
-      const entries = Array.isArray(value) ? value.map((entry, index) => [String(index + 1), entry]) : Object.entries(value);
-      entries.forEach(([childKey, childValue]) => appendValue(group, childKey, childValue, depth + 1)); if (group.childElementCount > 1) parent.appendChild(group); return;
+  const normalizeKey = value => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[_-]+/g, " ").trim();
+  const extraLabels = { "chung chi": "Chứng chỉ", "hoc van": "Học vấn", "ung vien trung tiem nang": "", "can nhac": "Cân nhắc", "nen phong van": "Nên phỏng vấn", "chua phu hop": "Chưa phù hợp", "extraction": "", "score": "Điểm", "recommendation": "Đề xuất", "linkedin": "LinkedIn", "github": "GitHub", "portfolio": "Portfolio", "school": "Trường học", "major": "Ngành học", "degree": "Bằng cấp", "year": "Năm", "company": "Công ty", "position": "Chức danh", "duration": "Thời gian", "description": "Mô tả", "matched skills": "Kỹ năng khớp", "missing skills": "Kỹ năng còn thiếu", "soft skills": "Kỹ năng mềm", "gap": "Khoảng trống công việc", "job hopping": "Nhảy việc nhiều", "contact missing": "Thiếu thông tin liên hệ", "flags": "Cờ cảnh báo" };
+  const labels = value => preferredLabels[value] || extraLabels[normalizeKey(value)] || String(value).replace(/[_-]+/g, " ").replace(/\b\w/g, char => char.toUpperCase());
+  const hiddenKeys = new Set(["score", "tong", "total", "cv_id", "jd_id", "ung_vien_id", "ly_do_xac_nhan", "ly_do_xac_nhan_ai", "reason", "nha_cung_cap", "provider", "model", "cham_diem", "trich_xuat", "extraction", "metadata", "ung vien trung tiem nang"]);
+  const displayFieldOrder = ["diem manh", "strengths", "diem yeu", "weaknesses", "chung chi", "certifications", "kinh nghiem", "experience", "work experience", "ky nang", "skills", "matched skills", "missing skills", "ngoai ngu", "languages", "so nam kinh nghiem", "years of experience", "skill scores", "cham diem ky nang", "criteria scores", "tom tat", "summary"];
+  const displayRank = key => { const normalized = normalizeKey(key); const index = displayFieldOrder.indexOf(normalized); return index < 0 ? 99 : index; };
+  const displaySpecs = [
+    { label: "Họ tên", aliases: ["ho ten", "name", "full name", "candidate name"], fallback: profile.ho_ten },
+    { label: "SĐT", aliases: ["so dien thoai", "sdt", "phone", "phone number", "mobile"], fallback: profile.so_dien_thoai || profile.sdt },
+    { label: "Email", aliases: ["email", "email address"], fallback: profile.email },
+    { label: "Học vấn", aliases: ["hoc van", "education", "education history"] },
+    { label: "Điểm mạnh", aliases: ["diem manh", "strengths", "strength", "strength points"], fallback: storedAnalysis.diem_manh },
+    { label: "Điểm yếu", aliases: ["diem yeu", "diem can cai thien", "weaknesses", "weakness", "areas to improve"], fallback: storedAnalysis.diem_yeu },
+    { label: "Chứng chỉ", aliases: ["chung chi", "certifications", "certificates", "certificate"] },
+    { label: "Kỹ năng", aliases: ["ky nang", "skills", "skill"] },
+    { label: "Số năm kinh nghiệm", aliases: ["so nam kinh nghiem", "years of experience", "experience years", "years experience"] },
+    { label: "Kỹ năng còn thiếu", aliases: ["missing skills", "ky nang thieu", "ky nang con thieu"] },
+    { label: "Cờ cảnh báo", aliases: ["co canh bao", "flags", "warning flags", "warnings", "canh bao"], fallback: storedAnalysis.canh_bao },
+    { label: "Tóm tắt", aliases: ["tom tat", "summary", "summary candidate", "overall summary"], fallback: storedAnalysis.tom_tat },
+    { label: "Điểm thành phần", aliases: ["diem thanh phan", "component scores", "criteria scores", "skill scores"] },
+    { label: "Điểm tương thích", aliases: ["compatibility score", "diem tuong thich", "match score"], fallback: scoreRaw },
+    { label: "Đề xuất", aliases: ["de xuat", "recommendation"], fallback: analysis?.score?.de_xuat || storedAnalysis.de_xuat },
+    { label: "Ghi chú", aliases: ["ghi chu", "ly do", "reason", "explanation", "giai thich", "ly do danh gia"], fallback: storedAnalysis.ly_do_ghi_de || storedAnalysis.ly_do || storedAnalysis.giai_thich }
+  ];
+  const findAnalysisValue = aliases => {
+    let found;
+    let objectFallback;
+    const visit = obj => {
+      if (found !== undefined || !obj || typeof obj !== "object") return;
+      for (const [key, value] of Object.entries(obj)) {
+        if (aliases.includes(normalizeKey(key)) && value !== null && value !== undefined && value !== "") {
+          if (value && typeof value === "object" && !Array.isArray(value)) objectFallback ??= value;
+          else { found = value; return; }
+        }
+        if (value && typeof value === "object") visit(value);
+        if (found !== undefined) return;
+      }
+    };
+    visit(analysis);
+    return found !== undefined ? found : objectFallback;
+  };
+  const displayText = value => {
+    const flattenObject = (object, prefix = "") => Object.entries(object).flatMap(([key, child]) => {
+      const label = labels(key);
+      const nextPrefix = prefix ? `${prefix} / ${label}` : label;
+      if (child && typeof child === "object" && !Array.isArray(child)) return flattenObject(child, nextPrefix);
+      if (Array.isArray(child)) return child.map(item => `- ${nextPrefix}: ${item && typeof item === "object" ? displayText(item) : String(item ?? "")}`);
+      return [`- ${nextPrefix}: ${String(child ?? "")}`];
+    }).join("\n");
+    if (Array.isArray(value)) return value.map(item => item && typeof item === "object" ? displayText(item) : `- ${String(item ?? "")}`).join("\n");
+    if (value && typeof value === "object") return flattenObject(value);
+    if (typeof value === "string" && value.includes("\n")) return value.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => line.startsWith("-") ? line : `- ${line}`).join("\n");
+    const normalized = normalizeKey(value);
+    if (normalized === "can nhac") return "Cân nhắc";
+    if (normalized === "nen phong van") return "Nên phỏng vấn";
+    if (normalized === "chua phu hop") return "Chưa phù hợp";
+    return String(value ?? "");
+  };
+  const renderAnalysisDisplay = () => {
+    analysisContent.replaceChildren();
+    const componentSpecs = [
+      { key: "skill_score", label: "Kỹ năng", aliases: ["skill score", "skills score", "diem ky nang", "ky nang", "skill", "skills", "skill_score"] },
+      { key: "experience_score", label: "Kinh nghiệm", aliases: ["experience score", "diem kinh nghiem", "kinh nghiem", "experience", "experience_score"] },
+      { key: "education_score", label: "Học vấn", aliases: ["education score", "diem hoc van", "hoc van", "education", "education_score"] },
+      { key: "soft_skills_score", label: "Kĩ năng mềm", aliases: ["soft skills score", "diem ky nang mem", "ky nang mem", "soft skills", "soft_skills", "soft_skills_score"] }
+    ];
+    for (const spec of displaySpecs) {
+      let value = findAnalysisValue(spec.aliases);
+      if (value === undefined || value === null || value === "") value = spec.fallback;
+      if (spec.label === "Điểm thành phần") {
+        const scoreRoot = analysis?.score && typeof analysis.score === "object" ? analysis.score : {};
+        const componentRoot = findAnalysisValue(["component scores", "criteria scores", "skill scores", "diem thanh phan", "cham diem ky nang"]);
+        const rows = componentSpecs.map(part => {
+          let point = scoreRoot[part.key];
+          if (point === undefined) point = Object.entries(scoreRoot).find(([key]) => part.aliases.includes(normalizeKey(key)))?.[1];
+          if (point === undefined && componentRoot && typeof componentRoot === "object") point = Object.entries(componentRoot).find(([key]) => part.aliases.includes(normalizeKey(key)))?.[1];
+          return { label: part.label, value: point };
+        });
+        const item = document.createElement("div"); item.className = "cv-dot-ai-item";
+        const title = document.createElement("strong"); title.textContent = "Điểm thành phần:"; item.appendChild(title);
+        const text = document.createElement("div"); text.className = "cv-dot-ai-review-text";
+        text.textContent = rows.map(row => `- ${row.label}: ${row.value === undefined || row.value === null || row.value === "" ? "—" : `${displayText(row.value)}${String(row.value).includes("/") ? "" : "/100"}`}`).join("\n"); item.appendChild(text); analysisContent.appendChild(item); continue;
+      }
+      if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0) || (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0)) continue;
+      if (spec.label === "Cờ cảnh báo") {
+        const warningText = Array.isArray(value) ? value.map(item => typeof item === "object" ? JSON.stringify(item) : String(item)).join(" ") : typeof value === "object" ? JSON.stringify(value) : String(value);
+        if (!warningText.trim() || /một số trích dẫn|some citations|no specific flags|không có cảnh báo|không có cờ cảnh báo|không nhảy việc nhiều|không có dấu hiệu nhảy việc|no warning|no job hopping|job[_ ]hopping.{0,15}(false|no|none)/i.test(warningText)) continue;
+        if (/^(false|no|none|không|không có|n\/a|null|\[\])$/i.test(warningText.trim())) continue;
+      }
+      const item = document.createElement("div"); item.className = "cv-dot-ai-item";
+      const title = document.createElement("strong"); title.textContent = `${spec.label}:`;
+      const text = document.createElement("div"); text.className = "cv-dot-ai-review-text";
+      if (spec.label === "Điểm tương thích") {
+        text.textContent = `${Math.round(Number(value) * 10) / 10}/100`;
+      } else {
+        text.textContent = displayText(value);
+      }
+      item.append(title, text); analysisContent.appendChild(item);
     }
-    const item = document.createElement("div"); item.className = "cv-dot-ai-item"; const keyEl = document.createElement("strong"); keyEl.textContent = `${labels(key)}: `; const valueEl = document.createElement("span"); valueEl.textContent = String(value); item.append(keyEl, valueEl); parent.appendChild(item);
+    if (!analysisContent.childElementCount) { const noAnalysis = document.createElement("p"); noAnalysis.textContent = "Chưa có kết quả phân tích được lưu cho ứng viên này."; analysisContent.appendChild(noAnalysis); }
   };
-  if (analysis && typeof analysis === "object") {
-    const entries = Array.isArray(analysis) ? analysis.map((entry, index) => [String(index + 1), entry]) : Object.entries(analysis);
-    entries.forEach(([key, value]) => appendValue(analysisContent, key, value));
+  renderAnalysisDisplay();
+  const editForm = document.createElement("form"); editForm.className = "cv-dot-edit-ai-form"; editForm.hidden = true;
+  const editFields = [];
+  const fieldAliases = [
+    { key: "ho_ten", label: "Họ tên", type: "profile", aliases: ["ho ten", "name", "full name", "candidate name"] },
+    { key: "so_dien_thoai", label: "SĐT", type: "profile", aliases: ["so dien thoai", "sdt", "phone", "phone number", "mobile"] },
+    { key: "email", label: "Email", type: "profile", aliases: ["email", "email address"] },
+    { label: "Học vấn", aliases: ["hoc van", "education", "education history"] },
+    { label: "Điểm mạnh", aliases: ["diem manh", "strengths", "strength", "strength points"] },
+    { label: "Điểm yếu", aliases: ["diem yeu", "diem can cai thien", "weaknesses", "weakness", "areas to improve"] },
+    { label: "Chứng chỉ", aliases: ["chung chi", "certifications", "certificates", "certificate"] },
+    { label: "Kỹ năng", aliases: ["ky nang", "skills", "skill"] },
+    { label: "Số năm kinh nghiệm", aliases: ["so nam kinh nghiem", "years of experience", "experience years", "years experience"] },
+    { label: "Kỹ năng còn thiếu", aliases: ["missing skills", "ky nang thieu", "ky nang con thieu"] },
+    { label: "Cờ cảnh báo", aliases: ["co canh bao", "flags", "warning flags", "warnings", "canh bao"] },
+    { label: "Tóm tắt", aliases: ["tom tat", "summary", "summary candidate", "overall summary"] },
+    { label: "Điểm thành phần", aliases: ["cham diem ky nang", "skill scores", "skills score", "skill ratings", "diem ky nang", "criteria scores", "component scores", "diem thanh phan"] }
+  ];
+  const labelOverrides = { "chung chi": "Chứng chỉ", "hoc van": "Học vấn", "can nhac": "Cân nhắc", "nen phong van": "Nên phỏng vấn", "chua phu hop": "Chưa phù hợp", "diem manh": "Điểm mạnh", "diem yeu": "Điểm yếu", "ky nang": "Kỹ năng", "ngoai ngu": "Ngoại ngữ", "tom tat": "Tóm tắt", "so nam kinh nghiem": "Số năm kinh nghiệm", "de xuat": "Đề xuất", "ghi chu": "Ghi chú", "ly do": "Ghi chú" };
+  const editHiddenKeys = new Set(["nha cung cap", "provider", "model", "metadata", "extraction", "trich xuat", "ung vien trung tiem nang", "cv id", "jd id", "ung vien id", "ly do xac nhan", "ly do xac nhan ai"]);
+  const editLabels = value => labelOverrides[normalizeKey(value)] || String(value ?? "").replace(/[_-]+/g, " ").replace(/\b\w/g, char => char.toUpperCase());
+  const aliasFor = key => fieldAliases.find(item => item.aliases.includes(normalizeKey(key)));
+  const orderedRank = key => { const found = aliasFor(key); return found ? fieldAliases.indexOf(found) : 99; };
+  const profileInputs = {};
+  const profileRow = document.createElement("div"); profileRow.className = "cv-dot-edit-ai-profile-row";
+  for (const field of fieldAliases.filter(item => item.type === "profile")) {
+    const control = document.createElement("input"); control.type = field.key === "email" ? "email" : "text"; control.name = field.key;
+    const currentValue = field.key === "ho_ten" ? profile.ho_ten : field.key === "email" ? profile.email : (profile.so_dien_thoai || profile.sdt);
+    control.value = currentValue || ""; control.dataset.profileField = field.key;
+    const wrap = document.createElement("label"); wrap.className = "cv-dot-edit-ai-field";
+    const title = document.createElement("span"); title.textContent = `${field.label}:`; wrap.append(title, control); profileRow.appendChild(wrap); profileInputs[field.key] = control;
   }
-  if (!analysisContent.childElementCount) { const noAnalysis = document.createElement("p"); noAnalysis.textContent = "Chưa có kết quả phân tích AI được lưu cho ứng viên này."; analysisContent.appendChild(noAnalysis); }
+  editForm.appendChild(profileRow);
+  const candidatesToEdit = [];
+  const collectEditableFields = (value, path = []) => {
+    if (value === null || value === undefined || editHiddenKeys.has(normalizeKey(path[path.length - 1]))) return;
+    if (typeof value === "object" && !Array.isArray(value)) {
+      const entries = Object.entries(value).sort(([a], [b]) => orderedRank(a) - orderedRank(b));
+      entries.forEach(([key, child]) => collectEditableFields(child, [...path, key]));
+      return;
+    }
+    const key = normalizeKey(path[path.length - 1]);
+    if (["score", "tong", "total", "de xuat", "recommendation", "ghi chu", "ly do", "reason"].includes(key)) return;
+    const matched = aliasFor(path[path.length - 1]);
+    const normalizedPath = path.map(normalizeKey);
+    if (normalizedPath[0] === "score") return;
+    const parentIsScoredSkills = normalizedPath.some(part => part.includes("skill score") || part.includes("cham diem ky nang") || part.includes("diem ky nang") || part.includes("criteria score")) || (typeof value === "number" && normalizedPath.slice(0, -1).includes("score"));
+    const allowed = Boolean(matched && matched.type !== "profile") || parentIsScoredSkills;
+    if (!allowed) return;
+    const labelText = matched?.label || editLabels(path[path.length - 1]);
+    const isNumber = parentIsScoredSkills || (typeof value === "number" && /(^| )(score|diem|tong|total)( |$)/i.test(key)) || /(^| )(score|diem so|tong diem|years|so nam|year)( |$)/i.test(key) && !["diem manh", "diem yeu", "diem can cai thien"].includes(key);
+    candidatesToEdit.push({ path, value, labelText, isNumber, rank: matched ? fieldAliases.indexOf(matched) : 10 });
+  };
+  collectEditableFields(analysis);
+  const editDefaults = [
+    { key: "hoc_van", label: "Học vấn", aliases: ["hoc van", "education", "education history"] },
+    { key: "diem_manh", label: "Điểm mạnh", aliases: ["diem manh", "strengths", "strength", "strength points"] },
+    { key: "diem_yeu", label: "Điểm yếu", aliases: ["diem yeu", "diem can cai thien", "weaknesses", "weakness", "areas to improve"] },
+    { key: "chung_chi", label: "Chứng chỉ", aliases: ["chung chi", "certifications", "certificates", "certificate"] },
+    { key: "ky_nang", label: "Kỹ năng", aliases: ["ky nang", "skills", "skill"] },
+    { key: "so_nam_kinh_nghiem", label: "Số năm kinh nghiệm", aliases: ["so nam kinh nghiem", "years of experience", "experience years", "years experience"] },
+    { key: "ky_nang_thieu", label: "Kỹ năng còn thiếu", aliases: ["missing skills", "ky nang thieu", "ky nang con thieu"] },
+    { key: "canh_bao", label: "Cờ cảnh báo", aliases: ["co canh bao", "flags", "warning flags", "warnings", "canh bao"] },
+    { key: "tom_tat", label: "Tóm tắt", aliases: ["tom tat", "summary", "summary candidate", "overall summary"] }
+  ];
+  for (const field of editDefaults) {
+    let existingValue = findAnalysisValue(field.aliases);
+    if (field.label === "Cờ cảnh báo" && existingValue !== undefined) {
+      const warningText = typeof existingValue === "object" ? JSON.stringify(existingValue) : String(existingValue ?? "");
+      if (!warningText.trim() || /một số trích dẫn|some citations|no specific flags|không có cảnh báo|không có cờ cảnh báo|không nhảy việc nhiều|không có dấu hiệu nhảy việc|no warning|no job hopping|job[_ ]hopping.{0,15}(false|no|none)/i.test(warningText) || /^(false|no|none|không|không có|n\/a|null|\[\])$/i.test(warningText.trim())) existingValue = "";
+    }
+    if (existingValue === undefined || existingValue === "" || (existingValue && typeof existingValue === "object" && !Array.isArray(existingValue))) {
+      const initialValue = existingValue && typeof existingValue === "object" ? displayText(existingValue) : (existingValue ?? "");
+      candidatesToEdit.push({ path: [field.key], value: initialValue, labelText: field.label, isNumber: false, rank: fieldAliases.findIndex(item => item.label === field.label) });
+    }
+  }
+  candidatesToEdit.sort((a, b) => a.rank - b.rank);
+  const seenFieldNames = new Set();
+  for (const field of candidatesToEdit) {
+    const fieldKey = normalizeKey(field.path[field.path.length - 1]);
+    if (seenFieldNames.has(fieldKey) && field.rank < 99) continue;
+    seenFieldNames.add(fieldKey);
+    const wrap = document.createElement("label"); wrap.className = field.isNumber ? "cv-dot-edit-ai-field cv-dot-edit-ai-score-field" : "cv-dot-edit-ai-field";
+    const title = document.createElement("span"); title.textContent = `${field.labelText}:`;
+    const control = document.createElement(field.isNumber ? "input" : "textarea");
+    if (field.isNumber) { control.type = "number"; control.min = "0"; control.max = "100"; control.step = "0.1"; control.className = "cv-dot-edit-ai-score-input"; }
+    else control.rows = Array.isArray(field.value) || String(field.value).length > 110 ? 3 : 2;
+    control.value = Array.isArray(field.value) ? field.value.map(item => typeof item === "object" ? displayText(item) : String(item)).join("\n") : String(field.value ?? "");
+    control.dataset.valueType = Array.isArray(field.value) ? "array" : typeof field.value; control.dataset.path = JSON.stringify(field.path);
+    wrap.append(title, control); editForm.appendChild(wrap); editFields.push(control);
+  }
+  const scoreRootForEdit = analysis?.score && typeof analysis.score === "object" ? analysis.score : {};
+  const componentRootForEdit = findAnalysisValue(["component scores", "criteria scores", "skill scores", "diem thanh phan", "cham diem ky nang"]);
+  const componentEditSpecs = [
+    { key: "skill_score", label: "Kỹ năng", aliases: ["skill score", "skills score", "diem ky nang", "ky nang", "skill", "skills", "skill_score"] },
+    { key: "experience_score", label: "Kinh nghiệm", aliases: ["experience score", "diem kinh nghiem", "kinh nghiem", "experience", "experience_score"] },
+    { key: "education_score", label: "Học vấn", aliases: ["education score", "diem hoc van", "hoc van", "education", "education_score"] },
+    { key: "soft_skills_score", label: "Kĩ năng mềm", aliases: ["soft skills score", "diem ky nang mem", "ky nang mem", "soft skills", "soft_skills", "soft_skills_score"] }
+  ];
+  const componentEditGroup = document.createElement("div"); componentEditGroup.className = "cv-dot-edit-ai-component-group";
+  const componentTitle = document.createElement("strong"); componentTitle.textContent = "Điểm thành phần:"; componentEditGroup.appendChild(componentTitle);
+  for (const part of componentEditSpecs) {
+    let value = scoreRootForEdit[part.key];
+    if (value === undefined) value = Object.entries(scoreRootForEdit).find(([key]) => part.aliases.includes(normalizeKey(key)))?.[1];
+    if (value === undefined && componentRootForEdit && typeof componentRootForEdit === "object") value = Object.entries(componentRootForEdit).find(([key]) => part.aliases.includes(normalizeKey(key)))?.[1];
+    const row = document.createElement("label"); row.className = "cv-dot-edit-ai-component-row";
+    const title = document.createElement("span"); title.textContent = `- ${part.label}:`;
+    const control = document.createElement("input"); control.type = "number"; control.min = "0"; control.max = "100"; control.step = "0.1"; control.className = "cv-dot-edit-ai-score-input"; control.value = value === undefined || value === null ? "" : String(value).replace(/\/100$/, ""); control.placeholder = "0–100";
+    control.dataset.valueType = "number"; control.dataset.path = JSON.stringify(["score", part.key]);
+    row.append(title, control); componentEditGroup.appendChild(row); editFields.push(control);
+  }
+  editForm.appendChild(componentEditGroup);
+  const scoreInput = document.createElement("input"); scoreInput.type = "number"; scoreInput.name = "diem"; scoreInput.min = "0"; scoreInput.max = "100"; scoreInput.step = "0.1"; scoreInput.required = true; scoreInput.value = Number.isFinite(Number(scoreRaw)) ? String(Number(scoreRaw)) : String(Number(analysis?.score?.tong) || 0);
+  const recommendation = document.createElement("select"); recommendation.name = "de_xuat"; recommendation.innerHTML = '<option value="nen_phong_van">Nên phỏng vấn</option><option value="can_nhac">Cân nhắc</option><option value="chua_phu_hop">Chưa phù hợp</option>';
+  const scoreForRecommendation = Number(scoreInput.value);
+  recommendation.value = Number.isFinite(scoreForRecommendation)
+    ? (scoreForRecommendation <= 70 ? "chua_phu_hop" : scoreForRecommendation < 85 ? "can_nhac" : "nen_phong_van")
+    : "can_nhac";
+  const reasonInput = document.createElement("textarea"); reasonInput.name = "ly_do"; reasonInput.rows = 2; reasonInput.placeholder = "Nhập lý do đánh giá của người phụ trách"; reasonInput.value = storedAnalysis.ly_do_ghi_de || storedAnalysis.ly_do || storedAnalysis.giai_thich || findAnalysisValue(["ghi chu", "ly do", "reason", "explanation", "giai thich"]) || "";
+  const createEditField = (label, control) => { const wrap = document.createElement("label"); wrap.className = "cv-dot-edit-ai-field"; const title = document.createElement("span"); title.textContent = `${label}:`; wrap.append(title, control); return wrap; };
+  scoreInput.addEventListener("input", () => {
+    const value = Number(scoreInput.value);
+    if (!Number.isFinite(value)) return;
+    recommendation.value = value <= 70 ? "chua_phu_hop" : value < 85 ? "can_nhac" : "nen_phong_van";
+  });
+  const scoreRecommendationRow = document.createElement("div"); scoreRecommendationRow.className = "cv-dot-edit-ai-meta-row";
+  scoreRecommendationRow.append(createEditField("Điểm tương thích", scoreInput), createEditField("Đề xuất", recommendation));
+  editForm.appendChild(scoreRecommendationRow); editForm.appendChild(createEditField("Ghi chú", reasonInput));
+  const editActions = document.createElement("div"); editActions.className = "cv-dot-edit-ai-actions";
+  const cancelEdit = document.createElement("button"); cancelEdit.type = "button"; cancelEdit.textContent = "Hủy"; cancelEdit.className = "cv-dot-edit-cancel";
+  const saveEdit = document.createElement("button"); saveEdit.type = "submit"; saveEdit.textContent = "Lưu toàn bộ nội dung"; saveEdit.className = "cv-dot-edit-save";
+  editActions.append(cancelEdit, saveEdit); editForm.appendChild(editActions); analysisSection.insertBefore(editForm, analysisContent);
+  editButton.addEventListener("click", () => { editForm.hidden = !editForm.hidden; analysisContent.hidden = !editForm.hidden; editButton.textContent = editForm.hidden ? "Sửa" : "Hủy sửa"; if (!editForm.hidden) editFields[0]?.focus(); });
+  cancelEdit.addEventListener("click", () => { editForm.hidden = true; analysisContent.hidden = false; editButton.textContent = "Sửa"; });
+  editForm.addEventListener("submit", async event => {
+    event.preventDefault(); saveEdit.disabled = true; saveEdit.textContent = "Đang lưu...";
+    try {
+      const editedAnalysis = JSON.parse(JSON.stringify(analysis || {}));
+      for (const control of editFields) {
+        const path = JSON.parse(control.dataset.path);
+        let target = editedAnalysis;
+        for (let index = 0; index < path.length - 1; index += 1) {
+          const part = path[index];
+          if (target[part] === null || typeof target[part] !== "object") target[part] = typeof path[index + 1] === "number" ? [] : {};
+          target = target[part];
+        }
+        const key = path[path.length - 1];
+        let value = control.value.trim();
+        if (control.dataset.valueType === "array") value = value ? value.split(/\r?\n/).map(item => item.trim()).filter(Boolean).map(item => { try { return JSON.parse(item); } catch { return item; } }) : [];
+        else if (control.dataset.valueType === "number" && value !== "") value = Number(value);
+        else if (control.dataset.valueType === "boolean") value = value.toLowerCase() === "true" || value.toLowerCase() === "có";
+        target[key] = value;
+      }
+      const savedNote = reasonInput.value.trim();
+      const noteAliases = new Set(["ghi chu", "ly do", "reason", "explanation", "giai thich", "ly do danh gia", "ly do ghi de"]);
+      const updateExistingNotes = value => {
+        if (!value || typeof value !== "object") return;
+        for (const [key, child] of Object.entries(value)) {
+          if (noteAliases.has(normalizeKey(key))) value[key] = savedNote;
+          else if (child && typeof child === "object") updateExistingNotes(child);
+        }
+      };
+      updateExistingNotes(editedAnalysis);
+      editedAnalysis.ghi_chu = savedNote;
+      editedAnalysis.score = editedAnalysis.score && typeof editedAnalysis.score === "object" ? editedAnalysis.score : {};
+      editedAnalysis.score.tong = Number(scoreInput.value);
+      editedAnalysis.score.de_xuat = recommendation.value;
+      const profilePayload = { ho_ten: profileInputs.ho_ten.value.trim(), email: profileInputs.email.value.trim(), so_dien_thoai: profileInputs.so_dien_thoai.value.trim() };
+      if (!profilePayload.ho_ten) throw new Error("Họ và tên không được để trống.");
+      await api(`${API}/ung-vien/${candidate.id}`, { method: "PUT", body: JSON.stringify(profilePayload) });
+      const payload = { du_lieu_phan_tich: editedAnalysis, diem: Number(scoreInput.value), de_xuat: recommendation.value, ly_do: reasonInput.value.trim() || "Đã chỉnh sửa nội dung đánh giá." };
+      await api(`${API}/cv/review/${candidate.id}/override`, { method: "PUT", body: JSON.stringify(payload) });
+      analysis = editedAnalysis;
+      scoreRaw = Number(scoreInput.value);
+      profile.ho_ten = profilePayload.ho_ten; profile.email = profilePayload.email; profile.so_dien_thoai = profilePayload.so_dien_thoai; profile.sdt = profilePayload.so_dien_thoai;
+      storedAnalysis.de_xuat = recommendation.value;
+      storedAnalysis.ly_do_ghi_de = reasonInput.value.trim();
+      storedAnalysis.ly_do = reasonInput.value.trim();
+      infoGrid.replaceChildren();
+      addInfo("Họ và tên", profile.ho_ten); addInfo("Email", profile.email); addInfo("Số điện thoại", profile.so_dien_thoai); addInfo("Địa chỉ", profile.dia_chi); addInfo("LinkedIn", profile.linkedin); addInfo("GitHub", profile.github); addInfo("Nguồn ứng viên", profile.nguon); addInfo("Tệp CV", cv?.ten_file || candidate.ten_file); if (cv?.loai_file) addInfo("Định dạng", cv.loai_file); if (cv?.ngay_tai_len) addInfo("Ngày tải lên", new Date(cv.ngay_tai_len).toLocaleString("vi-VN"));
+      renderAnalysisDisplay();
+      editForm.hidden = true; analysisContent.hidden = false; editButton.textContent = "Sửa"; hienThongBaoCVDot("Đã lưu toàn bộ nội dung đánh giá ứng viên.", true);
+    } catch (error) { alert(error.message || "Không lưu được đánh giá."); }
+    finally { saveEdit.disabled = false; saveEdit.textContent = "Lưu toàn bộ nội dung"; }
+  });
   cvContent.replaceChildren();
   const cvId = cv?.id || candidate.cv_id;
   if (cvId) {
@@ -1092,15 +1435,25 @@ async function hienThiChiTietUngVien(container, candidate, dot) {
       let blob = await response.blob(); const disposition = response.headers.get("content-disposition") || "";
       const fileName = cv?.ten_file || candidate.ten_file || "";
       const isPdf = blob.type === "application/pdf" || /\.pdf(?:[";]|$)/i.test(disposition) || /\.pdf$/i.test(fileName);
+      const imageExt = (fileName.match(/\.(jpe?g|png|webp|gif)$/i) || [])[1]?.toLowerCase();
+      const isImage = /^image\/(jpeg|png|webp|gif)$/i.test(blob.type) || Boolean(imageExt);
       if (isPdf && blob.type !== "application/pdf") blob = new Blob([blob], { type: "application/pdf" });
-      if (isPdf) {
-        const objectUrl = URL.createObjectURL(blob); const frame = document.createElement("iframe"); frame.className = "cv-dot-inline-frame"; frame.title = `CV của ${profile.ho_ten || "ứng viên"}`; frame.src = objectUrl; cvContent.appendChild(frame);
-        const revoke = () => URL.revokeObjectURL(objectUrl); frame.addEventListener("load", () => { frame.dataset.loaded = "true"; });
-        const download = document.createElement("a"); download.href = objectUrl; download.download = cv?.ten_file || candidate.ten_file || "CV.pdf"; download.textContent = "Tải CV về máy"; download.className = "cv-dot-download-link"; cvContent.appendChild(download);
-        const observer = new MutationObserver(() => { if (!frame.isConnected) { revoke(); observer.disconnect(); } }); observer.observe(container, { childList: true, subtree: true });
-      } else {
-        const objectUrl = URL.createObjectURL(blob); const download = document.createElement("a"); download.href = objectUrl; download.download = cv?.ten_file || candidate.ten_file || "CV"; download.textContent = `Tải CV xuống (${cv?.ten_file || candidate.ten_file || "tệp CV"})`; download.className = "cv-dot-download-link"; cvContent.appendChild(download);
+      if (isImage && !/^image\//i.test(blob.type)) {
+        const imageMime = imageExt === "jpg" || imageExt === "jpeg" ? "image/jpeg" : `image/${imageExt || "png"}`;
+        blob = new Blob([blob], { type: imageMime });
       }
+      const objectUrl = URL.createObjectURL(blob);
+      if (isPdf) {
+        const frame = document.createElement("iframe"); frame.className = "cv-dot-inline-frame"; frame.title = `CV của ${profile.ho_ten || "ứng viên"}`; frame.src = objectUrl;
+        taoCongCuPhongToCV(cvContent, frame, "pdf");
+        frame.addEventListener("load", () => { frame.dataset.loaded = "true"; });
+      } else if (isImage) {
+        const image = document.createElement("img"); image.className = "cv-dot-inline-image"; image.alt = `CV của ${profile.ho_ten || "ứng viên"}`; image.src = objectUrl;
+        taoCongCuPhongToCV(cvContent, image, "image");
+      }
+      const revoke = () => URL.revokeObjectURL(objectUrl);
+      const download = document.createElement("a"); download.href = objectUrl; download.download = fileName || "CV"; download.textContent = "Tải CV về máy"; download.className = "cv-dot-download-link"; cvContent.appendChild(download);
+      const observer = new MutationObserver(() => { if (!cvContent.isConnected) { revoke(); observer.disconnect(); } }); observer.observe(container, { childList: true, subtree: true });
     } catch (error) { cvContent.textContent = error.message || "Không thể hiển thị tệp CV."; }
   } else cvContent.textContent = "Ứng viên chưa có tệp CV đính kèm.";
 }
@@ -1122,7 +1475,7 @@ function taoModalCV(title, contentClass = "") {
   modal.className = `cv-dot-modal ${contentClass}`.trim();
   const header = document.createElement("div");
   header.className = "cv-dot-modal-header";
-  const heading = document.createElement("strong"); heading.textContent = title;
+  const heading = document.createElement("strong"); heading.textContent = title; if (!title) heading.hidden = true;
   const close = document.createElement("button"); close.type = "button"; close.className = "cv-dot-modal-close"; close.textContent = "×"; close.setAttribute("aria-label", "Đóng");
   const dong = () => { overlay.remove(); document.removeEventListener("keydown", esc); };
   const esc = (event) => { if (event.key === "Escape") dong(); };
@@ -1131,6 +1484,64 @@ function taoModalCV(title, contentClass = "") {
   header.append(heading, close); modal.appendChild(header); overlay.appendChild(modal); document.body.appendChild(overlay);
   document.addEventListener("keydown", esc);
   return { overlay, modal, dong };
+}
+
+function taoCongCuPhongToCV(parent, target, kind) {
+  const toolbar = document.createElement("div");
+  toolbar.className = "cv-zoom-toolbar";
+  const minus = document.createElement("button"); minus.type = "button"; minus.textContent = "−"; minus.title = "Thu nhỏ"; minus.setAttribute("aria-label", "Thu nhỏ CV");
+  const percent = document.createElement("span"); percent.className = "cv-zoom-percent"; percent.textContent = "100%";
+  const plus = document.createElement("button"); plus.type = "button"; plus.textContent = "+"; plus.title = "Phóng to"; plus.setAttribute("aria-label", "Phóng to CV");
+  const reset = document.createElement("button"); reset.type = "button"; reset.className = "cv-zoom-reset"; reset.textContent = "↶"; reset.title = "Trở về 100%"; reset.setAttribute("aria-label", "Trở về kích thước 100%");
+  toolbar.append(minus, percent, plus, reset);
+  const viewport = document.createElement("div"); viewport.className = "cv-zoom-viewport";
+  const stage = document.createElement("div"); stage.className = "cv-zoom-stage";
+  const originalParent = target.parentNode;
+  if (originalParent) originalParent.removeChild(target);
+  stage.appendChild(target); viewport.appendChild(stage); parent.append(toolbar, viewport);
+  target.classList.add("cv-zoom-target");
+  if (kind === "pdf") target.style.pointerEvents = "none";
+  let zoom = 1, baseWidth = 0, baseHeight = 0;
+  const measure = () => {
+    baseWidth = Math.max(320, viewport.clientWidth - 2);
+    if (kind === "image") {
+      const ratio = target.naturalWidth && target.naturalHeight ? target.naturalHeight / target.naturalWidth : 1.414;
+      baseHeight = Math.max(200, baseWidth * ratio);
+    } else {
+      baseHeight = Math.max(450, Math.min(window.innerHeight * 0.68, 760));
+    }
+    target.style.width = `${baseWidth}px`; target.style.height = `${baseHeight}px`;
+    render();
+  };
+  const render = () => {
+    stage.style.width = `${baseWidth * zoom}px`; stage.style.height = `${baseHeight * zoom}px`;
+    target.style.transform = `scale(${zoom})`;
+    percent.textContent = `${Math.round(zoom * 100)}%`;
+    minus.disabled = zoom <= 0.5; plus.disabled = zoom >= 3;
+  };
+  const setZoom = (next, resetPosition = false) => {
+    zoom = Math.max(0.5, Math.min(3, Math.round(next * 10) / 10)); render();
+    if (resetPosition) { viewport.scrollLeft = 0; viewport.scrollTop = 0; }
+  };
+  minus.addEventListener("click", () => setZoom(zoom - 0.1));
+  plus.addEventListener("click", () => setZoom(zoom + 0.1));
+  reset.addEventListener("click", () => setZoom(1, true));
+  let dragging = false, startX = 0, startY = 0, scrollX = 0, scrollY = 0;
+  viewport.addEventListener("pointerdown", event => {
+    if (event.button !== 0) return;
+    dragging = true; startX = event.clientX; startY = event.clientY; scrollX = viewport.scrollLeft; scrollY = viewport.scrollTop;
+    viewport.classList.add("is-dragging"); viewport.setPointerCapture?.(event.pointerId); event.preventDefault();
+  });
+  viewport.addEventListener("pointermove", event => {
+    if (!dragging) return;
+    viewport.scrollLeft = scrollX - (event.clientX - startX); viewport.scrollTop = scrollY - (event.clientY - startY);
+  });
+  const stopDrag = () => { dragging = false; viewport.classList.remove("is-dragging"); };
+  viewport.addEventListener("pointerup", stopDrag); viewport.addEventListener("pointercancel", stopDrag); viewport.addEventListener("lostpointercapture", stopDrag);
+  requestAnimationFrame(measure);
+  if (kind === "image") target.addEventListener("load", measure, { once: true });
+  if (typeof ResizeObserver !== "undefined") { const observer = new ResizeObserver(measure); observer.observe(viewport); }
+  return { viewport, setZoom };
 }
 
 async function moCVCoXacThuc(url) {
@@ -1146,14 +1557,28 @@ async function moCVCoXacThuc(url) {
     }
     let blob = await response.blob();
     const disposition = response.headers.get("content-disposition") || "";
-    const pdfByName = /\.pdf(?:[";]|$)/i.test(disposition);
+    const nameMatch = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+    const fileName = decodeURIComponent((nameMatch?.[1] || "").replace(/^"|"$/g, ""));
+    const pdfByName = blob.type === "application/pdf" || /\.pdf(?:[";]|$)/i.test(disposition) || /\.pdf$/i.test(fileName);
+    const imageExt = (fileName.match(/\.(jpe?g|png|webp|gif)$/i) || [])[1]?.toLowerCase();
+    const isImage = /^image\/(jpeg|png|webp|gif)$/i.test(blob.type) || Boolean(imageExt);
     if (pdfByName && blob.type !== "application/pdf") blob = new Blob([blob], { type: "application/pdf" });
+    if (isImage && !/^image\//i.test(blob.type)) blob = new Blob([blob], { type: imageExt === "jpg" || imageExt === "jpeg" ? "image/jpeg" : `image/${imageExt || "png"}` });
     const objectUrl = URL.createObjectURL(blob);
-    frame.src = objectUrl; frame.hidden = false; frame.dataset.objectUrl = objectUrl;
+    if (isImage) {
+      frame.remove();
+      const image = document.createElement("img"); image.className = "cv-preview-image"; image.alt = "Ảnh CV"; image.src = objectUrl;
+      taoCongCuPhongToCV(modal, image, "image");
+    } else if (pdfByName) {
+      frame.src = objectUrl; frame.hidden = false; frame.dataset.objectUrl = objectUrl;
+      taoCongCuPhongToCV(modal, frame, "pdf");
+    } else {
+      frame.remove();
+    }
     modal.querySelector(".cv-dot-modal-close").addEventListener("click", () => URL.revokeObjectURL(objectUrl), { once: true });
-    status.textContent = blob.type === "application/pdf" ? "Bản xem trước PDF" : "Định dạng này có thể không xem trực tiếp được trong trình duyệt.";
-    if (blob.type !== "application/pdf") {
-      const download = document.createElement("a"); download.href = objectUrl; download.download = "CV"; download.textContent = "Tải CV về máy"; download.className = "cv-preview-download"; status.append(" ", download);
+    status.textContent = pdfByName ? "Bản xem trước PDF" : isImage ? "Bản xem trước ảnh CV" : "Định dạng này không xem trực tiếp được trong trình duyệt.";
+    if (!pdfByName && !isImage) {
+      const download = document.createElement("a"); download.href = objectUrl; download.download = fileName || "CV"; download.textContent = "Tải CV về máy"; download.className = "cv-preview-download"; status.append(" ", download);
     }
   } catch (error) { status.textContent = error.message || "Không mở được CV."; }
 }
@@ -1195,9 +1620,9 @@ async function moFormHenPhongVan(candidate, dot, interviewId = null) {
     <p class="cv-dot-modal-subtitle"></p>
     <label><span class="cv-dot-label-title">Thời gian phỏng vấn <b>*</b></span><div class="cv-dot-datetime-fields"><input name="ngay_phong_van" type="date" aria-label="Ngày phỏng vấn" required><input name="gio_phong_van" type="time" aria-label="Giờ phỏng vấn" required></div><small>Chọn ngày trên lịch và chọn giờ phỏng vấn.</small></label>
     <label><span class="cv-dot-label-title">Vòng phỏng vấn <b>*</b></span><select name="vong_phong_van" required><option value="Sơ loại">Sơ loại</option><option value="Chuyên môn">Chuyên môn</option><option value="Vòng cuối">Vòng cuối</option><option value="Khác">Khác</option></select></label>
-    <label>Người phỏng vấn <span>*</span><select name="nguoi_phong_van_ids" multiple size="4" required><option value="">Đang tải danh sách...</option></select><small>Giữ Ctrl (Windows) hoặc Command (Mac) để chọn nhiều người.</small></label>
-    <label>Hình thức <span>*</span><select name="hinh_thuc"><option value="online">Trực tuyến (Online)</option><option value="offline">Trực tiếp (Offline)</option></select></label>
-    <label>Địa điểm / Link họp<input name="dia_diem" maxlength="500" placeholder="Ví dụ: Google Meet hoặc Phòng họp 02"></label>
+    <label><span class="cv-dot-label-title">Người phỏng vấn <b>*</b></span><select name="nguoi_phong_van_ids" multiple size="4" required><option value="">Đang tải danh sách...</option></select><small>Giữ Ctrl (Windows) hoặc Command (Mac) để chọn nhiều người.</small></label>
+    <label><span class="cv-dot-label-title">Hình thức <b>*</b></span><select name="hinh_thuc" required><option value="online">Trực tuyến (Online)</option><option value="offline">Trực tiếp (Offline)</option></select></label>
+    <label>Địa điểm / Link phỏng vấn<input name="dia_diem" maxlength="500" placeholder="Ví dụ: Google Meet hoặc Phòng phỏng vấn 02"></label>
     <label>Ghi chú<textarea name="ghi_chu" rows="3" maxlength="5000" placeholder="Nội dung cần chuẩn bị..."></textarea></label>
     <p class="cv-dot-interview-error" role="alert"></p>
     <div class="cv-dot-modal-actions"><button type="button" class="cv-dot-cancel">Đóng</button><button type="submit" class="cv-dot-save">${dangSuaLich ? "Lưu thay đổi lịch" : "Lưu lịch phỏng vấn"}</button></div>`;
@@ -1207,8 +1632,16 @@ async function moFormHenPhongVan(candidate, dot, interviewId = null) {
   const dateInput = form.elements.ngay_phong_van;
   const timeInput = form.elements.gio_phong_van;
   const now = new Date(Date.now() + 60 * 60 * 1000); now.setMinutes(Math.ceil(now.getMinutes() / 15) * 15, 0, 0);
-  dateInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-  timeInput.value = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+  if (dangSuaLich) {
+    // Khi đổi lịch, chờ tải lịch hiện tại để không hiện nhầm ngày giờ mặc định.
+    dateInput.value = "";
+    timeInput.value = "";
+    dateInput.disabled = true;
+    timeInput.disabled = true;
+  } else {
+    dateInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+    timeInput.value = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+  }
   const interviewerSelect = form.elements.nguoi_phong_van_ids;
   try {
     const result = await api(`${API}/phong-van/nguoi-phong-van`);
@@ -1226,12 +1659,25 @@ async function moFormHenPhongVan(candidate, dot, interviewId = null) {
   }
   if (dangSuaLich) {
     try {
-      const lich = await api(`${API}/phong-van/${interviewId}`);
-      const rawDate = String(lich.thoi_gian || lich.thoi_gian_phong_van || lich.bat_dau || "");
-      const dateMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+      const response = await api(`${API}/phong-van/${interviewId}`);
+      const lich = response?.data || response?.lich || response;
+      const rawDate = String(lich.thoi_gian || lich.thoi_gian_phong_van || lich.bat_dau || lich.ngay_phong_van || "").trim();
+      let dateMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/);
+      // Dữ liệu có múi giờ phải hiển thị cùng múi giờ Việt Nam như cột Ngày hẹn PV.
+      if (dateMatch && /(?:Z|[+-]\d{2}:?\d{2})$/i.test(rawDate)) {
+        const dateObj = new Date(rawDate);
+        if (!Number.isNaN(dateObj.getTime())) {
+          const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(dateObj).reduce((out, part) => (out[part.type] = part.value, out), {});
+          dateMatch = [rawDate, parts.year, parts.month, parts.day, parts.hour, parts.minute];
+        }
+      }
       if (dateMatch) {
         dateInput.value = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
         timeInput.value = `${dateMatch[4]}:${dateMatch[5]}`;
+        dateInput.disabled = false;
+        timeInput.disabled = false;
+      } else {
+        throw new Error("Không đọc được ngày giờ của lịch hiện tại. Hãy tải lại lịch trước khi đổi hẹn.");
       }
       form.elements.vong_phong_van.value = lich.vong_phong_van || "Sơ loại";
       form.elements.hinh_thuc.value = lich.hinh_thuc || "online";
@@ -1707,9 +2153,21 @@ async function luuTuyenDung(event) {
 
   try {
     let rubric = null;
-    let jdTieuDe = "";
+    const jdFields = () => ({
+      dot_tuyen_id: Number(dangSua?.dot?.id || dotTuyenJDId),
+      bo_phan: $("jdSuaBoPhan").value.trim(),
+      dia_diem: $("jdSuaDiaDiem").value.trim(),
+      loai_hinh: $("jdSuaLoaiHinh").value,
+      muc_luong: $("jdSuaMucLuong").value.trim(),
+      ky_nang: $("jdSuaKyNang").value.trim(),
+      tieu_de: dangSua?.jd?.tieu_de || $("ten").value.trim() || dangSua?.dot?.ten_dot || dangSua?.dot?.ten || "Vị trí tuyển dụng",
+      mo_ta: $("jdSuaMoTa").value.trim(),
+      yeu_cau: $("jdSuaYeuCau").value.trim(),
+      quyen_loi: $("jdSuaQuyenLoi").value.trim(),
+      tieu_chi: layDanhSachTieuChiSua(),
+    });
+    const coNoiDungJD = () => ["jdSuaBoPhan", "jdSuaDiaDiem", "jdSuaLoaiHinh", "jdSuaMucLuong", "jdSuaKyNang", "jdSuaMoTa", "jdSuaYeuCau", "jdSuaQuyenLoi"].some(id => $(id).value.trim());
     if (dangSua?.jd?.id) {
-      jdTieuDe = dangSua.jd.tieu_de || "";
       rubric = layDanhSachTieuChiSua();
       if (!rubric.length || capNhatTongTrongSoSua() !== 100) {
         throw new Error("Bộ tiêu chí cần có ít nhất một mục và tổng trọng số bằng 100%.");
@@ -1718,30 +2176,21 @@ async function luuTuyenDung(event) {
 
     const dotId = await luuDotTuyen();
     if (!dotId) return;
-    if (dangSua?.jd?.id) {
+    if (dangSua?.jd?.id || (dangSua?.dot?.id && coNoiDungJD())) {
       try {
-        await api(`${API}/jd/${dangSua.jd.id}`, {
-          method: "PUT",
-          body: JSON.stringify({
-            dot_tuyen_id: dotId,
-            bo_phan: $("jdSuaBoPhan").value.trim(),
-            dia_diem: $("jdSuaDiaDiem").value.trim(),
-            loai_hinh: $("jdSuaLoaiHinh").value,
-            muc_luong: $("jdSuaMucLuong").value.trim(),
-            ky_nang: $("jdSuaKyNang").value.trim(),
-            tieu_de: jdTieuDe,
-            mo_ta: $("jdSuaMoTa").value.trim(),
-            yeu_cau: $("jdSuaYeuCau").value.trim(),
-            quyen_loi: $("jdSuaQuyenLoi").value.trim(),
-            tieu_chi: rubric,
-          }),
-        });
+        const payload = jdFields();
+        payload.dot_tuyen_id = Number(dotId);
+        if (dangSua?.jd?.id) {
+          await api(`${API}/jd/${dangSua.jd.id}`, { method: "PUT", body: JSON.stringify(payload) });
+        } else {
+          await api(`${API}/jd`, { method: "POST", body: JSON.stringify(payload) });
+        }
       } catch (error) {
         throw new Error(`Đợt tuyển dụng đã lưu nhưng bản mô tả chưa cập nhật được: ${error.message}`);
       }
     }
     $("thongBao").className = "thong-bao hien thanh-cong";
-    $("thongBao").textContent = dangSua?.jd?.id
+    $("thongBao").textContent = (dangSua?.jd?.id || (dangSua?.dot?.id && coNoiDungJD()))
       ? "Đã cập nhật đợt tuyển dụng và bản mô tả."
       : "Đã lưu đợt tuyển dụng. Đang chuyển sang bước làm rõ thông tin với AI...";
     const wasEditingExisting = Boolean(dangSua?.dot?.id);
@@ -2303,23 +2752,22 @@ function ganSuKien() {
     $("form").querySelector('[type="submit"]').textContent = "Lưu đợt tuyển dụng";
     $("hanhDongChiTiet").hidden = true;
     $("jdThongTin").hidden = true;
-    $("jdChinhSua").hidden = !item.jd;
-    if (item.jd) {
-      const jd = item.jd;
-      $("jdSuaBoPhan").value = jd.bo_phan || "";
-      chonDiaDiem($("jdSuaDiaDiem"), jd.dia_diem);
-      $("jdSuaLoaiHinh").value = jd.loai_hinh || "";
-      $("jdSuaMucLuong").value = jd.muc_luong || "";
-      $("jdSuaKyNang").value = jd.ky_nang || "";
-      $("jdSuaMoTa").value = jd.mo_ta || "";
-      $("jdSuaYeuCau").value = jd.yeu_cau || "";
-      $("jdSuaQuyenLoi").value = jd.quyen_loi || "";
-      $("danhSachTieuChiSua").replaceChildren();
-      parseTieuChi(jd.tieu_chi).forEach((criterion) => {
-        themTieuChiSua(criterion.ten || "", criterion.trong_so ?? 0, criterion.mo_ta || "");
-      });
-      capNhatTongTrongSoSua();
-    }
+    $("jdChinhSua").hidden = false;
+    const jd = item.jd || {};
+    $("jdSuaBoPhan").value = jd.bo_phan || "";
+    chonDiaDiem($("jdSuaDiaDiem"), jd.dia_diem || "");
+    $("jdSuaLoaiHinh").value = jd.loai_hinh || "";
+    $("jdSuaMucLuong").value = jd.muc_luong || "";
+    $("jdSuaKyNang").value = jd.ky_nang || "";
+    $("jdSuaMoTa").value = jd.mo_ta || "";
+    $("jdSuaYeuCau").value = jd.yeu_cau || "";
+    $("jdSuaQuyenLoi").value = jd.quyen_loi || "";
+    $("danhSachTieuChiSua").replaceChildren();
+    parseTieuChi(jd.tieu_chi).forEach((criterion) => {
+      themTieuChiSua(criterion.ten || "", criterion.trong_so ?? 0, criterion.mo_ta || "");
+    });
+    if (!parseTieuChi(jd.tieu_chi).length) themTieuChiSua();
+    capNhatTongTrongSoSua();
     $("thongBaoSuaJD").className = "thong-bao";
     $("thongBaoSuaJD").textContent = "";
     $("thongBao").className = "thong-bao";
@@ -2639,6 +3087,33 @@ function ganSuKien() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   ganSuKien();
+
+  const modalDanhGiaNhanh = $("modalDanhGiaNhanh");
+  const iframeDanhGiaNhanh = $("iframeDanhGiaNhanh");
+  const dongModalDanhGiaNhanh = () => {
+    modalDanhGiaNhanh.classList.remove("show");
+    modalDanhGiaNhanh.setAttribute("aria-hidden", "true");
+    iframeDanhGiaNhanh.src = "about:blank";
+  };
+  $("btnDongDanhGiaNhanh")?.addEventListener("click", dongModalDanhGiaNhanh);
+  modalDanhGiaNhanh.addEventListener("click", event => {
+    if (event.target === modalDanhGiaNhanh) dongModalDanhGiaNhanh();
+  });
+  window.addEventListener("message", async event => {
+    if (event.origin !== window.location.origin || !["tuyendung-ai-close-evaluation", "tuyendung-ai-feedback-saved"].includes(event.data?.type)) return;
+    if (event.data?.type === "tuyendung-ai-feedback-saved") {
+      try {
+        await api(`/api/danh-gia/mark-interviewed/${encodeURIComponent(event.data.phong_van_id)}`, { method: "POST", body: JSON.stringify({}) });
+      } catch (error) {
+        console.error("Không cập nhật được trạng thái ứng viên sau khi lưu đánh giá:", error);
+      }
+      await taiDuLieu();
+      alert(`Lưu đánh giá ứng viên ${event.data.ten_ung_vien || "ứng viên"} thành công.`);
+      return;
+    }
+    dongModalDanhGiaNhanh();
+    await taiDuLieu();
+  });
 
   if (!layToken()) {
     alert("Vui lòng đăng nhập.");

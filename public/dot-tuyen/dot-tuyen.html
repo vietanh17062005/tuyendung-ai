@@ -8,7 +8,7 @@
 
   <title>Quản lý đợt tuyển dụng</title>
 
-  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css?v=20261015-cv-ai-inline-fix4" />
+  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css?v=20261019-eval-dialog-layout" />
   <link rel="stylesheet" href="/account/account.css" />
 <link rel="stylesheet" href="/menu-dong-bo.css">
 </head>
@@ -746,8 +746,15 @@
     </div>
   </div>
 
+  <div class="modal modal-danh-gia-nhanh" id="modalDanhGiaNhanh" aria-hidden="true">
+    <div class="modal-box modal-danh-gia-nhanh-box" role="dialog" aria-modal="true" aria-label="Đánh giá phỏng vấn">
+      <div class="modal-danh-gia-nhanh-head"><strong>Đánh giá phỏng vấn</strong><button type="button" id="btnDongDanhGiaNhanh" aria-label="Đóng" title="Đóng">×</button></div>
+      <iframe id="iframeDanhGiaNhanh" title="Biểu mẫu đánh giá phỏng vấn" loading="lazy"></iframe>
+    </div>
+  </div>
+
   <script src="/account/account.js"></script>
-  <script src="/dot-tuyen/dot-tuyen.js?v=20261015-cv-ai-inline-fix4"></script>
+  <script src="/dot-tuyen/dot-tuyen.js?v=20261019-eval-dialog-layout"></script>
 <script src="/menu-dong-bo.js"></script>
 </body>
 

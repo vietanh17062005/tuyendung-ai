@@ -3678,7 +3678,7 @@ tbody tr:hover {
 .cv-dot-modal .cv-preview-frame { height: min(72vh, 760px); }
 .cv-dot-modal-subtitle { margin: 0 0 14px; color: #64748b; font-size: 13px; }
 .cv-dot-interview-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.cv-dot-interview-form > p:first-child, .cv-dot-interview-form label:nth-of-type(3), .cv-dot-interview-form label:nth-of-type(5), .cv-dot-interview-form label:nth-of-type(6), .cv-dot-interview-error, .cv-dot-modal-actions { grid-column: 1 / -1; }
+.cv-dot-interview-form > p:first-child, .cv-dot-interview-form label:nth-of-type(5), .cv-dot-interview-form label:nth-of-type(6), .cv-dot-interview-error, .cv-dot-modal-actions { grid-column: 1 / -1; }
 .cv-dot-interview-form label { display: flex; flex-direction: column; gap: 7px; color: #334155; font-size: 13px; font-weight: 600; }
 .cv-dot-interview-form label span { color: #dc2626; }
 .cv-dot-interview-form input, .cv-dot-interview-form select, .cv-dot-interview-form textarea { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 9px; padding: 10px 11px; background: #fff; color: #0f172a; font: inherit; }
@@ -3772,3 +3772,354 @@ tbody tr:hover {
 .cv-dot-download-link { justify-self: start; color: #1d4ed8; font-weight: 600; }
 @media (max-width: 760px) { .cv-dot-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cv-dot-inline-frame { height: 55vh; } }
 @media (max-width: 480px) { .cv-dot-detail-grid { grid-template-columns: 1fr; } }
+
+
+/* Cửa sổ CV/AI mở đè lên cửa sổ đợt tuyển dụng, không bung nội dung trong bảng. */
+.cv-dot-modal-overlay:has(.cv-dot-modal-ai-review) {
+  z-index: 200000 !important;
+  padding: 16px;
+  background: rgba(15, 23, 42, .72);
+}
+.cv-dot-modal-ai-review {
+  display: flex;
+  flex-direction: column;
+  width: min(1500px, 98vw);
+  height: min(900px, 94vh);
+  max-height: 94vh;
+  overflow: hidden;
+  padding: 18px;
+}
+.cv-dot-modal-ai-review > .cv-dot-review-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.cv-dot-review-content > .cv-dot-candidate-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: "info info" "cv ai";
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+.cv-dot-review-content .cv-dot-detail-section:nth-of-type(1) { grid-area: info; }
+.cv-dot-review-content .cv-dot-detail-section:nth-of-type(2) { grid-area: ai; }
+.cv-dot-review-content .cv-dot-detail-section:nth-of-type(3) { grid-area: cv; }
+.cv-dot-modal-ai-review .cv-dot-detail-section {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+  margin: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+.cv-dot-modal-ai-review .cv-dot-detail-section h4 { margin: 0 0 12px; }
+.cv-dot-modal-ai-review .cv-dot-inline-preview { min-height: 65vh; }
+.cv-dot-modal-ai-review .cv-dot-inline-frame { width: 100%; height: 65vh; border: 1px solid #e2e8f0; border-radius: 8px; }
+@media (max-width: 850px) {
+  .cv-dot-modal-ai-review { width: 100%; height: 96vh; max-height: 96vh; padding: 12px; }
+  .cv-dot-review-content > .cv-dot-candidate-detail {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(360px, 1fr) minmax(360px, 1fr);
+    grid-template-areas: "info" "cv" "ai";
+    height: auto;
+  }
+  .cv-dot-modal-ai-review .cv-dot-inline-frame { height: 55vh; }
+}
+
+/* Hoàn thiện vùng bấm ứng viên và giao diện đánh giá CV */
+.cv-dot-candidate-click-area { cursor: pointer; border-radius: 6px; transition: background .15s ease; }
+.cv-dot-candidate-click-area:hover { background: #eff6ff; }
+.cv-dot-candidate-click-area:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+.cv-dot-modal-ai-review .cv-dot-modal-header { flex: 0 0 auto; min-height: 30px; margin-bottom: 8px; }
+.cv-dot-modal-ai-review .cv-dot-modal-header > strong[hidden] { display: none; }
+.cv-dot-review-content > .cv-dot-candidate-detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "info info" "cv ai"; gap: 14px; height: 100%; }
+.cv-dot-review-content .cv-dot-candidate-info-strip { grid-area: info; display: block !important; }
+.cv-dot-review-content .cv-dot-cv-section { grid-area: cv; }
+.cv-dot-review-content .cv-dot-ai-section { grid-area: ai; }
+.cv-dot-modal-ai-review .cv-dot-detail-section h4 { font-size: 16px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+.cv-dot-modal-ai-review .cv-dot-ai-detail { gap: 9px; }
+.cv-dot-modal-ai-review .cv-dot-ai-item { padding: 10px 12px; border: 1px solid #edf2f7; background: #f8fafc; }
+.cv-dot-ai-item strong { display: inline-block; margin-right: 3px; }
+.cv-dot-ai-group > strong { font-size: 13px; }
+.cv-dot-edit-ai-button, .cv-dot-edit-save { border: 0; border-radius: 8px; padding: 9px 13px; background: #2563eb; color: #fff; font-weight: 650; cursor: pointer; }
+.cv-dot-edit-ai-button { margin: 0 0 10px; align-self: start; }
+.cv-dot-edit-ai-form { display: grid; gap: 12px; margin-top: 12px; padding: 14px; border: 1px solid #cbd5e1; border-radius: 10px; background: #f8fafc; }
+.cv-dot-edit-ai-form[hidden] { display: none !important; }
+.cv-dot-edit-ai-field { display: grid; gap: 6px; color: #334155; font-size: 13px; font-weight: 650; }
+.cv-dot-edit-ai-field input, .cv-dot-edit-ai-field select, .cv-dot-edit-ai-field textarea { box-sizing: border-box; width: 100%; min-width: 0; border: 1px solid #cbd5e1; border-radius: 7px; padding: 9px 10px; background: #fff; color: #0f172a; font: inherit; font-weight: 400; }
+.cv-dot-edit-ai-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.cv-dot-edit-cancel { border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 13px; background: #fff; color: #334155; cursor: pointer; }
+.cv-dot-saved-review { padding: 10px 12px; border-left: 3px solid #2563eb; border-radius: 5px; background: #eff6ff; color: #1e3a8a; }
+@media (max-width: 850px) {
+  .cv-dot-review-content > .cv-dot-candidate-detail { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(320px, auto) minmax(320px, auto); grid-template-areas: "cv" "ai"; height: auto; }
+  .cv-dot-modal-ai-review .cv-dot-inline-frame { height: 55vh; }
+}
+
+/* Thông tin liên hệ luôn hiển thị phía trên CV và phần AI; cho phép sửa toàn bộ JSON đánh giá. */
+.cv-dot-modal-ai-review .cv-dot-candidate-info-strip { padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; }
+.cv-dot-modal-ai-review .cv-dot-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; }
+.cv-dot-modal-ai-review .cv-dot-detail-item { overflow-wrap: anywhere; }
+.cv-dot-edit-ai-form textarea[name="noi_dung_danh_gia"] { min-height: 260px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; line-height: 1.45; }
+.cv-dot-modal-ai-review .cv-dot-ai-section { min-height: 0; overflow: auto; }
+@media (max-width: 850px) { .cv-dot-modal-ai-review .cv-dot-detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Cho phép mở hồ sơ bằng cách bấm bất kỳ vị trí nào trên dòng ứng viên, ngoại trừ nút thao tác. */
+.cv-dot-row-clickable { cursor: pointer; }
+.cv-dot-row-clickable:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
+.cv-dot-row-clickable > td:not(:last-child) { transition: background-color .12s ease; }
+.cv-dot-row-clickable:hover > td { background-color: #f1f5f9; }
+.cv-dot-edit-ai-field textarea { min-height: 58px; resize: vertical; }
+.cv-dot-edit-ai-form textarea[data-path] { font-family: inherit; font-size: 13px; line-height: 1.5; }
+
+/* Bố cục gọn cho phần đánh giá và chỉnh sửa trực tiếp tại vùng hiển thị. */
+.cv-dot-analysis-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cv-dot-analysis-header h4 { flex: 1; margin: 0; }
+.cv-dot-analysis-header .cv-dot-edit-ai-button { flex: 0 0 auto; margin: 0; padding: 7px 14px; }
+.cv-dot-ai-detail[hidden] { display: none !important; }
+.cv-dot-edit-ai-meta-row { display: grid; grid-template-columns: minmax(100px, .8fr) minmax(150px, 1.2fr); gap: 12px; align-items: start; }
+.cv-dot-edit-ai-meta-row .cv-dot-edit-ai-field { min-width: 0; }
+.cv-dot-edit-ai-meta-row input, .cv-dot-edit-ai-meta-row select { min-height: 39px; }
+@media (max-width: 600px) { .cv-dot-edit-ai-meta-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* Form đánh giá: liên hệ theo hàng, trường nhận xét dạng tiêu đề + ô nhập, trường điểm cùng hàng. */
+.cv-dot-edit-ai-profile-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cv-dot-edit-ai-score-field { display: grid; grid-template-columns: minmax(130px, 1fr) minmax(90px, 120px); align-items: center; gap: 12px; padding: 9px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+.cv-dot-edit-ai-score-field > span { margin: 0; }
+.cv-dot-edit-ai-score-input { width: 100%; min-height: 38px; }
+@media (max-width: 600px) { .cv-dot-edit-ai-profile-row { grid-template-columns: minmax(0, 1fr); } .cv-dot-edit-ai-score-field { grid-template-columns: minmax(0, 1fr) 100px; } }
+
+/* Nội dung đánh giá dạng tiêu đề và nhận xét; điểm kỹ năng nằm cùng hàng. */
+.cv-dot-ai-review-text { margin-top: 6px; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.55; }
+.cv-dot-ai-skill-scores { display: grid; gap: 6px; }
+.cv-dot-ai-skill-score-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(55px, 90px); align-items: center; gap: 12px; padding: 5px 0; border-bottom: 1px solid #e2e8f0; }
+.cv-dot-ai-skill-score-row:last-child { border-bottom: 0; }
+.cv-dot-ai-skill-score-row span { text-align: right; font-weight: 600; }
+
+/* Bộ lọc, xếp hạng ứng viên và nhóm nội dung đánh giá AI */
+.cv-dot-ranking-controls { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 10px; margin: 14px 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; }
+.cv-dot-ranking-controls label { display: flex; flex-direction: column; gap: 5px; color: #334155; font-size: 13px; font-weight: 600; }
+.cv-dot-ranking-controls input, .cv-dot-ranking-controls select { min-width: 0; width: 100%; padding: 8px 9px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #0f172a; font: inherit; }
+.cv-dot-ai-group-heading { grid-column: 1 / -1; margin: 12px 0 2px; padding-bottom: 6px; border-bottom: 1px solid #dbe4ee; color: #1d4ed8; font-size: 14px; }
+.cv-dot-ai-group-heading:first-child { margin-top: 0; }
+.cv-dot-ai-item { min-width: 0; }
+.cv-dot-ai-review-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.cv-dot-table tr[hidden] { display: none !important; }
+@media (max-width: 850px) { .cv-dot-ranking-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .cv-dot-ranking-controls { grid-template-columns: 1fr; } }
+
+/* Bố cục xem CV: CV bên trái, đánh giá bên phải; không hiển thị dải thông tin riêng phía trên. */
+.cv-dot-modal-ai-review .cv-dot-candidate-info-strip { display: none !important; }
+.cv-dot-review-content > .cv-dot-candidate-detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; grid-template-rows: minmax(0, 1fr) !important; grid-template-areas: "cv ai" !important; height: 100%; }
+.cv-dot-review-content .cv-dot-cv-section { grid-area: cv !important; }
+.cv-dot-review-content .cv-dot-ai-section { grid-area: ai !important; }
+@media (max-width: 850px) { .cv-dot-review-content > .cv-dot-candidate-detail { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(320px, auto) minmax(320px, auto) !important; grid-template-areas: "cv" "ai" !important; height: auto; } }
+
+/* Phần Sửa dùng cùng bố cục nhãn-trên, nội dung-dưới như phần Xem. */
+.cv-dot-edit-ai-form { background: transparent; border: 0; padding: 0; box-shadow: none; }
+.cv-dot-edit-ai-profile-row { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.cv-dot-edit-ai-field { padding: 8px 10px; border-radius: 7px; background: #f8fafc; }
+.cv-dot-edit-ai-field > span { color: #334155; font-weight: 700; }
+.cv-dot-edit-ai-field input, .cv-dot-edit-ai-field select, .cv-dot-edit-ai-field textarea { margin-top: 2px; }
+.cv-dot-edit-ai-score-field { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.cv-dot-edit-ai-component-group { display: grid; gap: 8px; padding: 8px 10px; border-radius: 7px; background: #f8fafc; }
+.cv-dot-edit-ai-component-group > strong { color: #334155; }
+.cv-dot-edit-ai-component-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(90px, 130px); align-items: center; gap: 12px; font-size: 13px; font-weight: 500; color: #334155; }
+.cv-dot-edit-ai-component-row input { box-sizing: border-box; width: 100%; min-width: 0; border: 1px solid #cbd5e1; border-radius: 7px; padding: 9px 10px; background: #fff; color: #0f172a; font: inherit; }
+@media (max-width: 600px) { .cv-dot-edit-ai-component-row { grid-template-columns: minmax(0, 1fr) 100px; } }
+
+
+/* Hiển thị CV dạng ảnh trong khung xem trước */
+.cv-dot-inline-image, .cv-preview-image { display: block; max-width: 100%; width: auto; height: auto; max-height: 72vh; object-fit: contain; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+.cv-preview-image { max-height: 75vh; }
+
+/* Căn giữa toàn bộ tiêu đề trong bảng CV của đợt tuyển dụng */
+.cv-dot-table thead th {
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+/* Căn giữa nội dung các cột CV, ngoại trừ cột tên ứng viên */
+.cv-dot-table thead th:not(:nth-child(2)),
+.cv-dot-table tbody td:not(:nth-child(2)) {
+  text-align: center !important;
+  vertical-align: middle;
+}
+.cv-dot-table tbody td:nth-child(6) .cv-dot-actions {
+  justify-content: center !important;
+}
+
+/* Công cụ phóng to, thu nhỏ và kéo xem CV */
+.cv-zoom-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px;margin:8px 0;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;position:sticky;top:0;z-index:2}
+.cv-zoom-toolbar button{min-width:36px;height:34px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#1e293b;font-size:20px;line-height:1;cursor:pointer}
+.cv-zoom-toolbar button:disabled{opacity:.4;cursor:not-allowed}
+.cv-zoom-toolbar .cv-zoom-reset{font-size:21px}
+.cv-zoom-percent{min-width:48px;text-align:center;font-weight:700;font-size:13px;color:#334155}
+.cv-zoom-viewport{position:relative;overflow:auto;width:100%;max-height:68vh;min-height:300px;border:1px solid #dbe3ee;border-radius:8px;background:#e9eef5;cursor:grab;touch-action:pan-x pan-y}
+.cv-zoom-viewport.is-dragging{cursor:grabbing;user-select:none}
+.cv-zoom-stage{position:relative;margin:0 auto}
+.cv-zoom-target{position:absolute;left:0;top:0;transform-origin:top left;display:block;max-width:none!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;background:#fff}
+.cv-zoom-target.cv-preview-image,.cv-zoom-target.cv-dot-inline-image{object-fit:contain}
+.cv-dot-modal-preview .cv-zoom-viewport{max-height:70vh;min-height:320px}
+
+
+/* Thu gọn cửa sổ thông tin đợt tuyển dụng, giữ bảng CV trong cùng khung. */
+#modal .modal-box {
+  width: min(920px, calc(100vw - 48px));
+  max-width: 920px;
+}
+.cv-dot-actions .btn-danh-gia-cv {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cv-dot-actions .btn-danh-gia-cv:hover { background: #dbeafe; }
+@media (max-width: 700px) {
+  #modal .modal-box { width: calc(100vw - 20px); max-width: none; }
+}
+
+/* Nút thao tác CV gọn, đồng nhất và tự xuống dòng khi thiếu chiều rộng. */
+.cv-dot-table tbody td:nth-child(6) .cv-dot-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;min-width:145px;max-width:230px;margin:0 auto}
+.cv-dot-actions button{font-size:12px;line-height:1.25;padding:7px 9px;border-radius:8px;white-space:nowrap;transition:background .15s,border-color .15s,transform .15s}
+.cv-dot-actions button:hover{transform:translateY(-1px)}
+.cv-dot-actions button:not(.btn-xoa-cv):not(.btn-danh-gia-cv){color:#334155;background:#f8fafc;border-color:#d8e0eb}
+.cv-dot-actions .btn-xoa-cv{color:#b42318;background:#fff5f4;border-color:#f5c7c3}
+.cv-dot-actions .btn-danh-gia-cv{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}
+.modal-danh-gia-nhanh{z-index:10020;padding:18px}
+.modal-danh-gia-nhanh.show{display:flex}
+.modal-danh-gia-nhanh .modal-danh-gia-nhanh-box{width:min(940px,calc(100vw - 36px));max-width:940px;height:min(900px,calc(100vh - 36px));max-height:calc(100vh - 36px);padding:0;overflow:hidden;border-radius:16px;display:flex;flex-direction:column;background:#fff;box-shadow:0 24px 80px rgba(15,23,42,.28)}
+.modal-danh-gia-nhanh-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 20px;border-bottom:1px solid #e5eaf2;background:#fff;color:#172033;font-size:16px;flex:0 0 auto}
+.modal-danh-gia-nhanh-head button{width:34px;height:34px;border:0;border-radius:9px;background:#f1f5f9;color:#334155;font-size:24px;cursor:pointer}
+.modal-danh-gia-nhanh-head button:hover{background:#e2e8f0}
+.modal-danh-gia-nhanh iframe{display:block;border:0;width:100%;flex:1;min-height:0;background:#fff}
+.jd-buoc#jdBuoc3>.jd-ai-tieu-de:first-child{margin-top:0;margin-bottom:4px;padding:0;border:0;border-radius:0;background:transparent}
+.jd-buoc#jdBuoc3 .jd-ai-tieu-de{margin-top:12px;margin-bottom:4px}
+@media(max-width:700px){.modal-danh-gia-nhanh{padding:8px}.modal-danh-gia-nhanh .modal-danh-gia-nhanh-box{width:calc(100vw - 16px);height:calc(100vh - 16px);max-height:calc(100vh - 16px);border-radius:12px}.modal-danh-gia-nhanh-head{padding:10px 14px}}
+
+/* CV actions: primary actions stay on one line; secondary actions live in an ellipsis menu. */
+.cv-dot-table tbody td:nth-child(6) .cv-dot-actions{display:flex;flex-wrap:nowrap;align-items:center;justify-content:center;gap:6px;min-width:150px;max-width:none;white-space:nowrap}
+.cv-dot-actions .cv-more-wrap{position:relative;display:inline-flex;flex:0 0 auto}
+.cv-dot-actions .cv-more-toggle{width:34px;height:31px;padding:0;font-size:20px;font-weight:700;line-height:1;border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:8px}
+.cv-dot-actions .cv-more-menu{position:absolute;right:0;top:calc(100% + 5px);z-index:10030;display:none;min-width:150px;padding:5px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 28px #0f172a24}
+.cv-dot-actions .cv-more-wrap.open .cv-more-menu{display:flex;flex-direction:column;gap:4px}
+.cv-dot-actions .cv-more-menu button{width:100%;text-align:left;justify-content:flex-start}
+.interview-readonly{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;padding:12px;border:1px solid #dbe3ee;border-radius:9px;background:#f8fafc;color:#334155}
+.interview-readonly div{display:flex;flex-direction:column;gap:3px;min-width:0}.interview-readonly span{font-size:12px;color:#64748b}.interview-readonly strong{font-size:13px;font-weight:600;overflow-wrap:anywhere}
+.evaluation-embedded #feedbackModal .modal-head p{display:none}
+@media(max-width:600px){.interview-readonly{grid-template-columns:1fr}}
+
+/* Dropdown thao tác ghim theo khung nhìn, luôn mở ở góc dễ thấy. */
+.cv-dot-actions .cv-more-menu{max-height:min(70vh,360px);overflow-y:auto}
+.cv-dot-actions .cv-more-menu button{display:block}
+.cv-dot-actions .cv-more-wrap.open .cv-more-menu{position:fixed;right:auto;z-index:20000}
+.modal-danh-gia-nhanh-head{min-height:48px}
+
+/* Căn giữa nút menu và thống nhất màu các thao tác trong dropdown. */
+.cv-dot-table tbody td:nth-child(6){text-align:center}
+.cv-dot-table tbody td:nth-child(6) .cv-dot-actions{justify-content:center;align-items:center}
+.cv-dot-actions .cv-more-wrap{display:flex;align-items:center;justify-content:center}
+.cv-dot-actions .cv-more-toggle{display:flex;align-items:center;justify-content:center;text-align:center;margin:0 auto;line-height:1;padding:0 0 3px}
+.cv-dot-actions .cv-more-menu button{background:#f8fafc!important;color:#334155!important;border:1px solid #d8e0eb!important;border-radius:7px!important;padding:8px 10px!important}
+.cv-dot-actions .cv-more-menu button:hover{background:#eaf0f8!important}
+.cv-dot-actions .cv-more-menu .btn-xoa-cv{background:#fff5f4!important;color:#b42318!important;border-color:#f5c7c3!important}
+.modal-danh-gia-nhanh-head{justify-content:space-between}
+.modal-danh-gia-nhanh-head button{display:flex;align-items:center;justify-content:center;flex:0 0 34px;width:34px;height:34px;border:0;border-radius:9px;background:#f1f5f9;color:#334155;font-size:25px;line-height:1;padding:0 0 3px;cursor:pointer}
+.modal-danh-gia-nhanh-head button:hover{background:#e2e8f0}
+
+/* Compact CV table now that actions live inside the ellipsis menu. */
+.cv-dot-table th,.cv-dot-table td{padding:8px 7px;font-size:12px}
+.cv-dot-table th{font-size:11px}
+.cv-dot-table td:nth-child(2) small{font-size:11px;margin-top:2px}
+.cv-dot-table .cv-dot-actions{justify-content:center;align-items:center;flex-wrap:nowrap;min-width:42px}
+.cv-dot-actions .cv-more-wrap{position:relative;display:flex;justify-content:center;align-items:center;width:100%}
+.cv-dot-actions .cv-more-toggle{width:32px;height:30px}
+.modal-danh-gia-nhanh .modal-danh-gia-nhanh-box{height:min(900px,calc(100vh - 24px));max-height:calc(100vh - 24px)}
+.modal-danh-gia-nhanh #iframeDanhGiaNhanh{display:block;width:100%;height:100%;min-height:0;flex:1;border:0}
+@media(max-width:900px){.cv-dot-table th,.cv-dot-table td{padding:7px 5px}.cv-dot-table td:nth-child(2){min-width:170px}}
+
+/* Thu gọn form thông tin đợt tuyển dụng và bảng CV để cân đối, không kéo ngang. */
+#modal .modal-box{width:min(920px,calc(100vw - 48px));max-width:920px}
+#modal .modal-header{padding:16px 20px}
+#form{padding:16px 20px 18px}
+#jdThongTinNoiDung{min-width:0;max-width:100%;overflow-x:hidden}
+.danh-sach-cv-dot{width:100%;max-width:100%;min-width:0;overflow-x:hidden}
+.cv-dot-table{width:100%;max-width:100%;table-layout:fixed}
+.cv-dot-table th,.cv-dot-table td{overflow-wrap:anywhere}
+.cv-dot-table th:nth-child(1),.cv-dot-table td:nth-child(1){width:42px}
+.cv-dot-table th:nth-child(3),.cv-dot-table td:nth-child(3){width:82px}
+.cv-dot-table th:nth-child(4),.cv-dot-table td:nth-child(4){width:95px}
+.cv-dot-table th:nth-child(5),.cv-dot-table td:nth-child(5){width:135px}
+.cv-dot-table th:nth-child(6),.cv-dot-table td:nth-child(6){width:155px}
+.cv-dot-table tbody td:nth-child(6) .cv-dot-actions{width:100%;min-width:0;max-width:100%;box-sizing:border-box}
+.cv-dot-actions .cv-more-menu button{background:#f8fafc!important;color:#334155!important;border-color:#d8e0eb!important}
+.cv-dot-actions .cv-more-menu .btn-xoa-cv{background:#f8fafc!important;color:#334155!important;border-color:#d8e0eb!important}
+.cv-dot-status-cell.is-interviewed{color:#334155;font-weight:700}
+@media(max-width:900px){#modal .modal-box{width:calc(100vw - 24px);max-width:none}#modal .modal-header{padding:14px 16px}#form{padding:14px 16px}}
+
+
+/* Thu sát các cột CV: chia theo tỷ lệ của khung, không để trình duyệt giãn cột dư. */
+#modal .cv-dot-table-wrap{width:100%;max-width:100%;overflow-x:hidden}
+#modal .cv-dot-table{width:100%!important;min-width:0!important;max-width:100%;table-layout:fixed!important;border-collapse:collapse}
+#modal .cv-dot-table th,#modal .cv-dot-table td{box-sizing:border-box;padding:6px 4px!important;min-width:0!important;overflow-wrap:anywhere;}
+#modal .cv-dot-table th:nth-child(1),#modal .cv-dot-table td:nth-child(1){width:5%!important;max-width:5%!important}
+#modal .cv-dot-table th:nth-child(2),#modal .cv-dot-table td:nth-child(2){width:28%!important;max-width:28%!important;min-width:0!important}
+#modal .cv-dot-table th:nth-child(3),#modal .cv-dot-table td:nth-child(3){width:12%!important;max-width:12%!important}
+#modal .cv-dot-table th:nth-child(4),#modal .cv-dot-table td:nth-child(4){width:12%!important;max-width:12%!important}
+#modal .cv-dot-table th:nth-child(5),#modal .cv-dot-table td:nth-child(5){width:17%!important;max-width:17%!important}
+#modal .cv-dot-table th:nth-child(6),#modal .cv-dot-table td:nth-child(6){width:26%!important;max-width:26%!important}
+#modal .cv-dot-table th{white-space:normal!important;font-size:10px!important;line-height:1.25}
+#modal .cv-dot-table td:nth-child(2) strong,#modal .cv-dot-table td:nth-child(2) small{max-width:100%;overflow-wrap:anywhere;word-break:break-word}
+#modal .cv-dot-table tbody td:nth-child(6) .cv-dot-actions{min-width:0!important;width:100%;max-width:100%;flex-wrap:wrap!important;gap:4px!important;white-space:normal!important}
+#modal .cv-dot-table tbody td:nth-child(6) .cv-dot-actions>button{max-width:100%;padding:5px 6px!important;font-size:11px!important;white-space:normal!important}
+@media(max-width:700px){
+  #modal .cv-dot-table th,#modal .cv-dot-table td{padding:5px 3px!important;font-size:10px!important}
+  #modal .cv-dot-table th:nth-child(2),#modal .cv-dot-table td:nth-child(2){min-width:0!important;width:27%!important;max-width:27%!important}
+  #modal .cv-dot-table th:nth-child(6),#modal .cv-dot-table td:nth-child(6){width:27%!important;max-width:27%!important}
+}
+
+/* Ưu tiên không gian cho trạng thái và ngày hẹn; cột thao tác chỉ giữ nút menu. */
+#modal .cv-dot-table{table-layout:fixed!important;width:100%!important}
+#modal .cv-dot-table th:nth-child(1),#modal .cv-dot-table td:nth-child(1){width:5%!important;max-width:5%!important}
+#modal .cv-dot-table th:nth-child(2),#modal .cv-dot-table td:nth-child(2){width:27%!important;max-width:27%!important}
+#modal .cv-dot-table th:nth-child(3),#modal .cv-dot-table td:nth-child(3){width:12%!important;max-width:12%!important}
+#modal .cv-dot-table th:nth-child(4),#modal .cv-dot-table td:nth-child(4){width:17%!important;max-width:17%!important}
+#modal .cv-dot-table th:nth-child(5),#modal .cv-dot-table td:nth-child(5){width:25%!important;max-width:25%!important}
+#modal .cv-dot-table th:nth-child(6),#modal .cv-dot-table td:nth-child(6){width:14%!important;max-width:14%!important}
+#modal .cv-dot-table tbody td:nth-child(6) .cv-dot-actions{justify-content:center!important;gap:2px!important}
+#modal .cv-dot-table tbody td:nth-child(6) .cv-more-toggle{width:28px!important;height:28px!important;padding:0!important}
+@media(max-width:700px){
+ #modal .cv-dot-table th:nth-child(2),#modal .cv-dot-table td:nth-child(2){width:25%!important;max-width:25%!important}
+ #modal .cv-dot-table th:nth-child(4),#modal .cv-dot-table td:nth-child(4){width:18%!important;max-width:18%!important}
+ #modal .cv-dot-table th:nth-child(5),#modal .cv-dot-table td:nth-child(5){width:25%!important;max-width:25%!important}
+ #modal .cv-dot-table th:nth-child(6),#modal .cv-dot-table td:nth-child(6){width:15%!important;max-width:15%!important}
+}
+
+
+/* Canh lại độ rộng cột CV: chừa khoảng giữa STT và ứng viên, gọn ngày hẹn và thao tác. */
+#modal .cv-dot-table th:nth-child(1),#modal .cv-dot-table td:nth-child(1){width:5%!important;max-width:5%!important;padding-right:5px!important}
+#modal .cv-dot-table th:nth-child(2),#modal .cv-dot-table td:nth-child(2){width:32%!important;max-width:32%!important;padding-left:10px!important}
+#modal .cv-dot-table th:nth-child(3),#modal .cv-dot-table td:nth-child(3){width:12%!important;max-width:12%!important}
+#modal .cv-dot-table th:nth-child(4),#modal .cv-dot-table td:nth-child(4){width:15%!important;max-width:15%!important}
+#modal .cv-dot-table th:nth-child(5),#modal .cv-dot-table td:nth-child(5){width:16%!important;max-width:16%!important}
+#modal .cv-dot-table th:nth-child(6),#modal .cv-dot-table td:nth-child(6){width:20%!important;max-width:20%!important}
+#modal .cv-dot-table tbody td:nth-child(6) .cv-dot-actions{min-width:0!important;gap:3px!important}
+
+/* Chia cot danh sach CV theo 21 phan nhu yeu cau: 1, 7, 3, 4, 4, 2. */
+#modal .cv-dot-table{width:100%!important;min-width:0!important;table-layout:fixed!important}
+#modal .cv-dot-table th:nth-child(1),#modal .cv-dot-table td:nth-child(1){width:4.76%!important;max-width:4.76%!important;padding-right:2px!important;padding-left:2px!important}
+#modal .cv-dot-table th:nth-child(2),#modal .cv-dot-table td:nth-child(2){width:33.33%!important;max-width:33.33%!important;padding-left:10px!important}
+#modal .cv-dot-table th:nth-child(3),#modal .cv-dot-table td:nth-child(3){width:14.29%!important;max-width:14.29%!important}
+#modal .cv-dot-table th:nth-child(4),#modal .cv-dot-table td:nth-child(4){width:19.05%!important;max-width:19.05%!important}
+#modal .cv-dot-table th:nth-child(5),#modal .cv-dot-table td:nth-child(5){width:19.05%!important;max-width:19.05%!important}
+#modal .cv-dot-table th:nth-child(6),#modal .cv-dot-table td:nth-child(6){width:9.52%!important;max-width:9.52%!important}
+#modal .cv-dot-table tbody td:nth-child(6) .cv-dot-actions{display:flex!important;justify-content:center!important;align-items:center!important;min-width:0!important;width:100%!important;gap:0!important}
+#modal .cv-dot-table tbody td:nth-child(6) .cv-more-wrap{width:100%!important;display:flex!important;justify-content:center!important}
+#modal .cv-dot-table tbody td:nth-child(6) .cv-more-toggle{font-weight:400!important}
+#modal .cv-more-menu button,#modal .cv-more-menu button.btn-danh-gia-cv,#modal .cv-more-menu button.btn-xoa-cv{font-weight:400!important;font-weight:normal!important}

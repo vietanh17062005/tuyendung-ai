@@ -1,5 +1,7 @@
 (() => {
   const $ = id => document.getElementById(id);
+  const embeddedEvaluation = new URLSearchParams(window.location.search).get('embed') === '1';
+  if (embeddedEvaluation) document.body.classList.add('evaluation-embedded');
   const resultLabels = {dat:'Đậu',can_nhac:'Cân nhắc',rot:'Rớt',vong_tiep:'Sang vòng tiếp'};
   let storedUser = {}; try { storedUser = JSON.parse(localStorage.getItem('nguoi_dung') || '{}'); } catch {}
   const user = window.appUser || storedUser || {};
@@ -17,11 +19,17 @@
     if(!response.ok)throw new Error(data.message||'Yêu cầu không thành công');return data;
   });
   const label = value => resultLabels[value] || value || '—';
-  const date = value => { if(!value) return 'Chưa xác định'; const d = new Date(String(value).replace(' ','T')); return Number.isNaN(d.getTime()) ? esc(value) : d.toLocaleString('vi-VN',{dateStyle:'short',timeStyle:'short'}); };
+  const date = value => { if(!value) return ''; const d = new Date(String(value).replace(' ','T')); return Number.isNaN(d.getTime()) ? esc(value) : d.toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}); };
   function notice(message,type='error',id='notice'){const el=$(id);el.textContent=message;el.className='notice '+type;el.hidden=false;}
   function clearNotice(id){const el=$(id);el.hidden=true;el.textContent='';}
+  function renderInterviewReadonly(schedule){
+    const box=$('interviewReadonly'); if(!box) return;
+    if(!schedule){box.textContent='Chưa chọn lịch phỏng vấn';return;}
+    const mode=String(schedule.hinh_thuc||'').toLowerCase(); const modeLabel=mode==='online'||mode.includes('truc_tuyen')||mode.includes('trực tuyến')?'Trực tuyến (Online)':mode==='offline'||mode.includes('truc_tiep')||mode.includes('trực tiếp')?'Trực tiếp (Offline)':(schedule.hinh_thuc||''); const items=[['Ứng viên',schedule.ten_ung_vien||''],['Đợt tuyển dụng',schedule.ten_dot_tuyen||''],['Vòng',schedule.vong_phong_van||''],['Ngày phỏng vấn',date(schedule.thoi_gian)],['Hình thức phỏng vấn',modeLabel],['Địa điểm / Link phỏng vấn',schedule.dia_diem||'']];
+    box.innerHTML=items.map(([k,v])=>`<label class="readonly-item"><span>${esc(k)}</span><input type="text" readonly aria-readonly="true" value="${esc(v)}"></label>`).join('');
+  }
   function openModal(id){$(id).classList.add('show');$(id).setAttribute('aria-hidden','false');}
-  function closeModal(id){$(id).classList.remove('show');$(id).setAttribute('aria-hidden','true');}
+  function closeModal(id){$(id).classList.remove('show');$(id).setAttribute('aria-hidden','true');if(embeddedEvaluation&&id==='feedbackModal'&&window.parent!==window)window.parent.postMessage({type:'tuyendung-ai-close-evaluation'},window.location.origin);}
   function grouped(){
     const map=new Map();
     for(const f of feedbacks){const id=Number(f.phong_van_id);if(!map.has(id))map.set(id,{...f,phong_van_id:id,feedbacks:[]});const g=map.get(id);g.feedbacks.push(f);g.ten_ung_vien=g.ten_ung_vien||f.ten_ung_vien;g.vong_phong_van=g.vong_phong_van||f.vong_phong_van;g.quyet_dinh_cuoi=g.quyet_dinh_cuoi||f.quyet_dinh_cuoi;g.ghi_chu_quyet_dinh=g.ghi_chu_quyet_dinh||f.ghi_chu_quyet_dinh;g.email_trang_thai=g.email_trang_thai||f.email_trang_thai;g.email_da_gui_luc=g.email_da_gui_luc||f.email_da_gui_luc;}
@@ -56,6 +64,38 @@
     $('criteriaSummary').innerHTML=`<span class="summary-chip"><strong>${activeCriteria.length}</strong> tiêu chí đang dùng</span><span class="summary-chip"><strong>${Number(total.toFixed(2))}%</strong> tổng trọng số</span>`;
     $('btnCriteria').hidden=!isManager;
     $('scoreFields').innerHTML=criteria.filter(c=>Number(c.dang_dung)!==0).map(c=>`<div class="score-field"><div class="score-field-head"><label for="score_${c.id}">${esc(c.ten)} <em>*</em></label><span class="score-weight">${Number(c.trong_so)}%</span></div><small>${esc(c.mo_ta||'Tiêu chí đánh giá')} · Thang điểm 0–${Number(c.diem_toi_da)}</small><div class="score-row"><input id="score_${c.id}" data-score-id="${c.id}" type="number" min="0" max="${Number(c.diem_toi_da)}" step="0.1" value="" placeholder="0 – ${Number(c.diem_toi_da)}" required><span class="score-max">/ ${Number(c.diem_toi_da)}</span></div></div>`).join('');
+    let totalBox=$('interviewScoreTotal');
+    if(!totalBox){totalBox=document.createElement('div');totalBox.id='interviewScoreTotal';totalBox.className='interview-score-total';$('scoreFields').insertAdjacentElement('afterend',totalBox);}
+    updateInterviewScore();
+  }
+  function updateInterviewScore(){
+    const active=criteria.filter(c=>Number(c.dang_dung)!==0);
+    let weighted=0,weightTotal=0,complete=true;
+    for(const c of active){
+      const input=document.querySelector(`[data-score-id="${c.id}"]`);
+      const raw=input?.value?.trim()??'';
+      const weight=Number(c.trong_so)||0, max=Number(c.diem_toi_da)||10;
+      if(raw===''||!Number.isFinite(Number(raw))){complete=false;continue;}
+      weighted+=(Number(raw)/max)*weight; weightTotal+=weight;
+    }
+    const box=$('interviewScoreTotal');
+    if(box)box.innerHTML=`<span>Điểm phỏng vấn</span><strong>${complete&&active.length?((weighted/100)*10).toFixed(2):weightTotal?((weighted/100)*10).toFixed(2):'—'} / 10</strong>`;
+  }
+  function findExistingFeedback(scheduleId){
+    const matches=feedbacks.filter(f=>Number(f.phong_van_id)===Number(scheduleId));
+    return matches.find(f=>Number(f.nguoi_danh_gia_id)===Number(user.id)) || matches[0] || null;
+  }
+  function restoreFeedback(existing){
+    if(!existing)return;
+    const saved=existing.diem_json&&typeof existing.diem_json==='object'?existing.diem_json:{};
+    for(const input of document.querySelectorAll('[data-score-id]')){
+      const item=saved[input.dataset.scoreId];
+      const value=item&&typeof item==='object'?item.diem:item;
+      input.value=value===undefined||value===null?'':String(value);
+    }
+    $('de_xuat').value=existing.de_xuat||'can_nhac';
+    $('nhan_xet').value=existing.nhan_xet||'';
+    updateInterviewScore();
   }
   function criterionRow(c={}){
     const active=c.active!==false && Number(c.dang_dung)!==0;
@@ -86,24 +126,49 @@
   async function load(){
     clearNotice('notice');
     try{const values=await Promise.all([api('/api/danh-gia'),api('/api/danh-gia/lich'),api('/api/danh-gia/dot-tuyen')]);feedbacks=rowsFrom(values[0]);schedules=rowsFrom(values[1]);campaigns=rowsFrom(values[2]);
-      const select=$('phong_van_id'), old=select.value;select.innerHTML='<option value="">-- Chọn lịch phỏng vấn --</option>'+schedules.map(s=>`<option value="${s.phong_van_id}">${esc(s.ten_ung_vien||('Ứng viên #'+s.ung_vien_id))} · ${esc(s.ten_dot_tuyen||'Đợt tuyển dụng')} · ${esc(s.vong_phong_van||'Vòng 1')} · ${esc(date(s.thoi_gian))} · #${s.phong_van_id}</option>`).join('');if(old)select.value=old;
+      const select=$('phong_van_id'), old=select.value;select.innerHTML='<option value="">-- Chọn lịch phỏng vấn --</option>'+schedules.map(s=>`<option value="${s.phong_van_id}">${esc(s.ten_ung_vien||('Ứng viên #'+s.ung_vien_id))} · ${esc(s.ten_dot_tuyen||'Đợt tuyển dụng')} · ${esc(s.vong_phong_van||'Vòng 1')} · ${esc(date(s.thoi_gian))} · #${s.phong_van_id}</option>`).join('');if(old)select.value=old; renderInterviewReadonly(schedules.find(s=>Number(s.phong_van_id)===Number(select.value))); 
       campaignOptions(); await loadCriteria(selectedCampaignId);render();
+      const requestedScheduleId = Number(new URLSearchParams(window.location.search).get('phong_van_id') || 0);
+      if (requestedScheduleId && schedules.some(s => Number(s.phong_van_id) === requestedScheduleId) && (isInterviewer || isManager)) {
+        $('feedbackForm').reset(); clearNotice('formNotice'); $('phong_van_id').value = String(requestedScheduleId);
+        const selectedSchedule = schedules.find(s => Number(s.phong_van_id) === requestedScheduleId); renderInterviewReadonly(selectedSchedule);
+        if (selectedSchedule) await loadCriteria(selectedSchedule.dot_tuyen_id);
+        restoreFeedback(findExistingFeedback(requestedScheduleId));
+        openModal('feedbackModal');
+      }
     }catch(e){notice(e.message||'Không tải được dữ liệu.');}
   }
   $('btnTao').hidden=!(isInterviewer||isManager);
   $('btnTao').addEventListener('click',()=>{if(!schedules.length){notice('Không có lịch phỏng vấn khả dụng để đánh giá.');return;} $('feedbackForm').reset();clearNotice('formNotice');renderCriteria();openModal('feedbackModal');});
-  $('phong_van_id').addEventListener('change',async()=>{const schedule=schedules.find(s=>Number(s.phong_van_id)===Number($('phong_van_id').value));if(schedule)try{await loadCriteria(schedule.dot_tuyen_id);}catch(err){notice(err.message||'Không tải được tiêu chí của đợt tuyển dụng.','error','formNotice');}});
+  $('phong_van_id').addEventListener('change',async()=>{const schedule=schedules.find(s=>Number(s.phong_van_id)===Number($('phong_van_id').value));renderInterviewReadonly(schedule);if(schedule)try{await loadCriteria(schedule.dot_tuyen_id);}catch(err){notice(err.message||'Không tải được tiêu chí của đợt tuyển dụng.','error','formNotice');}});
   $('criteriaCampaign').addEventListener('change',async()=>{selectedCampaignId=Number($('criteriaCampaign').value||0);$('editorCampaign').value=String(selectedCampaignId||'');try{await loadCriteria(selectedCampaignId);}catch(err){notice(err.message||'Không tải được tiêu chí.');}});
   $('editorCampaign').addEventListener('change',async()=>{selectedCampaignId=Number($('editorCampaign').value||0);$('criteriaCampaign').value=String(selectedCampaignId||'');try{await loadCriteria(selectedCampaignId);renderCriteriaEditor();}catch(err){notice(err.message||'Không tải được tiêu chí.','error','criteriaNotice');}});
   $('q').addEventListener('input',render);$('locDeXuat').addEventListener('change',render);$('locQuyetDinh').addEventListener('change',render);
   document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click',()=>closeModal(btn.dataset.close)));
   document.querySelectorAll('.modal').forEach(modal=>modal.addEventListener('click',e=>{if(e.target===modal)closeModal(modal.id)}));
-  $('feedbackForm').addEventListener('submit',async e=>{e.preventDefault();clearNotice('formNotice');const scores={};for(const input of document.querySelectorAll('[data-score-id]')){const raw=input.value.trim(),score=Number(raw);if(raw===''||!Number.isFinite(score)||score<Number(input.min)||score>Number(input.max)){notice('Vui lòng nhập điểm cho tất cả tiêu chí trong khoảng 0–'+input.max+'.','error','formNotice');input.focus();return;}scores[input.dataset.scoreId]=score;}const body={phong_van_id:Number($('phong_van_id').value),diem:scores,de_xuat:$('de_xuat').value,nhan_xet:$('nhan_xet').value.trim()};try{const r=await api('/api/danh-gia',{method:'POST',body:JSON.stringify(body)});closeModal('feedbackModal');notice(r.message||'Đã lưu feedback.','success');await load();}catch(err){notice(err.message||'Không lưu được feedback.','error','formNotice');}});
+  $('feedbackForm').addEventListener('input',e=>{if(e.target.matches('[data-score-id]'))updateInterviewScore();});
+  $('feedbackForm').addEventListener('submit',async e=>{e.preventDefault();clearNotice('formNotice');const scores={};for(const input of document.querySelectorAll('[data-score-id]')){const raw=input.value.trim(),score=Number(raw);if(raw===''||!Number.isFinite(score)||score<Number(input.min)||score>Number(input.max)){notice('Vui lòng nhập điểm cho tất cả tiêu chí trong khoảng 0–'+input.max+'.','error','formNotice');input.focus();return;}scores[input.dataset.scoreId]=score;}const body={phong_van_id:Number($('phong_van_id').value),diem:scores,de_xuat:$('de_xuat').value,nhan_xet:$('nhan_xet').value.trim()};try{const saveBtn=$('feedbackForm').querySelector('button[type="submit"]');saveBtn.disabled=true;const r=await api('/api/danh-gia',{method:'POST',body:JSON.stringify(body)});$('sendSuggestionEmail').hidden=false;$('sendSuggestionEmail').dataset.scheduleId=String(body.phong_van_id);if(embeddedEvaluation&&window.parent!==window){const savedSchedule=schedules.find(s=>Number(s.phong_van_id)===body.phong_van_id);window.parent.postMessage({type:'tuyendung-ai-feedback-saved',phong_van_id:body.phong_van_id,ten_ung_vien:savedSchedule?.ten_ung_vien||''},window.location.origin);}notice('Đã lưu đánh giá.','success','formNotice');await load();saveBtn.disabled=false;}catch(err){notice(err.message||'Không lưu được đánh giá.','error','formNotice');$('feedbackForm').querySelector('button[type="submit"]').disabled=false;}});
+  $('sendSuggestionEmail').addEventListener('click',async()=>{
+    const btn=$('sendSuggestionEmail'),id=Number(btn.dataset.scheduleId||$('phong_van_id').value);if(!id)return;
+    btn.disabled=true;clearNotice('emailDraftNotice');
+    try{const draft=await api(`/api/danh-gia/${id}/email-de-xuat`);$('emailDraftScheduleId').value=String(id);$('emailDraftMode').value='suggestion';$('emailDraftTo').value=draft.to||'';$('emailDraftSubject').value=draft.subject||'';$('emailDraftBody').value=draft.body||'';openModal('emailDraftModal');}
+    catch(err){notice(err.message||'Không tạo được bản nháp email.','error','formNotice');}
+    finally{btn.disabled=false;}
+  });
+  $('emailDraftForm').addEventListener('submit',async e=>{
+    e.preventDefault();clearNotice('emailDraftNotice');
+    const id=Number($('emailDraftScheduleId').value),subject=$('emailDraftSubject').value.trim(),body=$('emailDraftBody').value.trim(),btn=$('confirmSendDraft');
+    if(!subject||!body){notice('Vui lòng nhập tiêu đề và nội dung email.','error','emailDraftNotice');return;}
+    btn.disabled=true;btn.textContent='Đang gửi…';
+    try{const mode=$('emailDraftMode').value;const endpoint=mode==='decision'?'gui-ket-qua':'gui-email-de-xuat';const r=await api(`/api/danh-gia/${id}/${endpoint}`,{method:'POST',body:JSON.stringify({subject,body})});closeModal('emailDraftModal');notice(r.message||'Đã gửi mail kết quả.','success','formNotice');if(mode==='decision')await load();}
+    catch(err){notice(err.message||'Gửi mail kết quả thất bại.','error','emailDraftNotice');}
+    finally{btn.disabled=false;btn.textContent='Gửi email';}
+  });
   $('rows').addEventListener('click',async e=>{
     const feedbackBtn=e.target.closest('[data-feedback]');const decisionBtn=e.target.closest('[data-decision]');const emailBtn=e.target.closest('[data-email]');
-    if(feedbackBtn){$('feedbackForm').reset();clearNotice('formNotice');$('phong_van_id').value=feedbackBtn.dataset.feedback;const selectedSchedule=schedules.find(s=>Number(s.phong_van_id)===Number(feedbackBtn.dataset.feedback));if(selectedSchedule)await loadCriteria(selectedSchedule.dot_tuyen_id);const existing=feedbacks.find(f=>Number(f.phong_van_id)===Number(feedbackBtn.dataset.feedback)&&Number(f.nguoi_danh_gia_id)===Number(user.id));if(existing){for(const input of document.querySelectorAll('[data-score-id]'))input.value=existing.diem_json?.[input.dataset.scoreId]?.diem??'';$('de_xuat').value=existing.de_xuat||'can_nhac';$('nhan_xet').value=existing.nhan_xet||'';}openModal('feedbackModal');return;}
+    if(feedbackBtn){$('feedbackForm').reset();clearNotice('formNotice');$('phong_van_id').value=feedbackBtn.dataset.feedback;const selectedSchedule=schedules.find(s=>Number(s.phong_van_id)===Number(feedbackBtn.dataset.feedback));renderInterviewReadonly(selectedSchedule);if(selectedSchedule)await loadCriteria(selectedSchedule.dot_tuyen_id);restoreFeedback(findExistingFeedback(feedbackBtn.dataset.feedback));updateInterviewScore();openModal('feedbackModal');return;}
     if(decisionBtn){const id=Number(decisionBtn.dataset.decision),g=grouped().find(x=>x.phong_van_id===id);$('decisionScheduleId').value=id;$('decisionResult').value=g?.quyet_dinh_cuoi||'can_nhac';$('decisionNote').value=g?.ghi_chu_quyet_dinh||'';clearNotice('decisionNotice');openModal('decisionModal');return;}
-    if(emailBtn){const id=Number(emailBtn.dataset.email);if(!confirm('Gửi email thông báo kết quả cho ứng viên của lịch #'+id+'?'))return;emailBtn.disabled=true;try{const r=await api(`/api/danh-gia/${id}/gui-ket-qua`,{method:'POST',body:JSON.stringify({})});notice(r.message||'Đã gửi email.','success');await load();}catch(err){notice(err.message||'Gửi email thất bại.');emailBtn.disabled=false;}}
+    if(emailBtn){const id=Number(emailBtn.dataset.email);emailBtn.disabled=true;clearNotice('emailDraftNotice');try{const draft=await api(`/api/danh-gia/${id}/email-ket-qua`);$('emailDraftScheduleId').value=String(id);$('emailDraftMode').value='decision';$('emailDraftTo').value=draft.to||'';$('emailDraftSubject').value=draft.subject||'';$('emailDraftBody').value=draft.body||'';openModal('emailDraftModal');}catch(err){notice(err.message||'Không tạo được bản nháp email.');emailBtn.disabled=false;}}
   });
   $('decisionForm').addEventListener('submit',async e=>{e.preventDefault();clearNotice('decisionNotice');const id=Number($('decisionScheduleId').value);try{const r=await api(`/api/danh-gia/${id}/quyet-dinh`,{method:'POST',body:JSON.stringify({ket_qua:$('decisionResult').value,ghi_chu:$('decisionNote').value.trim()})});closeModal('decisionModal');notice(r.message||'Đã lưu quyết định.','success');await load();}catch(err){notice(err.message||'Không lưu được quyết định.','error','decisionNotice');}});
   $('btnCriteria').addEventListener('click',()=>{if(!isManager)return;if(!selectedCampaignId){notice('Hãy chọn đợt tuyển dụng trước khi chỉnh sửa tiêu chí.');return;}clearNotice('criteriaNotice');$('editorCampaign').value=String(selectedCampaignId);renderCriteriaEditor();openModal('criteriaModal');});

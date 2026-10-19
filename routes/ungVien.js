@@ -8,7 +8,8 @@ const net = require("net");
 const path = require("path");
 const express = require("express");
 const multer = require("multer");
-const { del: xoaBlobCV } = require("@vercel/blob");
+const { put: luuBlobCV, del: xoaBlobCV, get: layBlobCV } = require("@vercel/blob");
+const { Readable } = require("stream");
 const db = require("../database/db");
 const { kiemTraDangNhap, kiemTraVaiTro } = require("../middleware/auth");
 
@@ -319,16 +320,10 @@ async function layCVTuURL(rawUrl) {
     throw new Error("Không tải được CV từ link");
 }
 
-fs.mkdirSync(thuMucCV, { recursive: true });
-
 const upload = multer({
     defParamCharset: "utf8",
-    storage: multer.diskStorage({
-        destination: thuMucCV,
-        filename(req, file, callback) {
-            callback(null, crypto.randomUUID() + path.extname(file.originalname).toLowerCase());
-        }
-    }),
+    // Luôn nhận file vào bộ nhớ rồi lưu vào cùng một kho Blob cho local và deploy.
+    storage: multer.memoryStorage(),
     limits: { fileSize: kichThuocCVToiDa },
     fileFilter(req, file, callback) {
         if (!duoiFileHopLe.has(path.extname(file.originalname).toLowerCase())) {
@@ -603,23 +598,26 @@ router.put("/:id", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "hr"), asy
     }
 });
 
-// Tải CV lên
+// Tải CV lên: trên Vercel lưu ở Blob để file không mất sau khi deploy.
 router.post("/:id/cv", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "hr"), nhanUploadCV, async (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ message: "Vui lòng chọn tệp CV" });
-    }
+    if (!req.file) return res.status(400).json({ message: "Vui lòng chọn tệp CV" });
 
     let connection;
-
+    let duongDanDaLuu = null;
     try {
+        const tenBlob = `cv/${crypto.randomUUID()}${path.extname(req.file.originalname).toLowerCase()}`;
+        const blob = await luuBlobCV(tenBlob, req.file.buffer, {
+            access: "private",
+            contentType: req.file.mimetype || "application/octet-stream",
+        });
+        duongDanDaLuu = blob.url;
+
         connection = await db.getConnection();
         await connection.beginTransaction();
-
         const [candidate] = await connection.query("SELECT id FROM ung_vien WHERE id = ?", [req.params.id]);
-
         if (!candidate.length) {
             await connection.rollback();
-            fs.unlink(duongDanFile(req.file.filename), () => { });
+            if (duongDanDaLuu) await xoaBlobCV(duongDanDaLuu).catch(() => {});
             return res.status(404).json({ message: "Không tìm thấy ứng viên" });
         }
 
@@ -627,21 +625,14 @@ router.post("/:id/cv", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "hr"),
         await connection.query(`
             INSERT INTO cv (ung_vien_id, ten_file, duong_dan, loai_file, kich_thuoc, la_ban_chinh)
             VALUES (?, ?, ?, ?, ?, 1)
-        `, [
-            req.params.id,
-            path.basename(req.file.originalname),
-            req.file.filename,
-            req.file.mimetype,
-            req.file.size
-        ]);
-
+        `, [req.params.id, path.basename(req.file.originalname), duongDanDaLuu, req.file.mimetype, req.file.size]);
         await connection.commit();
         res.status(201).json({ message: "Tải CV lên thành công" });
     } catch (error) {
-        if (connection) await connection.rollback();
-        if (req.file) fs.unlink(duongDanFile(req.file.filename), () => { });
+        if (connection) { try { await connection.rollback(); } catch (_) {} }
+        if (duongDanDaLuu) await xoaBlobCV(duongDanDaLuu).catch(() => {});
         console.error("POST /api/ung-vien/:id/cv:", error);
-        res.status(500).json({ message: "Không tải được CV lên" });
+        res.status(500).json({ message: error.message || "Không tải được CV lên. Nếu ứng dụng đang chạy trên Vercel, hãy kiểm tra BLOB_READ_WRITE_TOKEN." });
     } finally {
         if (connection) connection.release();
     }
@@ -670,12 +661,16 @@ router.post("/:id/cv-url", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "h
     }
 
     const diskName = crypto.randomUUID() + remoteFile.extension;
-    const filePath = duongDanFile(diskName);
+    let storedPath = diskName;
     let connection;
     let transactionStarted = false;
 
     try {
-        await fs.promises.writeFile(filePath, remoteFile.buffer, { flag: "wx" });
+        const blob = await luuBlobCV(`cv/${diskName}`, remoteFile.buffer, {
+            access: "private",
+            contentType: remoteFile.mime
+        });
+        storedPath = blob.url;
         connection = await db.getConnection();
         await connection.beginTransaction();
         transactionStarted = true;
@@ -685,7 +680,7 @@ router.post("/:id/cv-url", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "h
         if (!candidate.length) {
             await connection.rollback();
             transactionStarted = false;
-            fs.unlink(filePath, () => { });
+            if (storedPath) await xoaBlobCV(storedPath).catch(() => {});
             return res.status(404).json({ message: "Không tìm thấy ứng viên" });
         }
 
@@ -696,7 +691,7 @@ router.post("/:id/cv-url", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "h
         `, [
             req.params.id,
             remoteFile.fileName,
-            diskName,
+            storedPath,
             remoteFile.mime,
             remoteFile.buffer.length
         ]);
@@ -706,7 +701,7 @@ router.post("/:id/cv-url", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "h
         res.status(201).json({ message: "Tải CV từ link thành công" });
     } catch (error) {
         if (connection && transactionStarted) await connection.rollback();
-        fs.unlink(filePath, () => { });
+        if (storedPath) await xoaBlobCV(storedPath).catch(() => {});
         console.error("POST /api/ung-vien/:id/cv-url:", error);
         res.status(500).json({ message: "Không lưu được CV tải từ link" });
     } finally {
@@ -745,7 +740,21 @@ router.get("/:id/cv/:cvId", kiemTraDangNhap, async (req, res) => {
             if (!blobUrl || blobUrl.protocol !== "https:" || !/(^|\.)blob\.vercel-storage\.com$/i.test(blobUrl.hostname)) {
                 return res.status(400).json({ message: "Đường dẫn CV lưu trữ không hợp lệ" });
             }
-            return res.redirect(rows[0].duong_dan);
+            const blob = await layBlobCV(rows[0].duong_dan, { access: "private" });
+            if (!blob || blob.statusCode !== 200 || !blob.stream) {
+                return res.status(404).json({ message: "Không tìm thấy CV trong kho lưu trữ riêng tư" });
+            }
+            const tenFile = rows[0].ten_file || "CV-ung-vien";
+            res.setHeader("Content-Type", blob.blob.contentType || "application/octet-stream");
+            res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(tenFile)}`);
+            res.setHeader("X-Content-Type-Options", "nosniff");
+            res.setHeader("Cache-Control", "private, no-store");
+            Readable.fromWeb(blob.stream).on("error", error => {
+                console.error("Lỗi đọc CV private:", error);
+                if (!res.headersSent) res.status(500);
+                res.end();
+            }).pipe(res);
+            return;
         }
 
         const filePath = duongDanFile(rows[0].duong_dan);
@@ -838,10 +847,14 @@ router.delete("/:id", kiemTraDangNhap, kiemTraVaiTro("admin", "manager"), async 
             return res.status(404).json({ message: "Không tìm thấy ứng viên" });
         }
 
-        files.forEach(file => {
-            const filePath = duongDanFile(file.duong_dan);
-            if (filePath) fs.unlink(filePath, () => { });
-        });
+        for (const file of files) {
+            if (/^https:\/\//i.test(String(file.duong_dan || ""))) {
+                try { await xoaBlobCV(file.duong_dan); } catch (error) { console.error("Không xóa được CV trên Blob:", error); }
+            } else {
+                const filePath = duongDanFile(file.duong_dan);
+                if (filePath) fs.unlink(filePath, () => {});
+            }
+        }
 
         res.json({ message: "Xóa ứng viên thành công" });
     } catch (error) {

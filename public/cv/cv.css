@@ -2821,3 +2821,148 @@
         padding: 14px
     }
 }
+/* Modal xem CV và đánh giá AI cạnh nhau */
+.cv-workspace {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-height: calc(100vh - 160px);
+}
+.cv-list-panel {
+    min-height: 420px;
+}
+.cv-list-main-clickable {
+    cursor: pointer;
+    min-width: 0;
+    border-radius: 6px;
+}
+.cv-list-main-clickable:hover .cv-list-name-clickable {
+    color: #1e40af;
+    text-decoration: underline;
+}
+.cv-list-name-clickable {
+    color: #1d4ed8;
+    width: fit-content;
+    max-width: 100%;
+}
+.cv-list-main-clickable:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+}
+.cv-list-name-clickable:hover {
+    color: #1e40af;
+    text-decoration: underline;
+}
+.cv-review-modal-overlay {
+    z-index: 100050;
+    padding: 18px;
+    background: rgba(15, 23, 42, .62);
+}
+.cv-review-modal {
+    display: flex;
+    flex-direction: column;
+    width: min(1600px, 98vw);
+    height: min(920px, 94vh);
+    min-height: 0;
+    overflow: hidden;
+    background: #f8fafc;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, .3);
+}
+.cv-review-modal-header {
+    flex: 0 0 auto;
+    align-items: center;
+    background: #fff;
+}
+.cv-review-modal-header p {
+    color: #64748b;
+    font-size: 12px;
+}
+.cv-review-modal-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: 12px;
+    padding: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+.cv-review-modal-content > .cv-preview-panel,
+.cv-review-modal-content > .cv-analysis-panel {
+    height: 100%;
+    min-height: 0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+}
+.cv-review-modal-content > .cv-preview-panel .cv-viewer,
+.cv-review-modal-content > .cv-analysis-panel .cv-analysis-content {
+    min-height: 0;
+    overflow: auto;
+}
+.cv-review-modal-content > .cv-analysis-panel .cv-hr-decision-actions {
+    flex: 0 0 auto;
+}
+@media (max-width: 900px) {
+    .cv-review-modal-overlay {
+        padding: 8px;
+    }
+    .cv-review-modal {
+        width: 100%;
+        height: 96vh;
+    }
+    .cv-review-modal-content {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(320px, 1fr) minmax(320px, 1fr);
+        overflow-y: auto;
+    }
+    .cv-review-modal-content > .cv-preview-panel,
+    .cv-review-modal-content > .cv-analysis-panel {
+        min-height: 360px;
+    }
+}
+
+/* Popup CV luôn căn giữa màn hình, không bung nội dung bên dưới tên ứng viên. */
+body > .cv-review-modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+}
+body > .cv-review-modal-overlay.show {
+    display: flex;
+}
+
+
+/* Cửa sổ xem CV + phân tích AI: luôn nổi giữa màn hình, hai cột trên desktop. */
+.cv-review-modal-content > .cv-preview-panel,
+.cv-review-modal-content > .cv-analysis-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 100%;
+    min-height: 0;
+    background: #fff;
+}
+.cv-review-modal-content > .cv-preview-panel .cv-viewer,
+.cv-review-modal-content > .cv-analysis-panel .cv-analysis-content {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+.cv-list-item { cursor: pointer; }
+.cv-list-item:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+}
+@media (max-width: 900px) {
+    .cv-review-modal-overlay { padding: 8px; }
+    .cv-review-modal { width: 100%; height: 96vh; }
+    .cv-review-modal-content {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: minmax(300px, 1fr) minmax(300px, 1fr);
+        overflow-y: auto;
+    }
+    .cv-review-modal-content > .cv-preview-panel,
+    .cv-review-modal-content > .cv-analysis-panel { min-height: 300px; }
+}

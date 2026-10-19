@@ -89,9 +89,22 @@ async function ensureSchema() {
   return schemaPromise;
 }
 async function layLich(id) {
+  const [uvColumns] = await db.query('SHOW COLUMNS FROM ung_vien');
+  const uvNames = new Set(uvColumns.map(c => c.Field));
+  const [dtColumns] = await db.query('SHOW COLUMNS FROM dot_tuyen');
+  const dtNames = new Set(dtColumns.map(c => c.Field));
+  const campaignName = dtNames.has('ten') ? 'ten' : (dtNames.has('ten_dot') ? 'ten_dot' : null);
+  const campaignJoin = uvNames.has('dot_tuyen_id') && campaignName
+    ? `LEFT JOIN dot_tuyen dt ON dt.id=uv.dot_tuyen_id`
+    : '';
+  const campaignExpr = campaignJoin ? `dt.${campaignName} AS ten_dot_tuyen` : `NULL AS ten_dot_tuyen`;
   const [rows] = await db.query(`SELECT pv.id, pv.ung_vien_id, pv.vong_phong_van,
-    uv.ho_ten AS ten_ung_vien, uv.email AS email_ung_vien
-    FROM phong_van pv JOIN ung_vien uv ON uv.id=pv.ung_vien_id WHERE pv.id=? LIMIT 1`, [id]);
+    uv.ho_ten AS ten_ung_vien, uv.email AS email_ung_vien,
+    ${campaignExpr}
+    FROM phong_van pv
+    JOIN ung_vien uv ON uv.id=pv.ung_vien_id
+    ${campaignJoin}
+    WHERE pv.id=? LIMIT 1`, [id]);
   return rows[0] || null;
 }
 async function duocPhanCong(req, id) {
@@ -109,6 +122,18 @@ async function duocPhanCong(req, id) {
 }
 function safeText(v, max=5000) { return String(v ?? '').trim().slice(0,max); }
 function escapeHtml(v) { return String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c])); }
+function taoEmailDeXuat(lich, suggestion) {
+  const templates = {
+    dat:{subject:'Thông báo kết quả tuyển dụng',label:'Đạt vòng phỏng vấn',body:'Chúng tôi vui mừng thông báo bạn đã đạt yêu cầu ở vòng phỏng vấn này. Bộ phận Tuyển dụng sẽ liên hệ để trao đổi về các bước tiếp theo.'},
+    rot:{subject:'Thông báo kết quả tuyển dụng',label:'Chưa phù hợp ở vòng này',body:'Sau khi xem xét hồ sơ và kết quả phỏng vấn, rất tiếc chúng tôi chưa thể tiếp tục quy trình tuyển dụng với bạn ở thời điểm này. Chúng tôi trân trọng sự quan tâm của bạn và hy vọng sẽ có cơ hội hợp tác trong tương lai.'},
+    can_nhac:{subject:'Thông báo cập nhật kết quả tuyển dụng',label:'Đang được cân nhắc',body:'Hồ sơ và kết quả phỏng vấn của bạn hiện đang được bộ phận Tuyển dụng xem xét thêm. Chúng tôi sẽ chủ động liên hệ với bạn ngay khi có cập nhật tiếp theo.'},
+    vong_tiep:{subject:'Thông báo kết quả tuyển dụng',label:'Được đề xuất vào vòng tiếp theo',body:'Chúng tôi vui mừng thông báo bạn được đề xuất tiếp tục quy trình tuyển dụng ở vòng tiếp theo. Bộ phận Tuyển dụng sẽ liên hệ để trao đổi thời gian và thông tin chi tiết.'}
+  };
+  const tpl=templates[suggestion]; if(!tpl) return null;
+  const campaign=safeText(lich.ten_dot_tuyen||'Đợt tuyển dụng',200), round=safeText(lich.vong_phong_van||'Vòng phỏng vấn',100), candidate=safeText(lich.ten_ung_vien||'Ứng viên',150);
+  const body=`Chào ${candidate},\n\nCảm ơn bạn đã quan tâm và ứng tuyển trong đợt tuyển dụng ${campaign}, đồng thời dành thời gian tham gia ${round}.\n\nKết quả hiện tại của bạn: ${tpl.label}.\n\n${tpl.body}\n\nChúng tôi chân thành cảm ơn sự quan tâm, thời gian và nỗ lực bạn đã dành cho quy trình tuyển dụng. Chúc bạn luôn thành công trong công việc và những cơ hội sắp tới.\n\nTrân trọng,\nBộ phận Tuyển dụng`;
+  return {subject:`${tpl.subject} – ${campaign}`, body, label:tpl.label};
+}
 
 router.use(kiemTraDangNhap);
 
@@ -186,7 +211,7 @@ router.get('/lich', async (req,res) => {
     const [uvColumns] = await db.query('SHOW COLUMNS FROM ung_vien');
     const uvNames = new Set(uvColumns.map(c => c.Field));
     if (!uvNames.has('dot_tuyen_id')) throw new Error('Bảng ung_vien không có cột dot_tuyen_id.');
-    sql = `SELECT pv.id AS phong_van_id,pv.ung_vien_id,uv.dot_tuyen_id,dt.${dotNameColumn} AS ten_dot_tuyen,${names.has('vong_phong_van')?'pv.vong_phong_van':"'Vòng 1' AS vong_phong_van"},${names.has('trang_thai')?'pv.trang_thai':"'' AS trang_thai"},uv.ho_ten AS ten_ung_vien,uv.email AS email_ung_vien,${timeCol?`pv.${timeCol}`:'NULL'} AS thoi_gian FROM phong_van pv JOIN ung_vien uv ON uv.id=pv.ung_vien_id JOIN dot_tuyen dt ON dt.id=uv.dot_tuyen_id`;
+    sql = `SELECT pv.id AS phong_van_id,pv.ung_vien_id,uv.dot_tuyen_id,dt.${dotNameColumn} AS ten_dot_tuyen,${names.has('vong_phong_van')?'pv.vong_phong_van':"'Vòng 1' AS vong_phong_van"},${names.has('trang_thai')?'pv.trang_thai':"'' AS trang_thai"},${names.has('hinh_thuc')?'pv.hinh_thuc':"'' AS hinh_thuc"},${names.has('dia_diem')?'pv.dia_diem':"'' AS dia_diem"},uv.ho_ten AS ten_ung_vien,uv.email AS email_ung_vien,${timeCol?`pv.${timeCol}`:'NULL'} AS thoi_gian FROM phong_van pv JOIN ung_vien uv ON uv.id=pv.ung_vien_id JOIN dot_tuyen dt ON dt.id=uv.dot_tuyen_id`;
     const [rows] = await db.query(sql + ' ORDER BY thoi_gian DESC, pv.id DESC LIMIT 500');
     const out=[];
     for (const row of rows) if (await duocPhanCong(req,row.phong_van_id)) out.push(row);
@@ -256,8 +281,62 @@ router.post('/', async (req,res) => {
     const comment=safeText(req.body?.nhan_xet,5000); const uid=userId(req);
     await db.query(`INSERT INTO danh_gia_phong_van (phong_van_id,nguoi_danh_gia_id,diem_json,diem_tong,nhan_xet,de_xuat)
       VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE diem_json=VALUES(diem_json),diem_tong=VALUES(diem_tong),nhan_xet=VALUES(nhan_xet),de_xuat=VALUES(de_xuat),ngay_cap_nhat=CURRENT_TIMESTAMP`,[phongVanId,uid,JSON.stringify(detail),total,comment,suggestion]);
-    res.status(201).json({message:'Đã lưu feedback phỏng vấn.',diem_tong:total});
+    // Cập nhật trạng thái ngay trong request lưu đánh giá để không phụ thuộc postMessage/iframe.
+    await db.query(`UPDATE ung_vien uv JOIN phong_van pv ON pv.ung_vien_id=uv.id SET uv.trang_thai='da_phong_van' WHERE pv.id=?`,[phongVanId]);
+    res.status(201).json({message:'Đã lưu đánh giá phỏng vấn và cập nhật trạng thái ứng viên.',diem_tong:total,trang_thai:'da_phong_van'});
   } catch(e) { console.error('POST /api/danh-gia',e); res.status(500).json({message:'Không lưu được feedback phỏng vấn.'}); }
+});
+
+
+// Đánh dấu ứng viên đã phỏng vấn sau khi đã lưu feedback.
+router.post('/mark-interviewed/:id', async (req,res) => {
+  try {
+    await ensureSchema();
+    const id=Number(req.params.id);
+    if(!Number.isInteger(id)||id<1) return res.status(400).json({message:'Lịch phỏng vấn không hợp lệ.'});
+    if (!hasRole(req,'interviewer') && !canManage(req)) return res.status(403).json({message:'Không có quyền cập nhật trạng thái.'});
+    if (!(await duocPhanCong(req,id))) return res.status(403).json({message:'Bạn không được phân công vào lịch phỏng vấn này.'});
+    await db.query(`UPDATE ung_vien uv JOIN phong_van pv ON pv.ung_vien_id=uv.id SET uv.trang_thai='da_phong_van' WHERE pv.id=?`,[id]);
+    res.json({message:'Đã cập nhật trạng thái ứng viên.'});
+  } catch(e) { console.error('POST /api/danh-gia/mark-interviewed',e); res.status(500).json({message:'Không cập nhật được trạng thái ứng viên.'}); }
+});
+
+router.get('/:id/email-de-xuat', async (req,res) => {
+  try {
+    await ensureSchema();
+    const id=Number(req.params.id);
+    if(!Number.isInteger(id)||id<1) return res.status(400).json({message:'Lịch phỏng vấn không hợp lệ.'});
+    if (!(await duocPhanCong(req,id))) return res.status(403).json({message:'Bạn không được phân công vào lịch phỏng vấn này.'});
+    const lich=await layLich(id); if(!lich) return res.status(404).json({message:'Không tìm thấy lịch phỏng vấn.'});
+    if(!lich.email_ung_vien) return res.status(400).json({message:'Ứng viên chưa có email.'});
+    const [rows]=await db.query('SELECT de_xuat FROM danh_gia_phong_van WHERE phong_van_id=? ORDER BY ngay_cap_nhat DESC,id DESC LIMIT 1',[id]);
+    if(!rows.length) return res.status(400).json({message:'Vui lòng lưu đánh giá trước khi gửi mail.'});
+    const draft=taoEmailDeXuat(lich,rows[0].de_xuat); if(!draft) return res.status(400).json({message:'Đề xuất đánh giá chưa hợp lệ.'});
+    res.json({to:lich.email_ung_vien,ten_ung_vien:lich.ten_ung_vien,subject:draft.subject,body:draft.body,label:draft.label});
+  } catch(e) { console.error('GET /api/danh-gia/:id/email-de-xuat',e); res.status(500).json({message:e.message||'Không tạo được bản nháp email.'}); }
+});
+
+router.post('/:id/gui-email-de-xuat', async (req,res) => {
+  try {
+    await ensureSchema();
+    const id=Number(req.params.id);
+    if(!Number.isInteger(id)||id<1) return res.status(400).json({message:'Lịch phỏng vấn không hợp lệ.'});
+    if (!(await duocPhanCong(req,id))) return res.status(403).json({message:'Bạn không được phân công vào lịch phỏng vấn này.'});
+    const lich=await layLich(id); if(!lich) return res.status(404).json({message:'Không tìm thấy lịch phỏng vấn.'});
+    if(!lich.email_ung_vien) return res.status(400).json({message:'Ứng viên chưa có email.'});
+    const [rows]=await db.query('SELECT de_xuat FROM danh_gia_phong_van WHERE phong_van_id=? ORDER BY ngay_cap_nhat DESC,id DESC LIMIT 1',[id]);
+    if(!rows.length) return res.status(400).json({message:'Vui lòng lưu đánh giá trước khi gửi mail.'});
+    const draft=taoEmailDeXuat(lich,rows[0].de_xuat); if(!draft) return res.status(400).json({message:'Đề xuất đánh giá chưa hợp lệ.'});
+    const subject=safeText(req.body?.subject||draft.subject,250);
+    const text=safeText(req.body?.body||draft.body,12000);
+    if(!subject||!text) return res.status(400).json({message:'Tiêu đề và nội dung email không được để trống.'});
+    const email=String(process.env.GMAIL_USER||'').trim(), pass=String(process.env.GMAIL_APP_PASSWORD||'').replace(/\s+/g,'');
+    if(!email||!pass) throw new Error('Thiếu GMAIL_USER hoặc GMAIL_APP_PASSWORD trong file .env.');
+    const html=`<div style="margin:0;background:#f4f6fa;padding:32px 12px;font-family:Arial,Helvetica,sans-serif;color:#243047"><div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e3e8f0;border-radius:12px;overflow:hidden"><div style="background:#173b68;padding:24px 30px;color:#fff"><h2 style="margin:8px 0 0;font-size:22px">${escapeHtml(subject)}</h2></div><div style="padding:28px 30px;font-size:15px;line-height:1.75;white-space:pre-line">${escapeHtml(text)}</div><div style="padding:14px 30px;background:#f8fafc;border-top:1px solid #e8edf4;color:#718096;font-size:12px">Email thông báo kết quả tuyển dụng từ Bộ phận Tuyển dụng.</div></div></div>`;
+    const transporter=nodemailer.createTransport({service:'gmail',auth:{user:email,pass}});
+    await transporter.sendMail({from:email,to:lich.email_ung_vien,subject,text,html});
+    res.json({message:'Đã gửi mail kết quả cho ứng viên.'});
+  } catch(e) { console.error('POST /api/danh-gia/:id/gui-email-de-xuat',e); res.status(500).json({message:e.message||'Gửi mail kết quả thất bại.'}); }
 });
 
 router.post('/:id/quyet-dinh', async (req,res) => {
@@ -273,6 +352,21 @@ router.post('/:id/quyet-dinh', async (req,res) => {
   } catch(e) { console.error('POST /api/danh-gia/:id/quyet-dinh',e); res.status(500).json({message:'Không lưu được quyết định cuối.'}); }
 });
 
+router.get('/:id/email-ket-qua', async (req,res) => {
+  try {
+    await ensureSchema(); if(!canHr(req)) return res.status(403).json({message:'Chỉ HR hoặc quản lý được gửi kết quả cho ứng viên.'});
+    const id=Number(req.params.id); const lich=await layLich(id); if(!lich) return res.status(404).json({message:'Không tìm thấy lịch phỏng vấn.'});
+    if(!lich.email_ung_vien) return res.status(400).json({message:'Ứng viên chưa có email.'});
+    const [rows]=await db.query('SELECT * FROM quyet_dinh_phong_van WHERE phong_van_id=? LIMIT 1',[id]); const decision=rows[0];
+    if(!decision) return res.status(400).json({message:'Manager/Leader cần lưu quyết định cuối trước khi gửi email.'});
+    const labels={dat:'Đạt vòng phỏng vấn',can_nhac:'Đang được cân nhắc',rot:'Chưa phù hợp ở vòng này',vong_tiep:'Được mời tiếp tục quy trình tuyển dụng ở vòng tiếp theo'};
+    const explanations={dat:'Chúng tôi vui mừng thông báo bạn đã đạt yêu cầu ở vòng phỏng vấn này. Bộ phận Tuyển dụng sẽ liên hệ để trao đổi về các bước tiếp theo.',can_nhac:'Hồ sơ và kết quả phỏng vấn của bạn hiện đang được bộ phận Tuyển dụng xem xét thêm. Chúng tôi sẽ chủ động liên hệ với bạn ngay khi có cập nhật tiếp theo.',rot:'Sau khi xem xét hồ sơ và kết quả phỏng vấn, rất tiếc chúng tôi chưa thể tiếp tục quy trình tuyển dụng với bạn ở thời điểm này. Chúng tôi trân trọng sự quan tâm của bạn và hy vọng sẽ có cơ hội hợp tác trong tương lai.',vong_tiep:'Chúng tôi vui mừng thông báo bạn được đề xuất tiếp tục quy trình tuyển dụng ở vòng tiếp theo. Bộ phận Tuyển dụng sẽ liên hệ để trao đổi thời gian và thông tin chi tiết.'};
+    const campaign=safeText(lich.ten_dot_tuyen||'Đợt tuyển dụng',200), round=safeText(lich.vong_phong_van||'Vòng phỏng vấn',100), candidate=safeText(lich.ten_ung_vien||'Ứng viên',150), label=labels[decision.ket_qua]||decision.ket_qua, explanation=explanations[decision.ket_qua]||'';
+    const body=`Chào ${candidate},\n\nCảm ơn bạn đã quan tâm và ứng tuyển trong đợt tuyển dụng ${campaign}, đồng thời dành thời gian tham gia ${round}.\n\nKết quả hiện tại của bạn: ${label}.\n\n${explanation}\n\nChúng tôi chân thành cảm ơn sự quan tâm, thời gian và nỗ lực bạn đã dành cho quy trình tuyển dụng. Chúc bạn luôn thành công trong công việc và những cơ hội sắp tới.\n\nTrân trọng,\nBộ phận Tuyển dụng`;
+    res.json({to:lich.email_ung_vien,ten_ung_vien:candidate,subject:`Thông báo kết quả tuyển dụng – ${campaign}`,body,label});
+  } catch(e) { console.error('GET /api/danh-gia/:id/email-ket-qua',e); res.status(500).json({message:e.message||'Không tạo được bản nháp email.'}); }
+});
+
 router.post('/:id/gui-ket-qua', async (req,res) => {
   try {
     await ensureSchema(); if(!canHr(req)) return res.status(403).json({message:'Chỉ HR hoặc quản lý được gửi kết quả cho ứng viên.'});
@@ -282,11 +376,17 @@ router.post('/:id/gui-ket-qua', async (req,res) => {
     if(!lich.email_ung_vien) return res.status(400).json({message:'Ứng viên chưa có email.'});
     const email=String(process.env.GMAIL_USER||'').trim(), pass=String(process.env.GMAIL_APP_PASSWORD||'').replace(/\s+/g,'');
     if(!email||!pass) throw new Error('Thiếu GMAIL_USER hoặc GMAIL_APP_PASSWORD trong file .env.');
-    const labels={dat:'Đạt phỏng vấn',can_nhac:'Đang được cân nhắc',rot:'Chưa phù hợp ở vòng này',vong_tiep:'Mời tham gia vòng phỏng vấn tiếp theo'};
-    const label=labels[decision.ket_qua]||decision.ket_qua; const round=safeText(lich.vong_phong_van||'Vòng phỏng vấn',100);
+    const labels={dat:'Đạt vòng phỏng vấn',can_nhac:'Đang được cân nhắc',rot:'Chưa phù hợp ở vòng này',vong_tiep:'Được mời tiếp tục quy trình tuyển dụng ở vòng tiếp theo'};
+    const label=labels[decision.ket_qua]||decision.ket_qua;
+    const campaign=safeText(lich.ten_dot_tuyen||'Đợt tuyển dụng',200);
+    const defaultSubject=`Thông báo kết quả tuyển dụng – ${campaign}`;
+    const candidate=safeText(lich.ten_ung_vien||'Ứng viên',150);
+    const defaultBody=`Chào ${candidate},\n\nCảm ơn bạn đã quan tâm và ứng tuyển trong đợt tuyển dụng ${campaign}, đồng thời dành thời gian tham gia ${safeText(lich.vong_phong_van||'Vòng phỏng vấn',100)}.\n\nKết quả hiện tại của bạn: ${label}.\n\nTrân trọng,\nBộ phận Tuyển dụng`;
+    const subject=safeText(req.body?.subject||defaultSubject,250), text=safeText(req.body?.body||defaultBody,12000);
+    if(!subject||!text) return res.status(400).json({message:'Tiêu đề và nội dung email không được để trống.'});
+    const html=`<div style="margin:0;background:#f4f6fa;padding:32px 12px;font-family:Arial,Helvetica,sans-serif;color:#243047"><div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e3e8f0;border-radius:12px;overflow:hidden"><div style="background:#173b68;padding:24px 30px;color:#fff"><h2 style="margin:8px 0 0;font-size:22px">${escapeHtml(subject)}</h2></div><div style="padding:28px 30px;font-size:15px;line-height:1.75;white-space:pre-line">${escapeHtml(text)}</div><div style="padding:14px 30px;background:#f8fafc;border-top:1px solid #e8edf4;color:#718096;font-size:12px">Email thông báo kết quả tuyển dụng từ Bộ phận Tuyển dụng.</div></div></div>`;
     const transporter=nodemailer.createTransport({service:'gmail',auth:{user:email,pass}});
-    const html=`<div style="font-family:Arial,sans-serif;line-height:1.7;color:#243047"><h2>Thông báo kết quả phỏng vấn</h2><p>Chào ${escapeHtml(lich.ten_ung_vien)},</p><p>Cảm ơn bạn đã tham gia <b>${escapeHtml(round)}</b> tại AI Recruitment Hub.</p><p>Kết quả hiện tại: <b>${escapeHtml(label)}</b>.</p>${decision.ghi_chu?`<p>${escapeHtml(safeText(decision.ghi_chu,2000)).replace(/\n/g,'<br>')}</p>`:''}<p>Trân trọng,<br>Bộ phận Tuyển dụng</p></div>`;
-    await transporter.sendMail({from:`AI Recruitment Hub <${email}>`,to:lich.email_ung_vien,subject:`Kết quả phỏng vấn – ${round}`,text:`Chào ${lich.ten_ung_vien},\nKết quả ${round}: ${label}.\n${decision.ghi_chu||''}\nTrân trọng, Bộ phận Tuyển dụng`,html});
+    await transporter.sendMail({from:email,to:lich.email_ung_vien,subject,text,html});
     await db.query("UPDATE quyet_dinh_phong_van SET email_trang_thai='da_gui',email_da_gui_luc=NOW(),email_loi=NULL WHERE phong_van_id=?",[id]);
     res.json({message:'Đã gửi email thông báo kết quả cho ứng viên.'});
   } catch(e) {

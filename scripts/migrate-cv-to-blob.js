@@ -1,5 +1,6 @@
 
 require("dotenv").config({ path: ".env.local" });
+require("dotenv").config();
 
 const fs = require("fs");
 const path = require("path");
@@ -54,10 +55,6 @@ async function main() {
         if (!process.env[ten]) {
             throw new Error(`Thiếu biến môi trường ${ten}`);
         }
-    }
-
-    if (!fs.existsSync(THU_MUC_CV)) {
-        throw new Error(`Không tìm thấy thư mục ${THU_MUC_CV}`);
     }
 
     const [danhSach] = await db.query(`

@@ -1,6 +1,6 @@
 {
   "che_do": "APPLY",
-  "bat_dau": "2026-10-09T04:25:50.728Z",
+  "bat_dau": "2026-10-19T08:40:46.071Z",
   "tong_ban_ghi": 13,
   "san_sang": [],
   "da_co_blob": [
@@ -23,54 +23,61 @@
     {
       "id": 40001,
       "ten_file": "chi-tiet-mau-cv-so-72.png"
-    },
-    {
-      "id": 44001,
-      "ten_file": "mau-cv-lap-trinh-vien-1-scaled.jpg"
-    },
-    {
-      "id": 44002,
-      "ten_file": "mau-cv-lap-trinh-vien-5.jpg"
-    },
-    {
-      "id": 44003,
-      "ten_file": "655223b5327a33e579ec95b9_Viet-thu-xin-viec-lap-trinh-vien-khong-he-kho-nhu-ban-nghi.png"
-    },
-    {
-      "id": 44004,
-      "ten_file": "chi-tiet-mau-cv-so-72.png"
-    },
-    {
-      "id": 48001,
-      "ten_file": "chi-tiet-mau-cv-so-72.png"
-    },
-    {
-      "id": 52001,
-      "ten_file": "JOBOKO-CV ATS WORD.docx"
     }
   ],
-  "thieu_file": [],
+  "thieu_file": [
+    {
+      "id": 88001,
+      "ten_file": "CV Tester.png",
+      "duong_dan": "uploads/cv/1791872461131_CV_Tester.png"
+    },
+    {
+      "id": 96006,
+      "ten_file": "CV_Nguyen_Viet_Anh_Mixue_1.pdf",
+      "duong_dan": "uploads/cv/9affb7ab-1fd9-453b-a858-584e2628e283_CV_Nguyen_Viet_Anh_Mixue_1.pdf"
+    },
+    {
+      "id": 100003,
+      "ten_file": "mceclip11_ce9dfe6156.jpg",
+      "duong_dan": "uploads/cv/e8631ae8-4acb-40e8-a538-b3fd9c8695a4_mceclip11_ce9dfe6156.jpg"
+    }
+  ],
   "duong_dan_khong_hop_le": [],
   "loi": [],
   "thanh_cong": [
     {
       "id": 16001,
-      "ten_file": "mau-cv-cho-sinh-vien-chua-co-kinh-nghiem-6.jpg",
-      "kich_thuoc": 98901
+      "ten_file": "tai-mau-cv-xin-viec-file-pdf-careerbuilder-1.jpg",
+      "kich_thuoc": 114303
     },
     {
-      "id": 36003,
-      "ten_file": "chi-tiet-mau-cv-so-72.png",
-      "kich_thuoc": 345603
+      "id": 72002,
+      "ten_file": "mau-cv-xin-viec-don-gian-image-1.jpg",
+      "kich_thuoc": 98293
+    },
+    {
+      "id": 72003,
+      "ten_file": "2.pdf",
+      "kich_thuoc": 64226
+    },
+    {
+      "id": 84001,
+      "ten_file": "CV Tester chuyÃªn nghiá»p â Nguyá»n Viá»t Anh.png",
+      "kich_thuoc": 1732295
+    },
+    {
+      "id": 88002,
+      "ten_file": "CV Tester chuyÃªn nghiá»p â Nguyá»n Viá»t Anh.png",
+      "kich_thuoc": 1732295
     }
   ],
-  "ket_thuc": "2026-10-09T04:25:56.539Z",
+  "ket_thuc": "2026-10-19T08:41:00.943Z",
   "tong_ket": {
     "san_sang": 0,
-    "da_co_blob": 11,
-    "thieu_file": 0,
+    "da_co_blob": 5,
+    "thieu_file": 3,
     "duong_dan_khong_hop_le": 0,
-    "thanh_cong": 2,
+    "thanh_cong": 5,
     "loi": 0
   }
 }

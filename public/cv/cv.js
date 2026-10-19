@@ -73,6 +73,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const khuVucThayCV = document.getElementById("khuVucThayCV");
     const btnPhanTich = document.getElementById("btnPhanTich");
     const phanTichAI = document.getElementById("phanTichAI");
+    const modalDanhGiaCV = document.getElementById("modalDanhGiaCV");
+    const modalPopupPhanTich = document.getElementById("modalPopupPhanTich");
+    const btnMoPopupPhanTich = document.getElementById("btnMoPopupPhanTich");
+    const btnDongPopupPhanTich = document.getElementById("btnDongPopupPhanTich");
+    const btnDongDanhGiaCV = document.getElementById("btnDongDanhGiaCV");
+
+    // Đặt popup trực tiếp dưới body để luôn phủ toàn màn hình, không bị giới hạn bởi bố cục trang.
+    if (modalDanhGiaCV && modalDanhGiaCV.parentElement !== document.body) document.body.appendChild(modalDanhGiaCV);
+    if (modalPopupPhanTich && modalPopupPhanTich.parentElement !== document.body) document.body.appendChild(modalPopupPhanTich);
 
     let danhSach = [];
     let danhSachDanhGia = [];
@@ -256,8 +265,8 @@ document.addEventListener("DOMContentLoaded", function () {
             return `<div class="cv-list-item-wrap">
                 <button type="button" class="cv-list-item ${selected ? "active" : ""}" data-id="${escapeHtml(id)}">
                     <div class="cv-list-icon">CV</div>
-                    <div class="cv-list-main">
-                        <div class="cv-list-name">${escapeHtml(layTenUngVien(item))}</div>
+                    <div class="cv-list-main cv-list-main-clickable" title="Bấm để mở CV và phân tích AI">
+                        <div class="cv-list-name cv-list-name-clickable">${escapeHtml(layTenUngVien(item))}</div>
                         <div class="cv-list-file">${escapeHtml(layTenFile(item))}</div>
                         <div class="cv-list-campaign">${escapeHtml(item.ten_dot_tuyen || "Chưa có đợt tuyển dụng")}</div>
                     </div>
@@ -414,6 +423,8 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             hoSoHienTai = data;
+            const tieuDeDanhGiaCV = document.getElementById("tieuDeDanhGiaCV");
+            if (tieuDeDanhGiaCV) tieuDeDanhGiaCV.textContent = `CV và phân tích AI — ${layTenUngVien(data.ung_vien)}`;
 
             const cvs = Array.isArray(data.cv) ? data.cv : [];
             cvHienTai = cvs.find((cv) => Number(cv.id) === Number(cvId))
@@ -870,7 +881,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!response.ok) throw new Error(data.message || "Không lưu được kết quả phân tích.");
             dongModalXacNhan();
             hienThongBao("Đã xác nhận và lưu kết quả phân tích.", "success");
-            await moHoSo(hoSoHienTai.ung_vien.id, cvHienTai.id);
+            const savedCandidateId = hoSoHienTai.ung_vien.id;
+            const savedCvId = cvHienTai.id;
+            await taiDanhSach();
+            await moHoSo(savedCandidateId, savedCvId);
         } catch (error) {
             hienThongBao(error.message || "Không thể lưu kết quả phân tích.");
         } finally {
@@ -1150,6 +1164,15 @@ document.addEventListener("DOMContentLoaded", function () {
             const action = actionButton.dataset.action;
             const candidateId = Number(actionButton.dataset.candidateId);
             if (!candidateId) return;
+            if (action === "open-review") {
+                event.preventDefault();
+                event.stopPropagation();
+                document.querySelectorAll(".cv-candidate-menu.show").forEach((menu) => menu.classList.remove("show"));
+                moModal(modalDanhGiaCV);
+                modalDanhGiaCV?.setAttribute("aria-hidden", "false");
+                await moHoSo(candidateId);
+                return;
+            }
             if (action === "more") {
                 event.stopPropagation();
                 document.querySelectorAll(".cv-candidate-menu.show").forEach((menu) => menu.classList.remove("show"));
@@ -1176,7 +1199,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!item) return;
         const cvId = Number(item.dataset.id);
         const cvItem = danhSach.find((row) => Number(row.id) === cvId);
-        if (cvItem?.ung_vien_id) await moHoSo(cvItem.ung_vien_id, cvId);
+        if (cvItem?.ung_vien_id) {
+            moModal(modalDanhGiaCV);
+            modalDanhGiaCV?.setAttribute("aria-hidden", "false");
+            await moHoSo(cvItem.ung_vien_id, cvId);
+        }
     });
 
     document.addEventListener("click", function (event) {
@@ -1262,6 +1289,22 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     btnPhanTich?.addEventListener("click", phanTichCV);
+    btnDongDanhGiaCV?.addEventListener("click", function () {
+        dongModal(modalDanhGiaCV);
+        modalDanhGiaCV?.setAttribute("aria-hidden", "true");
+    });
+    modalDanhGiaCV?.addEventListener("click", function (event) {
+        if (event.target === modalDanhGiaCV) {
+            dongModal(modalDanhGiaCV);
+            modalDanhGiaCV.setAttribute("aria-hidden", "true");
+        }
+    });
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && modalDanhGiaCV?.classList.contains("show")) {
+            dongModal(modalDanhGiaCV);
+            modalDanhGiaCV.setAttribute("aria-hidden", "true");
+        }
+    });
     document.getElementById("btnTuChoiCV")?.addEventListener("click", () => moFormKetQua("rot"));
     document.getElementById("btnNhanPhongVan")?.addEventListener("click", function () {
         // Mở biểu mẫu ngay trên trang CV, không chuyển sang trang khác.
