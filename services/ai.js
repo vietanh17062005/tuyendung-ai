@@ -1,14 +1,11 @@
 require("dotenv").config();
-const { OpenAI } = require("openai");
 
-// 1. Danh sách Model Gemini chuẩn hiện tại (Loại bỏ các model đã khai tử/ngưng hỗ trợ)
-const GEMINI_MODELS = [
-    process.env.GEMINI_MODEL || "gemini-flash-latest",
-    "gemini-3.8-flash",
-    "gemini-3.5-flash",
-].filter(function (val, idx, arr) {
-    return val && arr.indexOf(val) === idx;
-});
+const { GoogleGenAI } = require("@google/genai");
+
+const GEMINI_MODEL = "gemini-3.1-flash-lite";
+
+const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT;
+const LOCATION = process.env.GOOGLE_CLOUD_LOCATION || "global";
 
 function taoLoi(message, status) {
     const error = new Error(message);
@@ -16,211 +13,144 @@ function taoLoi(message, status) {
     return error;
 }
 
-function cho(ms) {
-    return new Promise(function (resolve) {
-        setTimeout(resolve, ms);
-    });
+if (!PROJECT_ID) {
+    throw new Error("Thiếu GOOGLE_CLOUD_PROJECT trong file .env");
 }
 
-function laLoiTamThoi(status, message) {
-    const msg = String(message || "").toUpperCase();
-    return (
-        status === 429 ||
-        status === 503 ||
-        msg.includes("UNAVAILABLE") ||
-        msg.includes("RESOURCE_EXHAUSTED") ||
-        msg.includes("TOO MANY REQUESTS")
-    );
-}
+const ai = new GoogleGenAI({
+    vertexai: true,
+    project: PROJECT_ID,
+    location: LOCATION,
+});
 
 /**
- * Gọi Gemini REST API - Tự động retry và fallback model thông minh
+ * Chỉ sử dụng Gemini 3.1 Flash-Lite qua Vertex AI.
+ * Xác thực bằng Service Account và Application Default Credentials.
+ * Không chuyển model, không gọi OpenAI.
  */
 async function goiGemini(system, noiDung, maxTokens, jsonMode) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-    if (!apiKey) {
-        throw taoLoi("Máy chủ chưa cấu hình GEMINI_API_KEY", 500);
+    if (
+        credentialsPath &&
+        !require("fs").existsSync(
+            require("path").resolve(credentialsPath)
+        )
+    ) {
+        throw taoLoi(
+            "Không tìm thấy file Service Account: " + credentialsPath,
+            500
+        );
     }
 
-    let loiCuoi = null;
-
-    for (let viTriModel = 0; viTriModel < GEMINI_MODELS.length; viTriModel++) {
-        const model = GEMINI_MODELS[viTriModel];
-
-        for (let lanThu = 1; lanThu <= 3; lanThu++) {
-            const controller = new AbortController();
-            const timer = setTimeout(function () {
-                controller.abort();
-            }, 50000);
-
-            try {
-                console.log(`[Gemini] Đang gọi model ${model}, lần thử ${lanThu}/3`);
-
-                const response = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-                    {
-                        method: "POST",
-                        signal: controller.signal,
-                        headers: {
-                            "content-type": "application/json",
-                            "x-goog-api-key": apiKey,
-                        },
-                        body: JSON.stringify({
-                            systemInstruction: { parts: [{ text: system }] },
-                            contents: [{ role: "user", parts: [{ text: noiDung }] }],
-                            generationConfig: {
-                                maxOutputTokens: maxTokens,
-                                ...(jsonMode === false
-                                    ? {}
-                                    : { responseMimeType: "application/json" }),
-                            },
-                        }),
-                    },
-                );
-
-                const data = await response.json().catch(function () {
-                    return {};
-                });
-
-                if (!response.ok) {
-                    const status = response.status;
-                    const errorMsg = data?.error?.message || "";
-                    console.error(`[Gemini] ${model} lỗi ${status}:`, JSON.stringify(data));
-
-                    if (status === 404 || errorMsg.includes("NOT_FOUND")) {
-                        console.warn(`[Gemini] Model ${model} không khả dụng. Chuyển model dự phòng...`);
-                        loiCuoi = taoLoi(`Gemini không hỗ trợ model ${model}.`, 502);
-                        break;
-                    }
-
-                    const thongBao = status === 429 || errorMsg.toLowerCase().includes("quota")
-                        ? `Gemini đã hết hạn mức gọi: ${errorMsg || "hãy kiểm tra quota và billing."}`
-                        : status === 503
-                            ? `Gemini đang quá tải: ${errorMsg || "vui lòng thử lại sau."}`
-                            : `Gemini lỗi ${status}: ${errorMsg || "không có thông tin chi tiết."}`;
-                    loiCuoi = taoLoi(thongBao, status === 429 ? 429 : 502);
-
-                    if (!laLoiTamThoi(status, errorMsg)) {
-                        throw loiCuoi;
-                    }
-
-                    if (status === 429) break;
-                    if (lanThu < 3) await cho(lanThu * 2000);
-                    continue;
-                }
-
-                const parts = data.candidates?.[0]?.content?.parts || [];
-                const text = parts
-                    .map(function (phan) {
-                        return phan.text || "";
-                    })
-                    .join("");
-
-                if (!text) {
-                    console.error("Gemini không trả nội dung:", JSON.stringify(data));
-                    throw taoLoi("AI không trả về nội dung, vui lòng thử lại", 502);
-                }
-
-                console.log(`[Gemini] Trả kết quả thành công bằng ${model}`);
-                return text;
-
-            } catch (error) {
-                loiCuoi = error;
-                if (error.status && error.status !== 502) throw error;
-
-                if (lanThu < 3 && laLoiTamThoi(error.status, error.message)) {
-                    await cho(lanThu * 2000);
-                }
-            } finally {
-                clearTimeout(timer);
-            }
-        }
-    }
-
-    throw loiCuoi || taoLoi("Không kết nối được AI, vui lòng thử lại", 502);
-}
-
-async function goiOpenAI(system, noiDung, maxTokens, jsonMode) {
-    if (!process.env.OPENAI_API_KEY) {
-        throw taoLoi("Máy chủ chưa cấu hình OPENAI_API_KEY", 500);
-    }
+    const controller = new AbortController();
+    const timer = setTimeout(function () {
+        controller.abort();
+    }, 50000);
 
     try {
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        const response = await openai.chat.completions.create({
-            model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-            messages: [
-                { role: "system", content: system },
-                { role: "user", content: noiDung },
-            ],
-            temperature: 0.2,
-            max_tokens: maxTokens,
-            ...(jsonMode === false
-                ? {}
-                : { response_format: { type: "json_object" } }),
+        console.log(
+            `[Vertex AI] Đang gọi ${GEMINI_MODEL}, project ${PROJECT_ID}`
+        );
+
+        const response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: noiDung,
+            config: {
+                systemInstruction: system,
+                maxOutputTokens: maxTokens,
+                ...(jsonMode === false
+                    ? {}
+                    : { responseMimeType: "application/json" }),
+                abortSignal: controller.signal,
+            },
         });
-        const reply = response.choices[0]?.message?.content?.trim();
-        if (!reply) throw taoLoi("OpenAI chưa trả về nội dung", 502);
-        return reply;
-    } catch (error) {
-        const status = Number(error?.status) || 502;
-        const message = error?.code === "insufficient_quota"
-            ? "OpenAI đã hết credit hoặc hạn mức. Hãy kiểm tra billing của tài khoản OpenAI."
-            : error.message || "Không thể kết nối OpenAI.";
-        console.error(`[OpenAI] Lỗi gọi model (${status}):`, message);
-        throw taoLoi(message, status);
-    }
-}
 
-async function goiAI(system, noiDung, maxTokens, options) {
-    const jsonMode = options?.jsonMode !== false;
-    const providersConfigured = {
-        gemini: Boolean(process.env.GEMINI_API_KEY),
-        openai: Boolean(process.env.OPENAI_API_KEY),
-    };
-    const providerSetting = String(process.env.AI_PROVIDER || "gemini").toLowerCase();
-    const openaiSettings = ["openai", "gpt", "chatgpt"];
-    if (!["gemini", ...openaiSettings].includes(providerSetting)) {
-        throw taoLoi("AI_PROVIDER chỉ nhận gemini, openai, gpt hoặc chatgpt", 500);
-    }
-    const primary = openaiSettings.includes(providerSetting) ? "openai" : "gemini";
-    const providers = [primary, primary === "gemini" ? "openai" : "gemini"]
-        .filter((provider) => providersConfigured[provider]);
+        const text = response.text || "";
 
-    if (!providers.length) {
-        throw taoLoi("Chưa cấu hình GEMINI_API_KEY hoặc OPENAI_API_KEY trên máy chủ", 500);
-    }
-
-    const errors = [];
-    for (const provider of providers) {
-        try {
-            console.log(`[AI] Đang dùng ${provider === "openai" ? "OpenAI" : "Gemini"}`);
-            const text = provider === "openai"
-                ? await goiOpenAI(system, noiDung, maxTokens, jsonMode)
-                : await goiGemini(system, noiDung, maxTokens, jsonMode);
-            return { text, provider };
-        } catch (error) {
-            errors.push({
-                provider: provider === "openai" ? "OpenAI" : "Gemini",
-                error,
-            });
-            console.error(`[AI] ${provider} thất bại:`, error.message);
-            if (providers.length > 1) {
-                console.warn(`[AI] Đang chuyển sang ${provider === "openai" ? "Gemini" : "OpenAI"}`);
-            }
+        if (!text.trim()) {
+            console.error("[Vertex AI] Không có nội dung trả về.");
+            throw taoLoi(
+                "Gemini không trả về nội dung. Hãy thử lại sau.",
+                502
+            );
         }
-    }
 
-    const message = errors
-        .map(({ provider, error }) => `${provider}: ${error.message}`)
-        .join(" | ");
-    const status = errors.some(({ error }) => error.status === 429) ? 429 : 502;
-    throw taoLoi(message || "Không thể kết nối nhà cung cấp AI.", status);
+        console.log(`[Vertex AI] Thành công bằng ${GEMINI_MODEL}`);
+        return text;
+    } catch (error) {
+        if (error.status) {
+            throw error;
+        }
+
+        if (
+            error.name === "AbortError" ||
+            error.name === "TimeoutError"
+        ) {
+            throw taoLoi(
+                "Gemini phản hồi quá thời gian chờ 50 giây.",
+                504
+            );
+        }
+
+        const message = error.message || "Không có thông tin chi tiết.";
+        console.error("[Vertex AI] Lỗi:", message);
+
+        if (/401|403|permission|credential|unauthenticated/i.test(message)) {
+            throw taoLoi(
+                "Vertex AI không xác thực được hoặc Service Account thiếu quyền. Chi tiết: " +
+                message,
+                403
+            );
+        }
+
+        if (/404|not found/i.test(message)) {
+            throw taoLoi(
+                `Không tìm thấy model ${GEMINI_MODEL} tại khu vực ${LOCATION}, hoặc model không được hỗ trợ. Chi tiết: ${message}`,
+                502
+            );
+        }
+
+        if (/429|quota|resource exhausted/i.test(message)) {
+            throw taoLoi(
+                "Vertex AI đã vượt quota hoặc giới hạn sử dụng. Chi tiết: " +
+                message,
+                429
+            );
+        }
+
+        throw taoLoi(
+            "Không gọi được Vertex AI. Kiểm tra kết nối, billing và cấu hình Google Cloud. Chi tiết: " +
+            message,
+            502
+        );
+    } finally {
+        clearTimeout(timer);
+    }
 }
 
 /**
- * Gọi chatbot bằng nhà cung cấp AI được cấu hình và fallback tự động
+ * Giữ định dạng { text, provider } để tương thích code hiện tại.
+ */
+async function goiAI(system, noiDung, maxTokens, options) {
+    const jsonMode = options?.jsonMode !== false;
+
+    const text = await goiGemini(
+        system,
+        noiDung,
+        maxTokens,
+        jsonMode
+    );
+
+    return {
+        text,
+        provider: "gemini",
+    };
+}
+
+/**
+ * Giữ tên hàm để tương thích các file đang import.
+ * Không gọi OpenAI.
  */
 async function goiChatbotOpenAI(messages, duLieuHeThong) {
     const systemPrompt = `
@@ -238,9 +168,18 @@ ${JSON.stringify(duLieuHeThong)}
             return `${m.role === "assistant" ? "Trợ lý" : "Người dùng"}: ${String(m.text || "").slice(0, 2000)}`;
         })
         .join("\n");
-    const response = await goiAI(systemPrompt, noiDung, 2048, { jsonMode: false });
+
+    const response = await goiAI(
+        systemPrompt,
+        noiDung,
+        2048,
+        { jsonMode: false }
+    );
+
     return response.text;
 }
+
+
 
 // --- HÀM XỬ LÝ DỮ LIỆU JD & CÂU HỎI ---
 
