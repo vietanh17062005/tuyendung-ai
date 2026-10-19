@@ -1,5 +1,39 @@
 require("dotenv").config();
 
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+
+// Đọc Service Account từ Vercel hoặc dùng file local
+if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
+    try {
+        const credentials = JSON.parse(
+            process.env.GOOGLE_SERVICE_ACCOUNT_JSON
+        );
+
+        if (!credentials.client_email || !credentials.private_key) {
+            throw new Error("Service Account thiếu client_email hoặc private_key");
+        }
+
+        const credentialPath = path.join(
+            os.tmpdir(),
+            "tuyendung-ai-service-account.json"
+        );
+
+        fs.writeFileSync(
+            credentialPath,
+            JSON.stringify(credentials),
+            { mode: 0o600 }
+        );
+
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialPath;
+    } catch (error) {
+        throw new Error(
+            "Không thể đọc GOOGLE_SERVICE_ACCOUNT_JSON: " + error.message
+        );
+    }
+}
+
 const { GoogleGenAI } = require("@google/genai");
 
 const GEMINI_MODEL = "gemini-3.1-flash-lite";
