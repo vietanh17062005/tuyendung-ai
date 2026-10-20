@@ -4260,6 +4260,10 @@ body.embed-mode #modal .modal-box { box-shadow: none !important; }
 
 /* Biểu mẫu xác nhận/kết quả xóa nhiều đợt tuyển dụng. */
 #modalXoaNhieuDot { z-index: 10050; }
+#modalEmailCVTrung { z-index: 10060; }
+#modalEmailCVTrung .modal-xoa-nhieu-dot { width: min(460px, calc(100vw - 32px)); }
+#modalEmailCVTrung .modal-footer { justify-content: center; }
+#modalEmailCVTrung .btn-luu { min-width: 100px; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 #modalXoaNhieuDot .modal-xoa-nhieu-dot { width: min(460px, calc(100vw - 32px)); }
 #modalXoaNhieuDot #tieuDeXoaNhieuDot .vong-tai-nho { margin-right: 7px; }
 #modalXoaNhieuDot #noiDungXoaNhieuDot { line-height: 1.65; overflow-wrap: anywhere; }
@@ -4267,3 +4271,6 @@ body.embed-mode #modal .modal-box { box-shadow: none !important; }
 
 /* Toàn bộ ô checkbox có thể bấm để chọn; các ô dữ liệu khác vẫn mở chi tiết đợt tuyển dụng. */
 .table-scroll-dot-tuyen tbody td.cot-chon-dot { cursor: pointer; }
+
+/* Tiêu đề CV và nút phân tích trong form chi tiết ứng viên. */
+.cv-dot-cv-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.cv-dot-cv-title-row h4{margin:0}.cv-dot-reanalyze-button{border:0;border-radius:8px;padding:8px 12px;background:#245bd6;color:#fff;font-weight:600;cursor:pointer}.cv-dot-reanalyze-button:disabled{opacity:.65;cursor:wait}.cv-dot-add-interviewer-modal{max-width:520px;width:min(520px,calc(100vw - 28px))}

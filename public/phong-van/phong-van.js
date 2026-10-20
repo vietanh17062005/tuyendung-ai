@@ -588,7 +588,7 @@
             const dungVaiTro = vaiTroDuocChon.includes(role) || role.includes("interviewer");
             const dangHoatDong = ["hoat_dong", "dang_hoat_dong", "active", "1", "true"].includes(status);
             return dungVaiTro && dangHoatDong;
-        });
+        }).sort((a, b) => String(a.ho_ten || a.ten || a.email || "").localeCompare(String(b.ho_ten || b.ten || b.email || ""), "vi", { sensitivity: "base" }));
 
         const nhanVaiTroNguoiThamGia = (account) => {
             const role = chuanHoa(account.vai_tro || account.role);
@@ -614,9 +614,16 @@
         `;
         $("campaignId").disabled = true;
 
-        $("interviewerId").innerHTML = interviewers.map((account) => `
-            <option value="${Number(account.id)}">${esc(account.ho_ten || account.ten || account.email || `Tài khoản #${account.id}`)} — ${nhanVaiTroNguoiThamGia(account)}</option>
-        `).join("");
+        $("interviewerId").innerHTML = `
+            <option value="__them_moi__">+ Thêm người phỏng vấn...</option>
+            ${interviewers.map((account) => `<option value="${Number(account.id)}">${esc(account.ho_ten || account.ten || account.email || `Tài khoản #${account.id}`)} — ${nhanVaiTroNguoiThamGia(account)}</option>`).join("")}
+        `;
+        $("interviewerId").onchange = async function () {
+            const select = this;
+            if (![...select.selectedOptions].some(option => option.value === "__them_moi__")) return;
+            [...select.options].forEach(option => { if (option.value === "__them_moi__") option.selected = false; });
+            await moDialogThemNguoiPhongVanTrangLich(select);
+        };
 
         if (!candidates.length) {
             $("candidateId").innerHTML = '<option value="">Không tải được danh sách ứng viên</option>';
@@ -630,6 +637,39 @@
             $("interviewerId").innerHTML = '<option value="">Chưa có tài khoản quản trị viên, quản lý hoặc người phỏng vấn khả dụng</option>';
             console.warn("Không tìm thấy tài khoản quản trị viên, quản lý hoặc người phỏng vấn đang hoạt động. Kiểm tra vai_tro và trang_thai trong bảng nguoi_dung.");
         }
+    }
+
+    async function moDialogThemNguoiPhongVanTrangLich(selectEl) {
+        const overlay = document.createElement("div"); overlay.className = "modal-backdrop open"; overlay.style.zIndex = "20000";
+        const modal = document.createElement("section"); modal.className = "modal"; modal.setAttribute("role", "dialog"); modal.setAttribute("aria-modal", "true");
+        modal.innerHTML = `
+            <div class="modal-head"><div><h2>Thêm người phỏng vấn</h2><p>Tạo tài khoản và hồ sơ người phỏng vấn mới.</p></div><button type="button" class="secondary-button" data-close>Đóng</button></div>
+            <form class="form-grid">
+              <label class="form-field full"><span>Họ và tên *</span><input name="ho_ten" maxlength="100" required></label>
+              <label class="form-field full"><span>Email đăng nhập *</span><input name="email" type="email" maxlength="150" required></label>
+              <label class="form-field full"><span>Số điện thoại</span><input name="so_dien_thoai" type="tel" maxlength="30"></label>
+              <div class="form-error full" role="alert"></div>
+              <div class="modal-actions full"><button type="button" class="secondary-button" data-close>Hủy</button><button type="submit" class="primary-button">Tạo người phỏng vấn</button></div>
+            </form>`;
+        overlay.appendChild(modal); document.body.appendChild(overlay);
+        const close = () => overlay.remove();
+        overlay.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", close));
+        overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
+        overlay.querySelector("form").addEventListener("submit", async event => {
+            event.preventDefault(); const form = event.currentTarget; const button = form.querySelector('[type="submit"]'); const errorBox = form.querySelector(".form-error");
+            button.disabled = true; button.textContent = "Đang tạo..."; errorBox.classList.remove("show"); errorBox.textContent = "";
+            try {
+                const body = { ho_ten: String(form.elements.ho_ten.value || "").trim(), email: String(form.elements.email.value || "").trim(), mat_khau: "123456", so_dien_thoai: String(form.elements.so_dien_thoai.value || "").trim(), bo_phan: "", chuc_danh: "" };
+                const result = await api("/api/phong-van/nguoi-phong-van", { method: "POST", body: JSON.stringify(body) });
+                const person = result.data || result;
+                interviewers.push(person);
+                const option = new Option(`${person.ho_ten || person.email} — Người phỏng vấn`, String(person.id), true, true);
+                // Ưu tiên người vừa tạo ở đầu danh sách và tự chọn ngay trong lịch hiện tại.
+                selectEl.insertBefore(option, selectEl.options[1] || null);
+                option.selected = true;
+                close(); hienToast("Đã thêm người phỏng vấn.");
+            } catch (error) { errorBox.textContent = error.message || "Không thêm được người phỏng vấn."; errorBox.classList.add("show"); button.disabled = false; button.textContent = "Tạo người phỏng vấn"; }
+        });
     }
 
     function dongBoDotTuyenTheoUngVien() {

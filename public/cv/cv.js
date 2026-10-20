@@ -88,6 +88,8 @@ document.addEventListener("DOMContentLoaded", function () {
     let hoSoHienTai = null;
     let cvHienTai = null;
     let objectUrlHienTai = null;
+    let uploadCVController = null;
+    let uploadCVDangChay = false;
     let dangPhanTich = false;
     let danhSachUngVien = [];
     let phanTichChoXacNhan = null;
@@ -433,6 +435,15 @@ document.addEventListener("DOMContentLoaded", function () {
             const cvs = Array.isArray(data.cv) ? data.cv : [];
             cvHienTai = cvs.find((cv) => Number(cv.id) === Number(cvId))
                 || layCVChinh(data);
+            if (cvHienTai?.id) {
+                try {
+                    const rawDraft = localStorage.getItem(`cv-analysis-draft:${cvHienTai.id}`);
+                    const draft = rawDraft ? JSON.parse(rawDraft) : null;
+                    if (draft?.phan_tich && Number(draft.ung_vien_id) === Number(ungVienId)) {
+                        phanTichChoXacNhan = draft.phan_tich;
+                    }
+                } catch (error) { console.warn("Không khôi phục được bản nháp phân tích CV:", error); }
+            }
 
             renderDanhSach();
             renderHoSo();
@@ -779,7 +790,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const formData = new FormData();
         formData.append("ung_vien_id", ungVienId);
         formData.append("file", file);
-
+        uploadCVController = new AbortController();
+        uploadCVDangChay = true;
         try {
             btnLuuThemCV.disabled = true;
             btnLuuThemCV.textContent = "Đang tải...";
@@ -787,6 +799,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,
+                signal: uploadCVController.signal,
             });
             if (xuLy401(response)) return;
             const data = await response.json();
@@ -795,12 +808,28 @@ document.addEventListener("DOMContentLoaded", function () {
             hienThongBao("Thêm CV thành công.", "success");
             await taiDanhSach();
         } catch (error) {
+            if (error.name === "AbortError") {
+                dongModal(modalThemCV);
+                return;
+            }
             thongBaoThemCV.textContent = error.message || "Không thể tải CV.";
             thongBaoThemCV.className = "cv-form-message error";
         } finally {
+            uploadCVDangChay = false;
+            uploadCVController = null;
             btnLuuThemCV.disabled = false;
             btnLuuThemCV.textContent = "Tải CV lên";
         }
+    }
+
+    function huyTaiCVLen() {
+        if (uploadCVDangChay && uploadCVController) {
+            uploadCVController.abort();
+            thongBaoThemCV.textContent = "Đang hủy tải CV. File này sẽ không được lưu.";
+            thongBaoThemCV.className = "cv-form-message";
+            return;
+        }
+        dongModal(modalThemCV);
     }
 
     function moModalHoiAI() {
@@ -856,7 +885,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const score = phanTichChoXacNhan.score || {};
         const extraction = phanTichChoXacNhan.extraction || {};
         const tong = Number(score.tong) || 0;
-        const asLines = (value) => Array.isArray(value) ? value.join("\n") : (value || "");
+        const asLines = (value) => danhSachHienThi(value).join("\n");
         noiDungXacNhanPhanTich.innerHTML = `
             <div class="cv-confirm-note">Bạn có thể chỉnh sửa thông tin trích xuất và điểm đánh giá. Dữ liệu chỉ được lưu khi bấm <strong>Xác nhận & lưu</strong>.</div>
             <h4>Thông tin ứng viên trích xuất từ CV</h4>
@@ -886,8 +915,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function dongModalXacNhan() {
+        // Đóng form chỉ tạm ẩn bản phân tích; không xóa kết quả chưa xác nhận.
+        if (phanTichChoXacNhan && cvHienTai?.id) {
+            try {
+                localStorage.setItem(`cv-analysis-draft:${cvHienTai.id}`, JSON.stringify({
+                    ung_vien_id: hoSoHienTai?.ung_vien?.id,
+                    cv_id: cvHienTai.id,
+                    jd_id: layJDChinh(hoSoHienTai)?.id,
+                    phan_tich: phanTichChoXacNhan,
+                    saved_at: Date.now()
+                }));
+            } catch (error) { console.warn("Không lưu được bản nháp phân tích CV:", error); }
+        }
         dongModal(modalXacNhanPhanTich);
-        phanTichChoXacNhan = null;
     }
 
     async function xacNhanPhanTich() {
@@ -952,7 +992,9 @@ document.addEventListener("DOMContentLoaded", function () {
             if (xuLy401(response)) return;
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || "Không lưu được kết quả phân tích.");
-            dongModalXacNhan();
+            try { localStorage.removeItem(`cv-analysis-draft:${cvHienTai.id}`); } catch (_) {}
+            dongModal(modalXacNhanPhanTich);
+            phanTichChoXacNhan = null;
             hienThongBao("Đã xác nhận và lưu kết quả phân tích.", "success");
             const savedCandidateId = hoSoHienTai.ung_vien.id;
             const savedCvId = cvHienTai.id;
@@ -981,6 +1023,24 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
     }
 
+    function giaTriCauTruc(value) {
+        if (value === null || value === undefined) return "";
+        if (typeof value !== "object") return String(value).trim();
+        const uuTien = ["ten_truong", "truong", "school", "university", "co_so_dao_tao", "bang_cap", "degree", "nganh", "major", "chuyen_nganh", "nam", "year", "thoi_gian", "thoi_gian_hoc", "mo_ta", "noi_dung", "ten", "title"];
+        const parts = [];
+        uuTien.forEach(key => {
+            const item = value[key];
+            if (item !== null && item !== undefined && typeof item !== "object" && String(item).trim() && !parts.includes(String(item).trim())) parts.push(String(item).trim());
+        });
+        if (!parts.length) Object.values(value).forEach(item => { if (item !== null && item !== undefined && typeof item !== "object" && String(item).trim()) parts.push(String(item).trim()); });
+        return parts.join(" — ");
+    }
+
+    function danhSachHienThi(value) {
+        const items = Array.isArray(value) ? value : value && typeof value === "object" ? [value] : value ? [value] : [];
+        return items.map(giaTriCauTruc).filter(Boolean);
+    }
+
     function renderList(title, items, type = "") {
         const list = Array.isArray(items) ? items.filter(Boolean) : [];
         if (!list.length) return "";
@@ -998,7 +1058,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function renderFormPhanTich(analysis) {
         const score = analysis.score || {};
         const extraction = analysis.extraction || {};
-        const asLines = (value) => Array.isArray(value) ? value.join("\n") : (value || "");
+        const asLines = (value) => danhSachHienThi(value).join("\n");
         phanTichAI.innerHTML = `
             <section class="cv-review-editor">
                 <div class="cv-review-editor-head">
@@ -1123,7 +1183,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div><span>Họ tên</span><strong>${escapeHtml(extraction.ho_ten || layTenUngVien(hoSoHienTai?.ung_vien))}</strong></div>
                     <div><span>Số năm kinh nghiệm</span><strong>${extraction.so_nam_kinh_nghiem ?? "-"} năm</strong></div>
                     <div class="wide"><span>Kỹ năng</span><strong>${escapeHtml((extraction.ky_nang || []).join(", ") || "Chưa xác định")}</strong></div>
-                    <div class="wide"><span>Học vấn</span><strong>${escapeHtml((extraction.hoc_van || []).join(" • ") || "Chưa xác định")}</strong></div>
+                    ${danhSachHienThi(extraction.hoc_van).length ? `<div class="wide"><span>Học vấn</span><strong>${escapeHtml(danhSachHienThi(extraction.hoc_van).join(" • "))}</strong></div>` : ""}
                 </div>
             </section>
         `;
@@ -1181,6 +1241,15 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             phanTichChoXacNhan = data.phan_tich;
+            try {
+                localStorage.setItem(`cv-analysis-draft:${cvHienTai.id}`, JSON.stringify({
+                    ung_vien_id: hoSoHienTai.ung_vien.id,
+                    cv_id: cvHienTai.id,
+                    jd_id: jd.id,
+                    phan_tich: phanTichChoXacNhan,
+                    saved_at: Date.now()
+                }));
+            } catch (error) { console.warn("Không lưu được bản nháp phân tích CV:", error); }
             renderPhanTich();
             hienThongBao("AI đã phân tích xong. Kiểm tra thông tin bên dưới, chỉnh sửa nếu cần rồi bấm “Xác nhận & lưu”.", "success");
         } catch (error) {
@@ -1448,11 +1517,11 @@ document.addEventListener("DOMContentLoaded", function () {
     btnPhongTo?.addEventListener("click", function () { thayDoiZoom(0.1); });
     btnDatLaiZoom?.addEventListener("click", datLaiZoom);
     btnThemCV?.addEventListener("click", moModalThemCV);
-    btnDongThemCV?.addEventListener("click", function () { dongModal(modalThemCV); });
+    btnDongThemCV?.addEventListener("click", huyTaiCVLen);
     btnDongUngVien?.addEventListener("click", function () { dongModal(modalUngVien); });
     btnHuyUngVien?.addEventListener("click", function () { dongModal(modalUngVien); });
     formUngVien?.addEventListener("submit", luuUngVien);
-    btnHuyThemCV?.addEventListener("click", function () { dongModal(modalThemCV); });
+    btnHuyThemCV?.addEventListener("click", huyTaiCVLen);
     formThemCV?.addEventListener("submit", function (event) { event.preventDefault(); taiCVLen(); });
 
     btnHoiAI?.addEventListener("click", moModalHoiAI);

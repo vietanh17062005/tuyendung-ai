@@ -195,3 +195,6 @@ td { font-size: 13px; }
     outline: 2px solid #6366f1;
     outline-offset: 1px;
 }
+
+/* Dialog thêm người phỏng vấn từ form tạo lịch. */
+.modal-backdrop[style*="z-index: 100"]{z-index:100!important}.modal-backdrop[style*="z-index: 100"] .modal{max-width:560px}.modal-backdrop[style*="z-index: 100"] .modal-head{align-items:center}.modal-backdrop[style*="z-index: 100"] .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.modal-backdrop[style*="z-index: 100"] .form-field.full,.modal-backdrop[style*="z-index: 100"] .modal-actions.full{grid-column:1/-1}.modal-backdrop[style*="z-index: 100"] .form-error{grid-column:1/-1}

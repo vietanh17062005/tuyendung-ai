@@ -8,7 +8,7 @@
 
   <title>Quản lý đợt tuyển dụng</title>
 
-  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css?v=20261020-bulk-delete-modal3" />
+  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css?v=20261020-interviewer-analysis4" />
   <link rel="stylesheet" href="/account/account.css" />
 <link rel="stylesheet" href="/menu-dong-bo.css?v=20261020-loading-buttons">
 </head>
@@ -744,6 +744,18 @@
     </section>
   </div>
 
+  <div class="modal" id="modalEmailCVTrung" aria-hidden="true">
+    <section class="modal-box xac-nhan-box modal-xoa-nhieu-dot" role="dialog" aria-modal="true" aria-labelledby="tieuDeEmailCVTrung">
+      <div class="xac-nhan-icon" style="background:#fff7ed;color:#c2410c">!</div>
+      <p class="xac-nhan-nhan">EMAIL CV BỊ TRÙNG</p>
+      <h2 id="tieuDeEmailCVTrung">CV đã tồn tại trong đợt tuyển dụng</h2>
+      <p id="noiDungEmailCVTrung">Email này đã được sử dụng. Nhấn OK để xác nhận xóa CV trùng.</p>
+      <div class="modal-footer">
+        <button type="button" class="btn-luu" id="btnXacNhanEmailCVTrung">OK</button>
+      </div>
+    </section>
+  </div>
+
   <div class="modal" id="modalChonJD">
     <div class="modal-box chon-jd-box">
       <div class="modal-header">
@@ -772,7 +784,7 @@
   </div>
 
   <script src="/account/account.js"></script>
-  <script src="/dot-tuyen/dot-tuyen.js?v=20261020-bulk-delete-modal3"></script>
+  <script src="/dot-tuyen/dot-tuyen.js?v=20261020-education-email-interviewer6"></script>
 <script src="/menu-dong-bo.js?v=20261020-loading-buttons"></script>
 </body>
 

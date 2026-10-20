@@ -429,9 +429,20 @@
                 ["Học vấn", result.hoc_van],
                 ["Kỹ năng mềm", result.ky_nang_mem],
             ];
-            const list = (items) => (Array.isArray(items) && items.length
-                ? `<ul>${items.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}</ul>`
-                : '<p class="candidate-no-data">Chưa có dữ liệu</p>');
+            const educationText = (value) => {
+                const preferred = ["ten_truong", "truong", "school", "university", "co_so_dao_tao", "bang_cap", "degree", "nganh", "major", "chuyen_nganh", "nam", "year", "thoi_gian", "thoi_gian_hoc", "mo_ta", "noi_dung", "ten", "title"];
+                const flatten = (item) => {
+                    if (item == null) return [];
+                    if (typeof item !== "object") { const text = String(item).trim(); return text && text !== "[object Object]" ? [text] : []; }
+                    const values = Array.isArray(item) ? item : [...preferred.filter(key => key in item).map(key => item[key]), ...Object.entries(item).filter(([key]) => !preferred.includes(key)).map(([, val]) => val)];
+                    return values.flatMap(flatten);
+                };
+                return [...new Set(flatten(value))].join(" — ");
+            };
+            const list = (items) => {
+                const values = (Array.isArray(items) ? items : items == null ? [] : [items]).map(item => educationText(item)).filter(Boolean);
+                return values.length ? `<ul>${values.map((item) => `<li>${escapeHTML(item)}</li>`).join("")}</ul>` : '<p class="candidate-no-data">Chưa có dữ liệu</p>';
+            };
             const evidence = Array.isArray(result.minh_chung) ? result.minh_chung : [];
             phanTichNoiDung.innerHTML = `
               <div class="candidate-score-summary">
@@ -461,7 +472,7 @@
                 <div><dt>Điện thoại</dt><dd>${escapeHTML(extraction.so_dien_thoai || data.ung_vien.so_dien_thoai || "Chưa có")}</dd></div>
                 <div><dt>Kinh nghiệm</dt><dd>${extraction.so_nam_kinh_nghiem == null ? "Chưa rõ" : `${Number(extraction.so_nam_kinh_nghiem)} năm`}</dd></div>
                 <div><dt>Kinh nghiệm làm việc</dt><dd>${list(extraction.kinh_nghiem)}</dd></div>
-                <div><dt>Học vấn</dt><dd>${list(extraction.hoc_van)}</dd></div>
+                ${(Array.isArray(extraction.hoc_van) ? extraction.hoc_van : extraction.hoc_van ? [extraction.hoc_van] : []).some(item => educationText(item)) ? `<div><dt>Học vấn</dt><dd>${list(extraction.hoc_van)}</dd></div>` : ""}
                 <div><dt>Kỹ năng</dt><dd>${list(extraction.ky_nang)}</dd></div>
                 <div><dt>Ngoại ngữ / chứng chỉ</dt><dd>${list([...(extraction.ngon_ngu || []), ...(extraction.chung_chi || [])])}</dd></div>
                 <div><dt>Liên kết</dt><dd>${Array.isArray(extraction.lien_ket) && extraction.lien_ket.length ? extraction.lien_ket.map((link) => taoLienKet(link)).join("<br/>") : "Chưa có"}</dd></div>

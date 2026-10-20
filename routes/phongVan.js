@@ -126,6 +126,20 @@ async function khoiTaoSchemaPhongVan() {
             );
         }
 
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS nguoi_phong_van (
+                id INT NOT NULL AUTO_INCREMENT,
+                nguoi_dung_id INT NOT NULL,
+                so_dien_thoai VARCHAR(30) NULL,
+                bo_phan VARCHAR(150) NULL,
+                chuc_danh VARCHAR(150) NULL,
+                ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_nguoi_phong_van_nguoi_dung (nguoi_dung_id),
+                CONSTRAINT fk_nguoi_phong_van_nguoi_dung FOREIGN KEY (nguoi_dung_id) REFERENCES nguoi_dung(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+
         const cacCotCanThem = [
             ["vong_phong_van", "VARCHAR(100) NOT NULL DEFAULT 'Vòng 1'"],
             ["email_trang_thai", "VARCHAR(30) NOT NULL DEFAULT 'chua_gui'"],
@@ -347,6 +361,7 @@ async function taoThongBao(nguoiDungId, tieuDe, noiDung, loai = "phong_van") {
 
 router.get("/nguoi-phong-van", kiemTraDangNhap, async function (req, res) {
     try {
+        await db.query(`CREATE TABLE IF NOT EXISTS nguoi_phong_van (id INT NOT NULL AUTO_INCREMENT, nguoi_dung_id INT NOT NULL, so_dien_thoai VARCHAR(30) NULL, bo_phan VARCHAR(150) NULL, chuc_danh VARCHAR(150) NULL, ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (id), UNIQUE KEY uq_nguoi_phong_van_nguoi_dung (nguoi_dung_id), CONSTRAINT fk_nguoi_phong_van_nguoi_dung FOREIGN KEY (nguoi_dung_id) REFERENCES nguoi_dung(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
         const [columns] = await db.query("SHOW COLUMNS FROM nguoi_dung");
         const names = new Set(columns.map((column) => column.Field));
         const cotTen = ["ho_ten", "ten", "name"].find((name) => names.has(name));
@@ -361,13 +376,15 @@ router.get("/nguoi-phong-van", kiemTraDangNhap, async function (req, res) {
         const cotTrangThai = ["trang_thai", "status", "trangthai"].find((name) => names.has(name));
         const [rows] = await db.query(`
             SELECT
-                id,
-                ${cotTen ? `\`${cotTen}\`` : "CAST(id AS CHAR)"} AS ho_ten,
-                ${cotEmail ? `\`${cotEmail}\`` : "NULL"} AS email,
-                vai_tro,
-                ${cotTrangThai ? `\`${cotTrangThai}\`` : "'hoat_dong'"} AS trang_thai
-            FROM nguoi_dung
-            ORDER BY ${cotTen ? `\`${cotTen}\`` : "id"} ASC
+                nd.id,
+                ${cotTen ? `nd.\`${cotTen}\`` : "CAST(nd.id AS CHAR)"} AS ho_ten,
+                ${cotEmail ? `nd.\`${cotEmail}\`` : "NULL"} AS email,
+                nd.vai_tro,
+                ${cotTrangThai ? `nd.\`${cotTrangThai}\`` : "'hoat_dong'"} AS trang_thai,
+                npv.so_dien_thoai, npv.bo_phan, npv.chuc_danh
+            FROM nguoi_dung nd
+            LEFT JOIN nguoi_phong_van npv ON npv.nguoi_dung_id = nd.id
+            ORDER BY ${cotTen ? `nd.\`${cotTen}\`` : "nd.id"} ASC
         `);
 
         const interviewers = rows.filter((row) =>
@@ -379,6 +396,33 @@ router.get("/nguoi-phong-van", kiemTraDangNhap, async function (req, res) {
         console.error("Lỗi lấy danh sách người tham gia phỏng vấn:", error);
         res.status(500).json({ message: error.message || "Không thể lấy danh sách người phỏng vấn." });
     }
+});
+
+router.post("/nguoi-phong-van", kiemTraDangNhap, kiemTraVaiTro(...vaiTroQuanLy), async function (req, res) {
+    let connection;
+    try {
+        const hoTen = String(req.body?.ho_ten || "").trim();
+        const email = String(req.body?.email || "").trim().toLowerCase();
+        const matKhau = String(req.body?.mat_khau || "");
+        const soDienThoai = String(req.body?.so_dien_thoai || "").trim();
+        const boPhan = String(req.body?.bo_phan || "").trim();
+        const chucDanh = String(req.body?.chuc_danh || "").trim();
+        if (!hoTen || !email || !matKhau) return res.status(400).json({ message: "Vui lòng nhập họ tên, email và mật khẩu tài khoản." });
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ message: "Email không hợp lệ." });
+        if (matKhau.length < 6) return res.status(400).json({ message: "Mật khẩu cần ít nhất 6 ký tự." });
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        const [existing] = await connection.query("SELECT id FROM nguoi_dung WHERE email = ? LIMIT 1", [email]);
+        if (existing.length) { await connection.rollback(); return res.status(409).json({ message: "Email đã tồn tại trong bảng người dùng." }); }
+        const [insertUser] = await connection.query("INSERT INTO nguoi_dung (ho_ten, email, mat_khau, vai_tro, trang_thai) VALUES (?, ?, ?, 'interviewer', 'hoat_dong')", [hoTen, email, matKhau]);
+        await connection.query("INSERT INTO nguoi_phong_van (nguoi_dung_id, so_dien_thoai, bo_phan, chuc_danh) VALUES (?, ?, ?, ?)", [insertUser.insertId, soDienThoai || null, boPhan || null, chucDanh || null]);
+        await connection.commit();
+        res.status(201).json({ message: "Đã thêm người phỏng vấn.", data: { id: insertUser.insertId, ho_ten: hoTen, email, vai_tro: "interviewer", trang_thai: "hoat_dong", so_dien_thoai: soDienThoai, bo_phan: boPhan, chuc_danh: chucDanh } });
+    } catch (error) {
+        if (connection) await connection.rollback().catch(() => {});
+        console.error("Lỗi thêm người phỏng vấn:", error);
+        res.status(500).json({ message: error.message || "Không thể thêm người phỏng vấn." });
+    } finally { if (connection) connection.release(); }
 });
 
 router.get("/", kiemTraDangNhap, async function (req, res) {

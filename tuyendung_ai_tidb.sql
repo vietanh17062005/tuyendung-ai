@@ -455,3 +455,15 @@ SELECT
 FROM INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'tuyendung_ai'
 ORDER BY TABLE_NAME;
+-- Hồ sơ mở rộng người phỏng vấn, liên kết 1-1 với tài khoản người dùng.
+CREATE TABLE IF NOT EXISTS `nguoi_phong_van` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nguoi_dung_id` int(11) NOT NULL,
+  `so_dien_thoai` varchar(30) DEFAULT NULL,
+  `bo_phan` varchar(150) DEFAULT NULL,
+  `chuc_danh` varchar(150) DEFAULT NULL,
+  `ngay_tao` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_nguoi_phong_van_nguoi_dung` (`nguoi_dung_id`),
+  CONSTRAINT `fk_nguoi_phong_van_nguoi_dung` FOREIGN KEY (`nguoi_dung_id`) REFERENCES `nguoi_dung` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -304,11 +304,26 @@ function chuanHoaChuoi(value, maxLength = 1000) {
     return String(value ?? "").trim().slice(0, maxLength);
 }
 
+function chuanHoaMucDanhSach(item) {
+    if (item === null || item === undefined) return "";
+    if (typeof item !== "object") return chuanHoaChuoi(item, 700);
+    const uuTien = ["ten_truong", "truong", "school", "university", "co_so_dao_tao", "bang_cap", "degree", "nganh", "major", "chuyen_nganh", "nam", "year", "thoi_gian", "thoi_gian_hoc", "mo_ta", "noi_dung", "ten", "title"];
+    const parts = [];
+    for (const key of uuTien) {
+        const value = item[key];
+        if (value !== null && value !== undefined && typeof value !== "object" && String(value).trim() && !parts.includes(String(value).trim())) parts.push(String(value).trim());
+    }
+    if (!parts.length) {
+        for (const value of Object.values(item)) {
+            if (value !== null && value !== undefined && typeof value !== "object" && String(value).trim()) parts.push(String(value).trim());
+        }
+    }
+    return chuanHoaChuoi(parts.join(" — "), 700);
+}
+
 function chuanHoaDanhSach(value, maxItems = 20, maxLength = 500) {
-    return (Array.isArray(value) ? value : [])
-        .map((item) => chuanHoaChuoi(item, maxLength))
-        .filter(Boolean)
-        .slice(0, maxItems);
+    const items = Array.isArray(value) ? value : value && typeof value === "object" ? [value] : value ? [value] : [];
+    return items.map(chuanHoaMucDanhSach).map((item) => chuanHoaChuoi(item, maxLength)).filter(Boolean).slice(0, maxItems);
 }
 
 function deXuatTheoDiem(diem) {
@@ -707,14 +722,8 @@ router.get(
                 filters.push("uv.dot_tuyen_id = ?");
                 params.push(req.query.dot_tuyen_id);
             }
-            if (req.nguoiDung?.vai_tro === "interviewer") {
-                const assignmentColumn = await layCotNguoiPhongVan();
-                filters.push(`EXISTS (
-                    SELECT 1 FROM phong_van pv
-                    WHERE pv.ung_vien_id = uv.id AND ${assignmentColumn ? `pv.${assignmentColumn} = ?` : `EXISTS (SELECT 1 FROM phong_van_nguoi_tham_gia pvt WHERE pvt.phong_van_id = pv.id AND pvt.nguoi_dung_id = ?)`}
-                )`);
-                params.push(Number(req.nguoiDung.id));
-            }
+            // Người phỏng vấn được xem toàn bộ CV; trạng thái được phân công
+            // được trả riêng để giao diện chỉ mở chức năng đánh giá khi phù hợp.
             const dotFilter = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
             const [rows] = await db.query(`
                 SELECT
@@ -732,7 +741,8 @@ router.get(
                         : `EXISTS (SELECT 1 FROM phong_van pv WHERE pv.ung_vien_id = uv.id`} AS co_lich_phong_van,
                     ${(interviewColumns.has("id") ? `(SELECT pv.id FROM phong_van pv WHERE pv.ung_vien_id = uv.id${interviewColumns.has("trang_thai") ? " AND COALESCE(pv.trang_thai, '') <> 'huy'" : ""} ORDER BY pv.id DESC LIMIT 1)` : "NULL")} AS phong_van_id,
                     ${(interviewColumns.has("trang_thai") ? `(SELECT pv.trang_thai FROM phong_van pv WHERE pv.ung_vien_id = uv.id ORDER BY pv.id DESC LIMIT 1)` : "NULL")} AS trang_thai_lich_phong_van,
-                    ${interviewTimeColumn ? `(SELECT pv.${interviewTimeColumn} FROM phong_van pv WHERE pv.ung_vien_id = uv.id${interviewColumns.has("trang_thai") ? " AND COALESCE(pv.trang_thai, '') <> 'huy'" : ""} ORDER BY pv.id DESC LIMIT 1)` : "NULL"} AS thoi_gian_phong_van
+                    ${interviewTimeColumn ? `(SELECT pv.${interviewTimeColumn} FROM phong_van pv WHERE pv.ung_vien_id = uv.id${interviewColumns.has("trang_thai") ? " AND COALESCE(pv.trang_thai, '') <> 'huy'" : ""} ORDER BY pv.id DESC LIMIT 1)` : "NULL"} AS thoi_gian_phong_van,
+                    EXISTS (SELECT 1 FROM phong_van pvx INNER JOIN phong_van_nguoi_tham_gia pvt ON pvt.phong_van_id = pvx.id WHERE pvx.ung_vien_id = uv.id AND pvt.nguoi_dung_id = ${Number(req.nguoiDung?.id) || 0})${assignmentColumn ? ` OR EXISTS (SELECT 1 FROM phong_van pvy WHERE pvy.ung_vien_id = uv.id AND pvy.${assignmentColumn} = ${Number(req.nguoiDung?.id) || 0})` : ""} AS duoc_phan_cong
                     ${scoreSelect},
                     ${analysisDataColumn ? `pa.${analysisDataColumn} AS du_lieu_phan_tich` : "NULL AS du_lieu_phan_tich"}
                 FROM ung_vien uv
@@ -796,12 +806,8 @@ router.get(
                 FROM ung_vien uv
                 INNER JOIN dot_tuyen dt ON dt.id = uv.dot_tuyen_id
                 WHERE uv.id = ?
-                    ${req.nguoiDung?.vai_tro === "interviewer" ? `AND EXISTS (
-                        SELECT 1 FROM phong_van pv
-                        WHERE pv.ung_vien_id = uv.id AND ${assignmentColumn ? `pv.${assignmentColumn} = ?` : `EXISTS (SELECT 1 FROM phong_van_nguoi_tham_gia pvt WHERE pvt.phong_van_id = pv.id AND pvt.nguoi_dung_id = ?)`}
-                    )` : ""}
                 LIMIT 1
-            `, assignmentColumn ? [id, Number(req.nguoiDung.id)] : [id]);
+            `, [id]);
             if (!candidateRows.length) {
                 return res.status(404).json({ message: "Không tìm thấy ứng viên." });
             }
@@ -1069,7 +1075,7 @@ router.post(
                 : candidateColumns.has("sdt") ? "sdt" : null;
 
             const [candidates] = await db.query(`
-                SELECT id, ho_ten, email, ${phoneColumn ? `\`${phoneColumn}\`` : "NULL"} AS so_dien_thoai
+                SELECT id, dot_tuyen_id, ho_ten, email, ${phoneColumn ? `\`${phoneColumn}\`` : "NULL"} AS so_dien_thoai
                 FROM ung_vien
                 WHERE id = ?
                 LIMIT 1
@@ -1077,6 +1083,17 @@ router.post(
             if (!candidates.length) return res.status(404).json({ message: "Không tìm thấy ứng viên." });
 
             const extraction = analysis.extraction || {};
+            const emailUngVien = String(extraction.email || "").trim().toLowerCase();
+            if (emailUngVien && candidates[0].dot_tuyen_id) {
+                const [duplicateEmailRows] = await db.query(`
+                    SELECT id, ho_ten FROM ung_vien
+                    WHERE dot_tuyen_id = ? AND id <> ? AND LOWER(TRIM(COALESCE(email, ''))) = ?
+                    LIMIT 1
+                `, [candidates[0].dot_tuyen_id, candidateId, emailUngVien]);
+                if (duplicateEmailRows.length) {
+                    return res.status(409).json({ message: `Email ${emailUngVien} đã được sử dụng bởi ứng viên ${duplicateEmailRows[0].ho_ten || `#${duplicateEmailRows[0].id}`} trong đợt tuyển dụng này. CV trùng không được lưu.` });
+                }
+            }
             const finalScore = Math.max(0, Math.min(100, Number(req.body?.diem ?? score.tong) || 0));
             const recommendation = chuanHoaDeXuat(req.body?.de_xuat || score.de_xuat);
             const reason = chuanHoaChuoi(req.body?.ly_do, 1000) || "Xác nhận kết quả phân tích AI.";
@@ -1458,6 +1475,14 @@ router.post(
                         "Chưa chọn file CV",
                 });
             }
+            const kiemTraDaHuyUploadDon = () => {
+                if (req.aborted || res.destroyed) {
+                    const error = new Error("Người dùng đã hủy tải CV.");
+                    error.code = "UPLOAD_CANCELLED";
+                    throw error;
+                }
+            };
+            kiemTraDaHuyUploadDon();
 
             const [ungVienRows] =
                 await db.query(
@@ -1504,6 +1529,7 @@ router.post(
                 contentType: loaiFile,
             });
             duongDanDaLuu = blob.url;
+            kiemTraDaHuyUploadDon();
 
             connection =
                 await db.getConnection();
@@ -1550,6 +1576,7 @@ router.post(
                     ],
                 );
 
+            kiemTraDaHuyUploadDon();
             await connection.commit();
 
             res.status(201).json({
@@ -1606,6 +1633,9 @@ router.post(
                 }
             }
 
+            if (error.code === "UPLOAD_CANCELLED" || req.aborted || res.destroyed) {
+                return;
+            }
             console.error(
                 "Lỗi upload CV:",
                 error,
@@ -1679,6 +1709,14 @@ router.post(
             if (!Array.isArray(req.files) || req.files.length === 0) {
                 return res.status(400).json({ message: "Vui lòng chọn CV hoặc file ZIP." });
             }
+            const kiemTraDaHuyUpload = () => {
+                if (req.aborted || res.destroyed) {
+                    const error = new Error("Người dùng đã hủy tải CV.");
+                    error.code = "UPLOAD_CANCELLED";
+                    throw error;
+                }
+            };
+            kiemTraDaHuyUpload();
 
             const [dotRows] = await db.query(
                 "SELECT id, trang_thai, DATE_FORMAT(ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc FROM dot_tuyen WHERE id = ? LIMIT 1",
@@ -1758,6 +1796,7 @@ router.post(
 
             const createdCandidates = [];
             for (const file of cvFiles) {
+                kiemTraDaHuyUpload();
                 const candidateData = { ...candidateInsert, ho_ten: layTenUngVien(file.tenFile) };
                 const candidateFields = Object.keys(candidateData).filter((field) =>
                     candidateColumnNames.includes(field),
@@ -1775,6 +1814,7 @@ router.post(
                 });
                 const storedPath = blob.url;
                 duongDanDaLuu.push(storedPath);
+                kiemTraDaHuyUpload();
 
                 const cvData = {
                     ...cvInsert,
@@ -1797,6 +1837,7 @@ router.post(
                 });
             }
 
+            kiemTraDaHuyUpload();
             await connection.commit();
             transactionStarted = false;
             res.status(201).json({
@@ -1817,6 +1858,9 @@ router.post(
                 else xoaFileLocal(duongDan);
             }
 
+            if (error.code === "UPLOAD_CANCELLED" || req.aborted || res.destroyed) {
+                return;
+            }
             console.error("Lỗi upload CV theo đợt:", error);
             if (error instanceof multer.MulterError) {
                 const message = error.code === "LIMIT_FILE_SIZE"
@@ -1924,37 +1968,13 @@ router.get(
                 });
             }
 
-            const assignmentColumn = req.nguoiDung?.vai_tro === "interviewer"
-                ? await layCotNguoiPhongVan()
-                : null;
-            if (req.nguoiDung?.vai_tro === "interviewer" && !assignmentColumn) {
-                await db.query(`CREATE TABLE IF NOT EXISTS phong_van_nguoi_tham_gia (
-                    phong_van_id INT NOT NULL, nguoi_dung_id INT NOT NULL,
-                    ngay_tao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    PRIMARY KEY (phong_van_id, nguoi_dung_id),
-                    KEY idx_pv_tham_gia_nguoi_dung (nguoi_dung_id)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
-            }
-            const [rows] =
-                await db.query(
-                    `
-                    SELECT
-                        cv.id,
-                        ten_file,
-                        duong_dan,
-                        loai_file,
-                        kich_thuoc
-                    FROM cv
-                    INNER JOIN ung_vien uv ON uv.id = cv.ung_vien_id
-                    WHERE cv.id = ?
-                        ${assignmentColumn ? `AND EXISTS (
-                            SELECT 1 FROM phong_van pv
-                            WHERE pv.ung_vien_id = uv.id AND pv.${assignmentColumn} = ?
-                        )` : ""}
-                    LIMIT 1
-                    `,
-                    assignmentColumn ? [id, Number(req.nguoiDung.id)] : [id],
-                );
+            const [rows] = await db.query(
+                `SELECT cv.id, ten_file, duong_dan, loai_file, kich_thuoc
+                 FROM cv
+                 INNER JOIN ung_vien uv ON uv.id = cv.ung_vien_id
+                 WHERE cv.id = ? LIMIT 1`,
+                [id],
+            );
 
             if (rows.length === 0) {
                 return res.status(404).json({

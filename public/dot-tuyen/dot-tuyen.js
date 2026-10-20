@@ -18,6 +18,26 @@ const SO_DOT_MOI_TRANG = 10;
 
 const $ = (id) => document.getElementById(id);
 
+function xacNhanEmailCVTrung(message) {
+  const modal = $("modalEmailCVTrung");
+  const content = $("noiDungEmailCVTrung");
+  const ok = $("btnXacNhanEmailCVTrung");
+  if (!modal || !content || !ok) return Promise.resolve(window.confirm(`${message}\n\nNhấn OK để xác nhận và xóa CV trùng.`));
+  content.textContent = `${message} Nhấn OK để xác nhận xóa CV trùng.`;
+  modal.classList.add("hien");
+  modal.setAttribute("aria-hidden", "false");
+  return new Promise((resolve) => {
+    const close = () => {
+      modal.classList.remove("hien");
+      modal.setAttribute("aria-hidden", "true");
+      ok.removeEventListener("click", accept);
+      resolve(true);
+    };
+    const accept = () => close();
+    ok.addEventListener("click", accept, { once: true });
+  });
+}
+
 function layToken() {
   return (
     localStorage.getItem("token") ||
@@ -487,14 +507,62 @@ function moUploadDotTuyen(dot) {
   panel.innerHTML = `<div class="upload-dot-inline-header"><strong>Thêm CV vào đợt tuyển dụng</strong><button type="button" class="btn-dong-upload-inline" aria-label="Đóng">×</button></div><p class="upload-dot-inline-caption">Chọn nhiều CV hoặc một file ZIP. CV sẽ được phân tích và lưu kết quả AI tự động.</p><form class="form-upload-dot-inline"><input type="hidden" name="dot_tuyen_id" value="${escapeHTML(dot.id)}" /><input type="file" name="files" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip" required /><p class="thong-bao upload-dot-inline-message" role="status"></p><progress class="candidate-upload-progress" max="1" value="0" hidden></progress><div class="upload-dot-inline-actions"><button type="button" class="btn-huy btn-huy-upload-inline">Hủy</button><button type="submit" class="btn-luu">Tải CV lên và phân tích</button></div></form>`;
   const table = section.querySelector(".cv-dot-table-wrap");
   section.insertBefore(panel, table || null);
-  panel.querySelector(".btn-dong-upload-inline").addEventListener("click", () => panel.remove());
-  panel.querySelector(".btn-huy-upload-inline").addEventListener("click", () => panel.remove());
-  panel.querySelector("form").addEventListener("submit", guiUploadCVTheoDot);
+  panel.querySelector(".btn-dong-upload-inline").addEventListener("click", () => huyUploadCVTheoDot(panel.querySelector("form")));
+  panel.querySelector(".btn-huy-upload-inline").addEventListener("click", () => huyUploadCVTheoDot(panel.querySelector("form")));
+  panel.querySelector("form").addEventListener("submit", batDauUploadCVTheoDot);
   panel.querySelector('input[type="file"]').focus();
 }
 
 function dongUploadDot() {
+  const form = document.querySelector("#modalUploadDot form");
+  if (form?._uploadState?.active) {
+    huyUploadCVTheoDot(form);
+    return;
+  }
   $("modalUploadDot").classList.remove("hien");
+}
+
+function batDauUploadCVTheoDot(event) {
+  const form = event.currentTarget;
+  const promise = guiUploadCVTheoDot(event);
+  if (form._uploadState) form._uploadState.runPromise = promise;
+  return promise;
+}
+
+async function huyUploadCVTheoDot(form) {
+  const state = form?._uploadState;
+  if (!state?.active) {
+    if (form?.closest("#modalUploadDot")) $("modalUploadDot").classList.remove("hien");
+    else form?.closest(".upload-dot-inline")?.remove();
+    return;
+  }
+  if (state.cancelPromise) return state.cancelPromise;
+  state.cancelRequested = true;
+  state.message.className = "thong-bao hien dang-xu-ly";
+  state.message.textContent = "Đang hủy và xóa các CV vừa tải lên...";
+  state.cancelButton.disabled = true;
+  state.cancelButton.textContent = "Đang hủy...";
+  state.submitButton.disabled = true;
+  state.controller.abort();
+  state.cancelPromise = (async () => {
+    if (state.runPromise) await state.runPromise.catch(() => {});
+    const created = state.candidates || [];
+    for (const candidate of created) {
+      if (!candidate?.id || !candidate?.cv_id) continue;
+      try {
+        await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" });
+      } catch (error) {
+        console.error("Không xóa được CV đã hủy:", candidate, error);
+      }
+    }
+    state.active = false;
+    if (form.closest("#modalUploadDot")) $("modalUploadDot").classList.remove("hien");
+    else form.closest(".upload-dot-inline")?.remove();
+    await taiDuLieu().catch(() => {});
+    const activeItem = danhSachGop.find((item) => Number(item.dot?.id) === Number(state.dotTuyenId));
+    if (activeItem) await taiCVTheoDot(activeItem.dot).catch(() => {});
+  })();
+  return state.cancelPromise;
 }
 
 async function guiUploadCVTheoDot(event) {
@@ -507,64 +575,163 @@ async function guiUploadCVTheoDot(event) {
   const message = form.querySelector(".thong-bao") || $("thongBaoUploadDot");
   const progress = form.querySelector("progress") || $("progressUploadDot");
   const button = form.querySelector('[type="submit"]') || $("btnGuiUploadDot");
+  const cancelButton = form.querySelector(".btn-huy-upload-inline") || $("btnHuyUploadDot");
   const data = new FormData();
   data.append("dot_tuyen_id", idInput.value);
   files.forEach((file) => data.append("files", file));
-  button.disabled = true; button.textContent = "Đang tải...";
-  progress.hidden = true; progress.value = 0;
-  message.className = "thong-bao hien dang-xu-ly"; message.textContent = "Đang tải CV lên đợt tuyển dụng...";
+  const state = {
+    active: true,
+    cancelRequested: false,
+    controller: new AbortController(),
+    candidates: [],
+    message,
+    progress,
+    submitButton: button,
+    cancelButton,
+    dotTuyenId: Number(idInput.value),
+    runPromise: null,
+  };
+  form._uploadState = state;
+  button.disabled = true;
+  button.textContent = "Đang tải...";
+  cancelButton.disabled = false;
+  progress.hidden = true;
+  progress.value = 0;
+  message.className = "thong-bao hien dang-xu-ly";
+  message.textContent = "Đang tải CV lên đợt tuyển dụng... Có thể nhấn Hủy để dừng và không lưu các CV của lần tải này.";
   try {
-    const response = await fetch(`${API}/cv/upload-dot-tuyen`, { method: "POST", headers: layToken() ? { Authorization: `Bearer ${layToken()}` } : {}, body: data });
+    const response = await fetch(`${API}/cv/upload-dot-tuyen`, {
+      method: "POST",
+      headers: layToken() ? { Authorization: `Bearer ${layToken()}` } : {},
+      body: data,
+      signal: state.controller.signal,
+    });
     const result = await response.json().catch(() => ({}));
+    if (state.cancelRequested) return;
     if (response.status === 401) { window.location.href = "/login/login.html"; return; }
     if (!response.ok) throw new Error(result.message || `Lỗi máy chủ (${response.status})`);
     const candidates = Array.isArray(result.candidates) ? result.candidates : [];
+    state.candidates = candidates;
     const failures = Array.isArray(result.errors) ? result.errors.map((item) => `${item.ten_file || "CV"}: ${item.message || "Tải CV thất bại"}`) : [];
     let successCount = 0;
     if (candidates.length) {
-      progress.hidden = false; progress.max = candidates.length; button.textContent = "Đang phân tích...";
+      progress.hidden = false;
+      progress.max = candidates.length;
+      button.textContent = "Đang phân tích...";
       for (let index = 0; index < candidates.length; index += 1) {
+        if (state.cancelRequested) break;
         const candidate = candidates[index];
         message.textContent = `Đã tải CV. Đang phân tích và lưu ${index + 1}/${candidates.length}: ${candidate.ten_file || "CV"}...`;
         try {
           const authHeaders = { "Content-Type": "application/json", ...(layToken() ? { Authorization: `Bearer ${layToken()}` } : {}) };
-          const analysisResponse = await fetch(`${API}/cv/review/${candidate.id}/analyze`, { method: "POST", headers: authHeaders, body: JSON.stringify({ cv_id: candidate.cv_id }) });
+          const analysisResponse = await fetch(`${API}/cv/review/${candidate.id}/analyze`, { method: "POST", headers: authHeaders, body: JSON.stringify({ cv_id: candidate.cv_id }), signal: state.controller.signal });
           const analysisResult = await analysisResponse.json().catch(() => ({}));
+          if (state.cancelRequested) break;
           if (!analysisResponse.ok) {
-            failures.push(`${candidate.ten_file || "CV"}: Đã lưu CV nhưng AI chưa phân tích được (${analysisResult.message || "lỗi phân tích"}).`);
+            failures.push(`${candidate.ten_file || "CV"}: ${analysisResult.message || "Lỗi phân tích"}`);
+            try { await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" }); state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id)); } catch {}
           } else {
             const duplicateByEmail = (analysisResult.ung_vien_trung_tiem_nang || []).find(item => item.exact && item.ly_do === "Trùng email");
             if (duplicateByEmail) {
+              const duplicateMessage = `Email ${analysisResult.phan_tich?.extraction?.email || "này"} đã tồn tại trong đợt tuyển dụng bởi ${duplicateByEmail.ho_ten || `ứng viên #${duplicateByEmail.id}`}. CV trùng sẽ được xóa.`;
+              // Dialog giữ nguyên trên trang; chỉ tiếp tục xóa khi người dùng bấm OK.
+              await xacNhanEmailCVTrung(duplicateMessage);
               try {
                 await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" });
-                failures.push(`${candidate.ten_file || "CV"}: Email đã tồn tại ở ứng viên ${duplicateByEmail.ho_ten || `#${duplicateByEmail.id}`}; đã bỏ qua CV trùng.`);
+                state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id));
+                // Không đưa lỗi trùng vào thông báo tổng kết nữa: dialog vừa được người dùng xác nhận.
               } catch (deleteError) {
-                failures.push(`${candidate.ten_file || "CV"}: Email đã tồn tại ở ứng viên khác, nhưng chưa tự xóa được hồ sơ trùng. ${deleteError.message || ""}`);
+                failures.push(`${candidate.ten_file || "CV"}: Email đã tồn tại nhưng chưa xóa được CV trùng. ${deleteError.message || ""}`);
               }
             } else if (analysisResult.phan_tich && analysisResult.jd_id) {
+              if (state.cancelRequested) break;
               const saveResponse = await fetch(`${API}/cv/review/${candidate.id}/confirm`, {
                 method: "POST", headers: authHeaders,
-                body: JSON.stringify({ cv_id: candidate.cv_id, jd_id: analysisResult.jd_id, phan_tich: analysisResult.phan_tich, diem: analysisResult.phan_tich.score?.tong, de_xuat: analysisResult.phan_tich.score?.de_xuat, ly_do: "Xác nhận tự động sau khi AI phân tích CV." })
+                body: JSON.stringify({ cv_id: candidate.cv_id, jd_id: analysisResult.jd_id, phan_tich: analysisResult.phan_tich, diem: analysisResult.phan_tich.score?.tong, de_xuat: analysisResult.phan_tich.score?.de_xuat, ly_do: "Xác nhận tự động sau khi AI phân tích CV." }),
+                signal: state.controller.signal,
               });
               const saveResult = await saveResponse.json().catch(() => ({}));
+              if (state.cancelRequested) break;
               if (saveResponse.ok) successCount += 1;
-              else failures.push(`${candidate.ten_file || "CV"}: Đã lưu CV nhưng chưa lưu được kết quả AI (${saveResult.message || "lỗi lưu kết quả"}).`);
+              else {
+                try { await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" }); state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id)); } catch {}
+                failures.push(`${candidate.ten_file || "CV"}: ${saveResult.message || "Không lưu được kết quả AI"}; CV không được giữ lại.`);
+              }
             } else {
-              failures.push(`${candidate.ten_file || "CV"}: Đã lưu CV nhưng AI chưa trả đủ dữ liệu để lưu kết quả.`);
+              try { await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" }); state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id)); } catch {}
+              failures.push(`${candidate.ten_file || "CV"}: AI chưa trả đủ dữ liệu; CV không được giữ lại.`);
             }
           }
-        } catch (error) { failures.push(`${candidate.ten_file || "CV"}: ${error.message || "Không kết nối được máy chủ AI"}`); }
+        } catch (error) {
+          if (state.cancelRequested || error.name === "AbortError") break;
+          failures.push(`${candidate.ten_file || "CV"}: ${error.message || "Không kết nối được máy chủ AI"}`);
+        }
         progress.value = index + 1;
       }
     }
-    message.className = failures.length ? "thong-bao hien" : "thong-bao hien thanh-cong";
-    message.textContent = failures.length ? `Đã tải ${candidates.length} CV. Phân tích và lưu thành công ${successCount}/${candidates.length}. Có ${failures.length} lỗi: ${failures.slice(0, 3).join(" · ")}` : `${result.message || "Đã tải CV thành công."}${candidates.length ? ` Đã phân tích và lưu ${successCount}/${candidates.length} CV.` : ""}`;
+    if (state.cancelRequested) return;
+    const daXuLyNhungKhongLuu = candidates.length > 0 && successCount === 0 && failures.length === 0;
+    if (daXuLyNhungKhongLuu) {
+      // Tất cả CV trong lượt này đều bị bỏ do trùng email đã được xác nhận.
+      // Không hiển thị thông báo xanh gây hiểu nhầm là đã phân tích/lưu thành công.
+      message.className = "thong-bao";
+      message.textContent = "";
+    } else {
+      message.className = failures.length ? "thong-bao hien" : "thong-bao hien thanh-cong";
+      message.textContent = failures.length ? `Đã tải ${candidates.length} CV. Phân tích và lưu thành công ${successCount}/${candidates.length}. Có ${failures.length} lỗi: ${failures.slice(0, 3).join(" · ")}` : `${result.message || "Đã tải CV thành công."}${candidates.length ? ` Đã phân tích và lưu ${successCount}/${candidates.length} CV.` : ""}`;
+    }
     await taiDuLieu();
     const activeItem = danhSachGop.find((item) => Number(item.dot?.id) === Number(idInput.value));
     if (activeItem) await taiCVTheoDot(activeItem.dot);
   } catch (error) {
-    console.error(error); message.className = "thong-bao hien"; message.textContent = error.message || "Không thể tải CV lên.";
-  } finally { button.disabled = false; button.textContent = "Tải CV lên và phân tích"; }
+    if (!state.cancelRequested && error.name !== "AbortError") {
+      console.error(error);
+      message.className = "thong-bao hien";
+      message.textContent = error.message || "Không thể tải CV lên.";
+    }
+  } finally {
+    state.active = false;
+    button.disabled = false;
+    button.textContent = "Tải CV lên và phân tích";
+    cancelButton.disabled = false;
+    cancelButton.textContent = "Hủy";
+  }
+}
+
+async function moDialogThemNguoiPhongVanDot(selectEl) {
+  const overlay = document.createElement("div");
+  overlay.className = "cv-dot-modal-overlay";
+  overlay.style.zIndex = "20000";
+  const modal = document.createElement("section");
+  modal.className = "cv-dot-modal cv-dot-modal-interview";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.innerHTML = `<div class="cv-dot-modal-header"><strong>Thêm người phỏng vấn</strong><button type="button" class="cv-dot-modal-close" data-close aria-label="Đóng">×</button></div><form class="cv-dot-interview-form"><label>Họ và tên *<input name="ho_ten" maxlength="100" required></label><label>Email đăng nhập *<input name="email" type="email" maxlength="150" required></label><label>Số điện thoại<input name="so_dien_thoai" type="tel" maxlength="30"></label><p class="cv-dot-interview-error" role="alert"></p><div class="cv-dot-modal-actions"><button type="button" class="cv-dot-cancel" data-close>Hủy</button><button type="submit" class="cv-dot-save">Tạo người phỏng vấn</button></div></form>`;
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelectorAll("[data-close]").forEach(button => button.addEventListener("click", close));
+  overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
+  overlay.querySelector("form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('[type="submit"]');
+    const errorBox = form.querySelector(".cv-dot-interview-error");
+    button.disabled = true; button.textContent = "Đang tạo..."; errorBox.textContent = "";
+    try {
+      const body = { ho_ten: String(form.elements.ho_ten.value || "").trim(), email: String(form.elements.email.value || "").trim(), mat_khau: "123456", so_dien_thoai: String(form.elements.so_dien_thoai.value || "").trim(), bo_phan: "", chuc_danh: "" };
+      const result = await api(`${API}/phong-van/nguoi-phong-van`, { method: "POST", body: JSON.stringify(body) });
+      const person = result.data || result;
+      const option = new Option(`${person.ho_ten || person.email} — Người phỏng vấn`, String(person.id), true, true);
+      // Người vừa tạo được đưa lên đầu danh sách (ngay dưới mục thêm mới) và chọn luôn.
+      selectEl.insertBefore(option, selectEl.options[1] || null);
+      option.selected = true;
+      close();
+    } catch (error) {
+      errorBox.textContent = error.message || "Không thêm được người phỏng vấn.";
+      button.disabled = false; button.textContent = "Tạo người phỏng vấn";
+    }
+  });
 }
 
 function layNgayHienTaiVietNam() {
@@ -1101,7 +1268,10 @@ async function taiCVTheoDot(dot) {
       }
       const actionsCell = document.createElement("td"); const actions = document.createElement("div"); actions.className = "cv-dot-actions";
       const interviewId = candidate.phong_van_id || candidate.id_phong_van || candidate.id_lich_phong_van || null;
-      if (candidate.cv_id) {
+      const role = layVaiTro();
+      const laNguoiPhongVan = ["interviewer", "interview", "nguoi_phong_van", "nguoiphongvan", "phong_van"].includes(role);
+      const duocPhanCong = [true, 1, "1", "true"].includes(candidate.duoc_phan_cong);
+      if (candidate.cv_id && !laNguoiPhongVan) {
         const deleteCv = document.createElement("button"); deleteCv.type = "button"; deleteCv.className = "btn-xoa-cv"; deleteCv.textContent = "Xóa CV";
         deleteCv.addEventListener("click", async () => {
           if (!confirm(`Xóa CV của ${candidate.ho_ten || "ứng viên này"} sẽ xóa luôn hồ sơ ứng viên và dữ liệu liên quan. Bạn có chắc chắn không?`)) return;
@@ -1119,6 +1289,7 @@ async function taiCVTheoDot(dot) {
       const daTuChoi = statusLabel === "Đã từ chối";
       if (!daTuChoi && statusLabel !== "Đã tuyển") {
         if (["Đã hẹn", "Đã phỏng vấn"].includes(statusLabel)) {
+          if (!laNguoiPhongVan) {
           const reschedule = document.createElement("button"); reschedule.type = "button"; reschedule.textContent = "Đổi ngày hẹn";
           reschedule.addEventListener("click", async () => {
             let resolvedId = interviewId;
@@ -1148,6 +1319,8 @@ async function taiCVTheoDot(dot) {
             }
           });
           actions.appendChild(cancelAppointment);
+          }
+          if (!laNguoiPhongVan || duocPhanCong) {
           const evaluate = document.createElement("button");
           evaluate.type = "button";
           evaluate.className = "btn-danh-gia-cv";
@@ -1171,7 +1344,8 @@ async function taiCVTheoDot(dot) {
             dialog.setAttribute("aria-hidden", "false");
           });
           actions.appendChild(evaluate);
-        } else {
+          }
+        } else if (!laNguoiPhongVan) {
           const schedule = document.createElement("button"); schedule.type = "button"; schedule.textContent = "Hẹn phỏng vấn";
           schedule.addEventListener("click", () => moFormHenPhongVan(candidate, dot)); actions.appendChild(schedule);
         }
@@ -1252,7 +1426,10 @@ async function hienThiChiTietUngVien(container, candidate, dot) {
   const infoGrid = document.createElement("div"); infoGrid.className = "cv-dot-detail-grid"; info.appendChild(infoGrid); panel.appendChild(info);
   const addInfo = (label, value) => { if (value === null || value === undefined || String(value).trim() === "") return; const item = document.createElement("div"); item.className = "cv-dot-detail-item"; const key = document.createElement("strong"); key.textContent = label; const val = document.createElement("span"); val.textContent = String(value); item.append(key, val); infoGrid.appendChild(item); };
   const cvSection = document.createElement("section"); cvSection.className = "cv-dot-detail-section cv-dot-cv-section";
-  const cvTitle = document.createElement("h4"); cvTitle.textContent = "CV ứng viên"; cvSection.appendChild(cvTitle);
+  const cvTitleRow = document.createElement("div"); cvTitleRow.className = "cv-dot-cv-title-row";
+  const cvTitle = document.createElement("h4"); cvTitle.textContent = "CV ứng viên";
+  const reanalyzeButton = document.createElement("button"); reanalyzeButton.type = "button"; reanalyzeButton.className = "cv-dot-reanalyze-button"; reanalyzeButton.textContent = "Phân tích lại"; reanalyzeButton.hidden = true;
+  cvTitleRow.append(cvTitle, reanalyzeButton); cvSection.appendChild(cvTitleRow);
   const cvContent = document.createElement("div"); cvContent.className = "cv-dot-inline-preview"; cvContent.textContent = "Đang tải tệp CV..."; cvSection.appendChild(cvContent); panel.appendChild(cvSection);
   const analysisSection = document.createElement("section"); analysisSection.className = "cv-dot-detail-section cv-dot-ai-section";
   const analysisHeader = document.createElement("div"); analysisHeader.className = "cv-dot-analysis-header";
@@ -1274,6 +1451,28 @@ async function hienThiChiTietUngVien(container, candidate, dot) {
   addInfo("Họ và tên", profile.ho_ten); addInfo("Email", profile.email); addInfo("Số điện thoại", profile.so_dien_thoai || profile.sdt); addInfo("Địa chỉ", profile.dia_chi); addInfo("LinkedIn", profile.linkedin); addInfo("GitHub", profile.github); addInfo("Nguồn ứng viên", profile.nguon);
   const cvList = Array.isArray(detail?.cv) ? detail.cv : [];
   const cv = cvList[0] || null;
+  const jds = Array.isArray(detail?.jd) ? detail.jd : [];
+  const selectedJd = jds.find(item => Number(item.dot_tuyen_id || item.dot_tuyen?.id) === Number(dot.id)) || jds[0] || null;
+  const analysisExists = Boolean(detail?.phan_tich?.id || detail?.phan_tich?.du_lieu_phan_tich || detail?.phan_tich?.du_lieu || candidate.phan_tich);
+  reanalyzeButton.hidden = !cv?.id || !selectedJd?.id;
+  reanalyzeButton.textContent = analysisExists ? "Phân tích lại" : "Phân tích CV";
+  reanalyzeButton.addEventListener("click", async () => {
+    if (!cv?.id || !selectedJd?.id) return;
+    reanalyzeButton.disabled = true; reanalyzeButton.textContent = "Đang phân tích...";
+    const error = document.createElement("p"); error.className = "cv-dot-detail-error"; error.textContent = "AI đang phân tích CV, vui lòng chờ..."; cvContent.replaceChildren(error);
+    try {
+      const analyzed = await api(`${API}/cv/review/${profile.id}/analyze`, { method: "POST", body: JSON.stringify({ cv_id: cv.id, jd_id: selectedJd.id }) });
+      const analysisResult = analyzed?.phan_tich;
+      const total = Number(analysisResult?.score?.tong ?? analysisResult?.score?.total ?? analysisResult?.diem_phu_hop);
+      if (!analysisResult || !Number.isFinite(total)) throw new Error("AI chưa trả đủ kết quả để lưu.");
+      const confirmResult = await api(`${API}/cv/review/${profile.id}/confirm`, { method: "POST", body: JSON.stringify({ cv_id: cv.id, jd_id: selectedJd.id, phan_tich: analysisResult, diem: total, de_xuat: analysisResult?.score?.de_xuat || (total < 60 ? "chua_phu_hop" : total < 80 ? "can_nhac" : "nen_phong_van"), ly_do: "Phân tích từ form CV ứng viên." }) });
+      hienThongBaoCVDot(confirmResult?.message || "Đã phân tích và lưu CV thành công.", true);
+      await hienThiChiTietUngVien(container, candidate, dot);
+    } catch (error) {
+      cvContent.textContent = error.message || "Không thể phân tích CV.";
+      reanalyzeButton.disabled = false; reanalyzeButton.textContent = analysisExists ? "Phân tích lại" : "Phân tích CV";
+    }
+  });
   addInfo("Tệp CV", cv?.ten_file || candidate.ten_file);
   if (cv?.loai_file) addInfo("Định dạng", cv.loai_file);
   if (cv?.ngay_tai_len) addInfo("Ngày tải lên", new Date(cv.ngay_tai_len).toLocaleString("vi-VN"));
@@ -1342,8 +1541,8 @@ async function hienThiChiTietUngVien(container, candidate, dot) {
       if (Array.isArray(child)) return child.map(item => `- ${nextPrefix}: ${item && typeof item === "object" ? displayText(item) : String(item ?? "")}`);
       return [`- ${nextPrefix}: ${String(child ?? "")}`];
     }).join("\n");
-    if (Array.isArray(value)) return value.map(item => item && typeof item === "object" ? displayText(item) : `- ${String(item ?? "")}`).join("\n");
-    if (value && typeof value === "object") return flattenObject(value);
+    if (Array.isArray(value)) return value.map(item => item && typeof item === "object" ? displayText(item) : `- ${String(item ?? "")}`).filter(line => line && line !== "- [object Object]").join("\n");
+    if (value && typeof value === "object") return flattenObject(value).split("\n").filter(line => !line.includes("[object Object]")).join("\n");
     if (typeof value === "string" && value.includes("\n")) return value.split(/\r?\n/).map(line => line.trim()).filter(Boolean).map(line => line.startsWith("-") ? line : `- ${line}`).join("\n");
     const normalized = normalizeKey(value);
     if (normalized === "can nhac") return "Cân nhắc";
@@ -1376,7 +1575,12 @@ async function hienThiChiTietUngVien(container, candidate, dot) {
         const text = document.createElement("div"); text.className = "cv-dot-ai-review-text";
         text.textContent = rows.map(row => `- ${row.label}: ${row.value === undefined || row.value === null || row.value === "" ? "—" : `${displayText(row.value)}${String(row.value).includes("/") ? "" : "/100"}`}`).join("\n"); item.appendChild(text); analysisContent.appendChild(item); continue;
       }
-      if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0) || (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0)) continue;
+      if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0) || (typeof value === "object" && !Array.isArray(value) && (Object.keys(value).length === 0 || !Object.values(value).some(item => item !== null && item !== undefined && item !== "" && (!Array.isArray(item) || item.length)))) ) continue;
+      if (spec.label === "Học vấn") {
+        const flattenedEducation = displayText(value).split("\n").map(line => line.replace(/^[-•]\s*/, "").trim()).filter(line => line && line !== "[object Object]").join(" · ").trim();
+        if (!flattenedEducation) continue;
+        value = flattenedEducation;
+      }
       if (spec.label === "Cờ cảnh báo") {
         const warningText = Array.isArray(value) ? value.map(item => typeof item === "object" ? JSON.stringify(item) : String(item)).join(" ") : typeof value === "object" ? JSON.stringify(value) : String(value);
         if (!warningText.trim() || /một số trích dẫn|some citations|no specific flags|không có cảnh báo|không có cờ cảnh báo|không nhảy việc nhiều|không có dấu hiệu nhảy việc|no warning|no job hopping|job[_ ]hopping.{0,15}(false|no|none)/i.test(warningText)) continue;
@@ -1908,14 +2112,23 @@ async function moFormHenPhongVan(candidate, dot, interviewId = null) {
   const interviewerSelect = form.elements.nguoi_phong_van_ids;
   try {
     const result = await api(`${API}/phong-van/nguoi-phong-van`);
-    const people = Array.isArray(result) ? result : (result.data || result.danhSach || []);
+    const people = (Array.isArray(result) ? result : (result.data || result.danhSach || [])).slice().sort((a, b) =>
+      String(a.ho_ten || a.ten || a.email || "").localeCompare(String(b.ho_ten || b.ten || b.email || ""), "vi", { sensitivity: "base" })
+    );
     interviewerSelect.replaceChildren();
+    const addOption = new Option("+ Thêm người phỏng vấn...", "__them_moi__");
+    interviewerSelect.add(addOption);
     people.forEach(person => {
       const option = document.createElement("option"); option.value = String(person.id);
       option.textContent = `${person.ho_ten || person.ten || person.email || `Tài khoản #${person.id}`} — ${person.vai_tro || person.role || "Người phỏng vấn"}`;
       interviewerSelect.appendChild(option);
     });
-    if (!people.length) interviewerSelect.innerHTML = '<option value="">Chưa có người phỏng vấn khả dụng</option>';
+    interviewerSelect.onchange = async function () {
+      if (![...this.selectedOptions].some(option => option.value === "__them_moi__")) return;
+      [...this.options].forEach(option => { if (option.value === "__them_moi__") option.selected = false; });
+      await moDialogThemNguoiPhongVanDot(interviewerSelect);
+    };
+    if (!people.length) interviewerSelect.insertAdjacentHTML("beforeend", '<option value="" disabled>Chưa có người phỏng vấn khả dụng</option>');
   } catch (error) {
     interviewerSelect.innerHTML = '<option value="">Không tải được danh sách</option>';
     form.querySelector(".cv-dot-interview-error").textContent = error.message || "Không tải được người phỏng vấn.";
@@ -3322,6 +3535,7 @@ function ganSuKien() {
 
   $("btnDongUploadDot").addEventListener("click", dongUploadDot);
   $("btnHuyUploadDot").addEventListener("click", dongUploadDot);
+  $("formUploadDot").addEventListener("submit", batDauUploadCVTheoDot);
   $("modalUploadDot").addEventListener("click", (event) => {
     if (event.target === $("modalUploadDot")) dongUploadDot();
   });

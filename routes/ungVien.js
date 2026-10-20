@@ -376,14 +376,8 @@ router.get("/", kiemTraDangNhap, async (req, res) => {
             thamSo.push(req.query.dot_tuyen_id);
         }
 
-        if (req.nguoiDung?.vai_tro === "interviewer") {
-            const column = await layCotNguoiPhongVan();
-            dieuKien.push(`EXISTS (
-                SELECT 1 FROM phong_van pv
-                WHERE pv.ung_vien_id = uv.id AND pv.${column} = ?
-            )`);
-            thamSo.push(Number(req.nguoiDung.id));
-        }
+        // Người phỏng vấn được xem danh sách tất cả ứng viên; quyền đánh giá
+        // vẫn được kiểm soát riêng theo lịch được phân công.
 
         if (req.query.trang_thai && trangThaiHopLe.has(req.query.trang_thai)) {
             dieuKien.push("uv.trang_thai = ?");
@@ -417,10 +411,6 @@ router.get("/", kiemTraDangNhap, async (req, res) => {
 // Chi tiết ứng viên
 router.get("/:id", kiemTraDangNhap, async (req, res) => {
     try {
-        const column = req.nguoiDung?.vai_tro === "interviewer"
-            ? await layCotNguoiPhongVan()
-            : null;
-
         const [rows] = await db.query(`
             SELECT uv.id, uv.dot_tuyen_id, uv.ho_ten, uv.email,
                    uv.so_dien_thoai AS sdt, uv.dia_chi, uv.linkedin,
@@ -429,11 +419,7 @@ router.get("/:id", kiemTraDangNhap, async (req, res) => {
             FROM ung_vien uv
             INNER JOIN dot_tuyen dt ON uv.dot_tuyen_id = dt.id
             WHERE uv.id = ?
-            ${column ? `AND EXISTS (
-                SELECT 1 FROM phong_van pv
-                WHERE pv.ung_vien_id = uv.id AND pv.${column} = ?
-            )` : ""}
-        `, column ? [req.params.id, Number(req.nguoiDung.id)] : [req.params.id]);
+        `, [req.params.id]);
 
         if (!rows.length) {
             return res.status(404).json({ message: "Không tìm thấy ứng viên" });
@@ -712,23 +698,11 @@ router.post("/:id/cv-url", kiemTraDangNhap, kiemTraVaiTro("admin", "manager", "h
 // Tải xuống CV
 router.get("/:id/cv/:cvId", kiemTraDangNhap, async (req, res) => {
     try {
-        const column = req.nguoiDung?.vai_tro === "interviewer"
-            ? await layCotNguoiPhongVan()
-            : null;
-
         const [rows] = await db.query(`
             SELECT ten_file, duong_dan
             FROM cv
             WHERE id = ? AND ung_vien_id = ?
-            ${column ? `AND EXISTS (
-                SELECT 1 FROM phong_van pv
-                WHERE pv.ung_vien_id = cv.ung_vien_id AND pv.${column} = ?
-            )` : ""}
-        `, [
-            req.params.cvId,
-            req.params.id,
-            ...(column ? [Number(req.nguoiDung.id)] : [])
-        ]);
+        `, [req.params.cvId, req.params.id]);
 
         if (!rows.length) {
             return res.status(404).json({ message: "Không tìm thấy CV" });
