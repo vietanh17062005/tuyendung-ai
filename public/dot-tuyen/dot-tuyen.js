@@ -705,6 +705,16 @@ function hienThiDanhSach() {
       });
     }
     row.addEventListener('click', (event) => {
+      // Bấm vào phần viền/nền của ô checkbox cũng chỉ chọn hàng, không mở chi tiết JD.
+      const checkboxCell = event.target.closest('td.cot-chon-dot');
+      if (checkboxCell) {
+        const checkbox = checkboxCell.querySelector('.tick-chon-dot');
+        if (checkbox && event.target !== checkbox) {
+          checkbox.checked = !checkbox.checked;
+          checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        return;
+      }
       if (event.target.closest('button, a, input, select, textarea')) return;
       try {
         moFormXem(item);
@@ -724,7 +734,8 @@ function capNhatNutXoaDotDaChon() {
   const count = dotTuyenDaChon.size;
   // Giữ nguyên thanh tìm kiếm; chỉ bật nút xóa khi đã chọn ít nhất một đợt.
   deleteButton.hidden = false;
-  deleteButton.disabled = dangXoaHangLoatDot || count === 0;
+  // Khi chưa chọn, vẫn cho bấm để hiện hướng dẫn thay vì khóa nút.
+  deleteButton.disabled = dangXoaHangLoatDot;
   deleteButton.innerHTML = dangXoaHangLoatDot
     ? '<span class="vong-tai-nho" aria-hidden="true"></span><span>Đang xóa...</span>'
     : "Xóa đợt tuyển dụng";
@@ -732,8 +743,22 @@ function capNhatNutXoaDotDaChon() {
 }
 
 function moModalXoaNhieuDot() {
-  if (dangXoaHangLoatDot || dotTuyenDaChon.size === 0) return;
+  if (dangXoaHangLoatDot) return;
   const modal = $("modalXoaNhieuDot");
+  if (dotTuyenDaChon.size === 0) {
+    $("nhanXoaNhieuDot").textContent = "CHƯA CHỌN ĐỢT TUYỂN DỤNG";
+    $("tieuDeXoaNhieuDot").textContent = "Vui lòng chọn đợt tuyển dụng để xóa";
+    $("noiDungXoaNhieuDot").textContent = "Tick vào ô ở cột đầu tiên của một hoặc nhiều đợt tuyển dụng, sau đó nhấn nút Xóa đợt tuyển dụng.";
+    $("bieuTuongXoaNhieuDot").textContent = "!";
+    $("hanhDongXoaNhieuDot").innerHTML = '<button type="button" class="btn-luu" id="btnDongKetQuaXoaNhieuDot">Đã hiểu</button>';
+    $("btnDongKetQuaXoaNhieuDot").addEventListener("click", () => {
+      modal.classList.remove("hien");
+      modal.setAttribute("aria-hidden", "true");
+    }, { once: true });
+    modal.classList.add("hien");
+    modal.setAttribute("aria-hidden", "false");
+    return;
+  }
   $("nhanXoaNhieuDot").textContent = "XÁC NHẬN XÓA";
   $("tieuDeXoaNhieuDot").textContent = `Xóa ${dotTuyenDaChon.size} đợt tuyển dụng đã chọn?`;
   $("noiDungXoaNhieuDot").textContent = "Các đợt tuyển dụng đã chọn cùng những JD liên quan sẽ bị xóa. Hành động này không thể hoàn tác.";
@@ -2821,6 +2846,10 @@ async function xacNhanXoa() {
 }
 
 function xuLyClickDanhSach(event) {
+  // Bất kỳ thao tác nào trong ô checkbox (kể cả vùng đệm/viền xung quanh)
+  // chỉ dùng để chọn hoặc bỏ chọn đợt tuyển dụng, tuyệt đối không mở form chi tiết.
+  if (event.target.closest("td.cot-chon-dot")) return;
+
   const rowClick = event.target.closest("tr[data-dot-id]");
   const isControl = event.target.closest("button[data-action], a, input, select, textarea, [data-toggle-menu]");
   if (rowClick && !isControl) {

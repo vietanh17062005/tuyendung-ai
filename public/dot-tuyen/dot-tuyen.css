@@ -4264,3 +4264,6 @@ body.embed-mode #modal .modal-box { box-shadow: none !important; }
 #modalXoaNhieuDot #tieuDeXoaNhieuDot .vong-tai-nho { margin-right: 7px; }
 #modalXoaNhieuDot #noiDungXoaNhieuDot { line-height: 1.65; overflow-wrap: anywhere; }
 #modalXoaNhieuDot .modal-footer button:disabled { cursor: wait; opacity: .7; }
+
+/* Toàn bộ ô checkbox có thể bấm để chọn; các ô dữ liệu khác vẫn mở chi tiết đợt tuyển dụng. */
+.table-scroll-dot-tuyen tbody td.cot-chon-dot { cursor: pointer; }
