@@ -8,9 +8,9 @@
 
   <title>Quản lý đợt tuyển dụng</title>
 
-  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css?v=20261020-recruitment-date-string-fix2" />
+  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css?v=20261020-bulk-delete-modal3" />
   <link rel="stylesheet" href="/account/account.css" />
-<link rel="stylesheet" href="/menu-dong-bo.css">
+<link rel="stylesheet" href="/menu-dong-bo.css?v=20261020-loading-buttons">
 </head>
 
 <body>
@@ -135,11 +135,14 @@
             <button type="button" class="tab-trang-thai-nut" data-status="ket_thuc">Đã đóng <span
                 id="demKetThuc">0</span></button>
           </div>
-          <label class="tim-kiem tim-kiem-bang">
+          <label class="tim-kiem tim-kiem-bang" id="khuTimKiemDot">
             <span aria-hidden="true">⌕</span>
             <input type="search" id="oTimKiem" placeholder="Tìm tên đợt tuyển dụng..."
               aria-label="Tìm tên đợt tuyển dụng" />
           </label>
+          <button type="button" id="btnXoaDotDaChon" class="btn-xoa-dot-da-chon" disabled>
+            Xóa đợt tuyển dụng
+          </button>
           <p id="tongSo" class="so-ket-qua">0 đợt tuyển dụng</p>
           <select id="locTrangThai" class="loc-an" aria-label="Lọc theo trạng thái">
             <option value="">Tất cả trạng thái</option>
@@ -154,11 +157,12 @@
           </div>
         </div>
 
-        <div class="table-scroll">
-          <table>
+        <div class="table-scroll table-scroll-dot-tuyen">
+          <table class="bang-dot-tuyen">
             <thead>
               <tr>
-                <th>STT</th>
+                <th class="cot-chon-dot" aria-label="Chọn đợt tuyển dụng"></th>
+                <th class="cot-stt">STT</th>
                 <th>Tên đợt tuyển dụng</th>
                 <th>Ứng viên đã nhận</th>
                 <th>Hợp tiêu chí</th>
@@ -443,12 +447,12 @@
                 <option value="Tây Ninh">Tây Ninh</option>
                 <option value="Thái Nguyên">Thái Nguyên</option>
                 <option value="Thanh Hóa">Thanh Hóa</option>
-                <option value="Thành phố Cần Thơ">Thành phố Cần Thơ</option>
-                <option value="Thành phố Đà Nẵng">Thành phố Đà Nẵng</option>
-                <option value="Thành phố Hà Nội">Thành phố Hà Nội</option>
-                <option value="Thành phố Hải Phòng">Thành phố Hải Phòng</option>
-                <option value="Thành phố Huế">Thành phố Huế</option>
-                <option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
+                <option value="Cần Thơ">Cần Thơ</option>
+                <option value="Đà Nẵng">Đà Nẵng</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="Hải Phòng">Hải Phòng</option>
+                <option value="Huế">Huế</option>
+                <option value="Hồ Chí Minh">Hồ Chí Minh</option>
                 <option value="Tuyên Quang">Tuyên Quang</option>
                 <option value="Vĩnh Long">Vĩnh Long</option>
               </select>
@@ -637,12 +641,12 @@
                 <option value="Tây Ninh">Tây Ninh</option>
                 <option value="Thái Nguyên">Thái Nguyên</option>
                 <option value="Thanh Hóa">Thanh Hóa</option>
-                <option value="Thành phố Cần Thơ">Thành phố Cần Thơ</option>
-                <option value="Thành phố Đà Nẵng">Thành phố Đà Nẵng</option>
-                <option value="Thành phố Hà Nội">Thành phố Hà Nội</option>
-                <option value="Thành phố Hải Phòng">Thành phố Hải Phòng</option>
-                <option value="Thành phố Huế">Thành phố Huế</option>
-                <option value="Thành phố Hồ Chí Minh">Thành phố Hồ Chí Minh</option>
+                <option value="Cần Thơ">Cần Thơ</option>
+                <option value="Đà Nẵng">Đà Nẵng</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="Hải Phòng">Hải Phòng</option>
+                <option value="Huế">Huế</option>
+                <option value="Hồ Chí Minh">Hồ Chí Minh</option>
                 <option value="Tuyên Quang">Tuyên Quang</option>
                 <option value="Vĩnh Long">Vĩnh Long</option>
               </select>
@@ -727,6 +731,19 @@
     </div>
   </div>
 
+  <div class="modal" id="modalXoaNhieuDot" aria-hidden="true">
+    <section class="modal-box xac-nhan-box modal-xoa-nhieu-dot" role="dialog" aria-modal="true" aria-labelledby="tieuDeXoaNhieuDot">
+      <div class="xac-nhan-icon" id="bieuTuongXoaNhieuDot">!</div>
+      <p class="xac-nhan-nhan" id="nhanXoaNhieuDot">XÁC NHẬN XÓA</p>
+      <h2 id="tieuDeXoaNhieuDot">Xóa các đợt tuyển dụng đã chọn?</h2>
+      <p id="noiDungXoaNhieuDot">Các đợt tuyển dụng đã chọn cùng những JD liên quan sẽ bị xóa. Hành động này không thể hoàn tác.</p>
+      <div class="modal-footer" id="hanhDongXoaNhieuDot">
+        <button type="button" class="btn-huy" id="btnHuyXoaNhieuDot">Hủy</button>
+        <button type="button" class="btn-xoa-confirm" id="btnXacNhanXoaNhieuDot">Xóa đợt tuyển dụng</button>
+      </div>
+    </section>
+  </div>
+
   <div class="modal" id="modalChonJD">
     <div class="modal-box chon-jd-box">
       <div class="modal-header">
@@ -755,8 +772,8 @@
   </div>
 
   <script src="/account/account.js"></script>
-  <script src="/dot-tuyen/dot-tuyen.js?v=20261020-recruitment-date-string-fix2"></script>
-<script src="/menu-dong-bo.js"></script>
+  <script src="/dot-tuyen/dot-tuyen.js?v=20261020-bulk-delete-modal3"></script>
+<script src="/menu-dong-bo.js?v=20261020-loading-buttons"></script>
 </body>
 
 </html>

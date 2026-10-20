@@ -335,7 +335,10 @@
                 can_nhac: "Cân nhắc",
                 chua_phu_hop: "Chưa phù hợp",
             };
-            const recommendation = recommendations[parsed.score?.de_xuat] || "Chưa có gợi ý AI";
+            const recommendationByScore = Number.isFinite(score)
+                ? (score < 60 ? "chua_phu_hop" : score < 80 ? "can_nhac" : "nen_phong_van")
+                : parsed.score?.de_xuat;
+            const recommendation = recommendations[recommendationByScore] || "Chưa có gợi ý AI";
             const operations = coQuyenQuanLyUngVien
                 ? `<div class="candidate-card-actions">
                     <button type="button" data-action="edit" data-id="${ungVien.id}">Sửa</button>
@@ -409,7 +412,9 @@
         const score = Number(analysisRow?.diem_phu_hop ?? analysisRow?.diem ?? result.tong);
         const overrideScore = reviewMeta.diem_ghi_de;
         const effectiveScore = overrideScore == null ? score : Number(overrideScore);
-        const recommendation = reviewMeta.de_xuat_ghi_de || result.de_xuat || "can_nhac";
+        const recommendation = reviewMeta.de_xuat_ghi_de || (Number.isFinite(effectiveScore)
+            ? (effectiveScore < 60 ? "chua_phu_hop" : effectiveScore < 80 ? "can_nhac" : "nen_phong_van")
+            : result.de_xuat || "can_nhac");
         const recommendationNames = {
             nen_phong_van: "Nên phỏng vấn",
             can_nhac: "Cân nhắc",

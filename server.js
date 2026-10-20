@@ -1310,7 +1310,15 @@ app.post(
 
       );
 
+      const thoiGianHienTaiVN = new Intl.DateTimeFormat("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+        dateStyle: "full",
+        timeStyle: "short",
+      }).format(new Date());
+
       const duLieuHeThong = {
+        thoiGianHienTaiVietNam: thoiGianHienTaiVN,
+        muiGio: "Asia/Ho_Chi_Minh (UTC+7)",
 
         phamViUngVien:
 
@@ -1392,13 +1400,54 @@ app.post(
 
         .replace(/đ/g, "d");
 
+      // Câu hỏi ngày/giờ phải lấy từ đồng hồ máy chủ theo giờ Việt Nam, không hỏi Gemini.
+      // Chỉ coi là hỏi ngày/giờ khi có ngữ cảnh thời gian rõ ràng.
+      // Tránh nhầm câu "Việt Nam xếp thứ mấy trên FIFA" thành hỏi thứ trong tuần.
+      const coNguCanhNgayGio =
+        /\b(hom nay|ngay mai|hom qua|bay gio|hien tai|ngay nao|ngay may|may gio|gio hien tai|thu may)\b/.test(cauHoiChuanHoa);
+      const dangHoiXepHang = /\b(xep hang|xep thu|thu hang|fifa|bang xep hang|ranking)\b/.test(cauHoiChuanHoa);
+      const laCauHoiNgayGio = coNguCanhNgayGio && !dangHoiXepHang;
+
+      if (laCauHoiNgayGio) {
+        const now = new Date();
+        const ngayHoi = new Date(now.getTime());
+        const hoiNgayMai = /\b(ngay mai|tomorrow)\b/.test(cauHoiChuanHoa);
+        const hoiHomQua = /\b(hom qua|yesterday)\b/.test(cauHoiChuanHoa);
+        if (hoiNgayMai) ngayHoi.setDate(ngayHoi.getDate() + 1);
+        if (hoiHomQua) ngayHoi.setDate(ngayHoi.getDate() - 1);
+        const ngayVN = new Intl.DateTimeFormat("vi-VN", {
+          timeZone: "Asia/Ho_Chi_Minh",
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }).format(ngayHoi);
+        const gioVN = new Intl.DateTimeFormat("vi-VN", {
+          timeZone: "Asia/Ho_Chi_Minh",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+        }).format(now);
+        const hoiNgay = /\b(thu may|ngay may|hom nay la thu|hom nay ngay|ngay nao)\b/.test(cauHoiChuanHoa);
+        const hoiGio = /\b(may gio|bay gio|hien tai|gio hien tai)\b/.test(cauHoiChuanHoa);
+        let reply = "";
+        if (hoiNgay && hoiGio) reply = `Hiện tại ở Việt Nam là ${gioVN}, ${ngayVN}.`;
+        else if (hoiGio) reply = `Bây giờ ở Việt Nam là ${gioVN}, ngày ${ngayVN}.`;
+        else reply = `${hoiNgayMai ? "Ngày mai" : hoiHomQua ? "Hôm qua" : "Hôm nay"} là ${ngayVN}.`;
+        return res.json({ reply, provider: "server-clock" });
+      }
+
+      // Không để mô hình lấy nhầm câu trả lời ngày/giờ trong lịch sử chat cho câu hỏi FIFA.
+      if (cauHoiChuanHoa.includes("fifa") && /\b(xep|hang|thu hang|thu may|ranking|rank)\b/.test(cauHoiChuanHoa)) {
+        return res.json({
+          reply: "Mình không biết thứ hạng FIFA hiện tại của Việt Nam vì hệ thống chưa có dữ liệu cập nhật để xác minh.",
+          provider: "unknown-current-data",
+        });
+      }
+
       const laCauHoiDemUngVien =
-
         /\b(bao nhieu|tong so|so luong|dem)\b/.test(cauHoiChuanHoa) &&
-
         /\b(ung vien|ho so)\b/.test(cauHoiChuanHoa);
-
-
 
       if (laCauHoiDemUngVien) {
 
@@ -1508,9 +1557,11 @@ app.post(
 
 Bạn là trợ lý AI hỗ trợ tuyển dụng tại Việt Nam.
 
-Là trợ lý tuyển dụng cho doanh nghiệp. Trả lời bằng tiếng Việt tự nhiên, súc tích (thường 2-5 câu), đi thẳng vào câu hỏi.
+Trả lời bằng tiếng Việt tự nhiên, súc tích, đi thẳng vào câu hỏi MỚI NHẤT của người dùng. Không lặp lại câu trả lời cũ nếu nó không trả lời câu hỏi mới. Không được trả lời bằng ngày/giờ chỉ vì câu hỏi mới có cụm từ "thứ mấy"; hãy phân biệt hỏi thứ trong tuần với hỏi xếp hạng/thứ hạng.
 
-Ưu tiên sự chính xác hơn việc cố trả lời: không bịa số liệu, vị trí tuyển, yêu cầu hoặc tiêu chí không có trong ngữ cảnh hệ thống. Nếu thiếu dữ liệu, nói rõ đang thiếu gì.
+Ưu tiên sự chính xác hơn việc cố trả lời: không bịa số liệu, vị trí tuyển, yêu cầu hoặc tiêu chí không có trong ngữ cảnh hệ thống. Nếu không biết hoặc không có dữ liệu để xác minh, hãy nói thẳng "Mình không biết thông tin này" hoặc "Mình chưa có dữ liệu để xác minh", không vòng vo, không đổi chủ đề và không tự tạo câu trả lời.
+
+Thời gian hiện tại được cung cấp trong NGỮ CẢNH HỆ THỐNG và dùng múi giờ Việt Nam (UTC+7). Chỉ dùng thời gian này khi người dùng thực sự hỏi về ngày/giờ. Với thông tin thời sự, bảng xếp hạng FIFA, giá cả, lịch sự kiện hoặc dữ liệu bên ngoài cần cập nhật mà ngữ cảnh không có nguồn xác minh, phải nói rõ chưa biết/chưa thể xác minh trực tiếp; không khẳng định như sự thật. Không tự nhận đã tra cứu Internet.
 
 Với câu hỏi về số liệu ứng viên, trạng thái ứng viên, chiến dịch hoặc vị trí đang tuyển, chỉ dùng dữ liệu trong ngữ cảnh hệ thống; nếu dữ liệu không có thì nói không tìm thấy.
 
@@ -1564,12 +1615,14 @@ Trợ lý:
 
     } catch (error) {
 
-      console.error("Lỗi chatbot AI:", error);
+      const status = Number(error?.status) === 429 ? 429 : Number(error?.status) >= 400 && Number(error?.status) < 600 ? Number(error.status) : 500;
+      const message = layThongBaoLoi(error);
+      console.error("Lỗi chatbot AI:", status, message);
 
-      res.status(500).json({
-
-        message: `Không thể sử dụng AI: ${layThongBaoLoi(error)}`,
-
+      res.status(status).json({
+        message: status === 429
+          ? message
+          : `Không thể sử dụng AI: ${message}`,
       });
 
     }

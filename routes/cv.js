@@ -314,8 +314,8 @@ function chuanHoaDanhSach(value, maxItems = 20, maxLength = 500) {
 function deXuatTheoDiem(diem) {
     const score = Number(diem);
     if (!Number.isFinite(score)) return "can_nhac";
-    if (score <= 70) return "chua_phu_hop";
-    if (score < 85) return "can_nhac";
+    if (score < 60) return "chua_phu_hop";
+    if (score < 80) return "can_nhac";
     return "nen_phong_van";
 }
 

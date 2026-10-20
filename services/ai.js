@@ -132,6 +132,16 @@ async function goiGemini(system, noiDung, maxTokens, jsonMode) {
         console.log(`[Vertex AI] Thành công bằng ${GEMINI_MODEL}`);
         return text;
     } catch (error) {
+        const message = error?.message || "Không có thông tin chi tiết.";
+        const isRateLimit = Number(error?.status) === 429 || /429|quota|resource exhausted|too many requests/i.test(message);
+        if (isRateLimit) {
+            console.warn("[Vertex AI] Chạm giới hạn lượt gọi hoặc quota (429). Không tự gọi lặp để tránh làm tăng số request.");
+            throw taoLoi(
+                "AI đang tạm quá tải hoặc đã chạm giới hạn lượt gọi của Google Cloud (429). Hãy đợi một lát rồi thử lại. Nếu lỗi vẫn tiếp diễn, cần kiểm tra quota Vertex AI và billing của dự án Google Cloud.",
+                429
+            );
+        }
+
         if (error.status) {
             throw error;
         }
@@ -146,7 +156,6 @@ async function goiGemini(system, noiDung, maxTokens, jsonMode) {
             );
         }
 
-        const message = error.message || "Không có thông tin chi tiết.";
         console.error("[Vertex AI] Lỗi:", message);
 
         if (/401|403|permission|credential|unauthenticated/i.test(message)) {
@@ -161,14 +170,6 @@ async function goiGemini(system, noiDung, maxTokens, jsonMode) {
             throw taoLoi(
                 `Không tìm thấy model ${GEMINI_MODEL} tại khu vực ${LOCATION}, hoặc model không được hỗ trợ. Chi tiết: ${message}`,
                 502
-            );
-        }
-
-        if (/429|quota|resource exhausted/i.test(message)) {
-            throw taoLoi(
-                "Vertex AI đã vượt quota hoặc giới hạn sử dụng. Chi tiết: " +
-                message,
-                429
             );
         }
 

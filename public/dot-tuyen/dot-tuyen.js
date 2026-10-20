@@ -12,6 +12,8 @@ let dotTuyenJDId = null;
 let yTuongJD = "";
 let cauHoiJD = [];
 let trangHienTaiDot = 1;
+const dotTuyenDaChon = new Set();
+let dangXoaHangLoatDot = false;
 const SO_DOT_MOI_TRANG = 10;
 
 const $ = (id) => document.getElementById(id);
@@ -256,7 +258,7 @@ function parseTieuChi(value) {
 async function taiDuLieu() {
   const tbody = $("danhSach");
   if (tbody) {
-    tbody.innerHTML = '<tr class="dong-dang-tai"><td colspan="7"><span class="vong-tai-nho" aria-hidden="true"></span>Đang tải danh sách đợt tuyển dụng…</td></tr>';
+    tbody.innerHTML = '<tr class="dong-dang-tai"><td colspan="8"><span class="vong-tai-nho" aria-hidden="true"></span>Đang tải danh sách đợt tuyển dụng…</td></tr>';
     $("khongCoDuLieu").style.display = "none";
   }
   try {
@@ -283,6 +285,11 @@ async function taiDuLieu() {
 
     if (!Array.isArray(danhSachJD)) {
       danhSachJD = [];
+    }
+
+    const idsDotHienCo = new Set(danhSachDotTuyen.map((dot) => String(dot.id)));
+    for (const id of dotTuyenDaChon) {
+      if (!idsDotHienCo.has(String(id))) dotTuyenDaChon.delete(id);
     }
 
     danhSachGop = danhSachDotTuyen.map((dot) => {
@@ -628,6 +635,7 @@ function hienThiDanhSach() {
 
   if (!danhSachLoc.length) {
     $("khongCoDuLieu").style.display = "block";
+    capNhatNutXoaDotDaChon();
     return;
   }
 
@@ -651,8 +659,10 @@ function hienThiDanhSach() {
     const row = document.createElement("tr");
     row.dataset.dotId = String(dot.id);
     row.classList.add("dot-tuyen-row-clickable");
+    if (dotTuyenDaChon.has(String(dot.id))) row.classList.add("dot-tuyen-row-selected");
 
     row.innerHTML = `
+      <td class="cot-chon-dot"><input type="checkbox" class="tick-chon-dot" data-action="chon-dot" data-id="${escapeHTML(dot.id)}" aria-label="Chọn đợt tuyển dụng ${escapeHTML(tenDot)}" ${dotTuyenDaChon.has(String(dot.id)) ? "checked" : ""}></td>
       <td class="cot-stt">${batDau + index + 1}</td>
       <td>
         <div class="chien-dich-ten">
@@ -705,6 +715,97 @@ function hienThiDanhSach() {
     });
     tbody.appendChild(row);
   });
+  capNhatNutXoaDotDaChon();
+}
+
+function capNhatNutXoaDotDaChon() {
+  const deleteButton = $("btnXoaDotDaChon");
+  if (!deleteButton) return;
+  const count = dotTuyenDaChon.size;
+  // Giữ nguyên thanh tìm kiếm; chỉ bật nút xóa khi đã chọn ít nhất một đợt.
+  deleteButton.hidden = false;
+  deleteButton.disabled = dangXoaHangLoatDot || count === 0;
+  deleteButton.innerHTML = dangXoaHangLoatDot
+    ? '<span class="vong-tai-nho" aria-hidden="true"></span><span>Đang xóa...</span>'
+    : "Xóa đợt tuyển dụng";
+  deleteButton.setAttribute("aria-label", dangXoaHangLoatDot ? "Đang xóa đợt tuyển dụng" : "Xóa đợt tuyển dụng");
+}
+
+function moModalXoaNhieuDot() {
+  if (dangXoaHangLoatDot || dotTuyenDaChon.size === 0) return;
+  const modal = $("modalXoaNhieuDot");
+  $("nhanXoaNhieuDot").textContent = "XÁC NHẬN XÓA";
+  $("tieuDeXoaNhieuDot").textContent = `Xóa ${dotTuyenDaChon.size} đợt tuyển dụng đã chọn?`;
+  $("noiDungXoaNhieuDot").textContent = "Các đợt tuyển dụng đã chọn cùng những JD liên quan sẽ bị xóa. Hành động này không thể hoàn tác.";
+  $("bieuTuongXoaNhieuDot").textContent = "!";
+  $("hanhDongXoaNhieuDot").innerHTML = '<button type="button" class="btn-huy" id="btnHuyXoaNhieuDot">Hủy</button><button type="button" class="btn-xoa-confirm" id="btnXacNhanXoaNhieuDot">Xóa đợt tuyển dụng</button>';
+  $("btnHuyXoaNhieuDot").addEventListener("click", dongModalXoaNhieuDot, { once: true });
+  $("btnXacNhanXoaNhieuDot").addEventListener("click", xoaDotTuyenDaChon, { once: true });
+  modal.classList.add("hien");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function dongModalXoaNhieuDot() {
+  if (dangXoaHangLoatDot) return;
+  const modal = $("modalXoaNhieuDot");
+  modal.classList.remove("hien");
+  modal.setAttribute("aria-hidden", "true");
+}
+
+async function xoaDotTuyenDaChon() {
+  if (dangXoaHangLoatDot || dotTuyenDaChon.size === 0) return;
+  const ids = [...dotTuyenDaChon];
+  dangXoaHangLoatDot = true;
+  capNhatNutXoaDotDaChon();
+
+  // Giữ form ở phía trước màn hình trong suốt quá trình xóa để chặn thao tác khác.
+  $("nhanXoaNhieuDot").textContent = "ĐANG XỬ LÝ";
+  $("tieuDeXoaNhieuDot").innerHTML = '<span class="vong-tai-nho" aria-hidden="true"></span> Đang xóa đợt tuyển dụng...';
+  $("noiDungXoaNhieuDot").textContent = `Đang xóa ${ids.length} đợt tuyển dụng cùng các JD liên quan. Vui lòng không đóng biểu mẫu hoặc thao tác trên trang.`;
+  $("bieuTuongXoaNhieuDot").textContent = "…";
+  $("hanhDongXoaNhieuDot").innerHTML = '<button type="button" class="btn-xoa-confirm" disabled>Đang xóa...</button>';
+
+  let daXoa = 0;
+  const loi = [];
+  try {
+    // Cho người dùng nhìn thấy trạng thái loading trước khi bắt đầu gọi API.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    for (const id of ids) {
+      try {
+        await api(`${API}/dot-tuyen/${encodeURIComponent(id)}`, { method: "DELETE" });
+        dotTuyenDaChon.delete(String(id));
+        daXoa += 1;
+      } catch (error) {
+        loi.push(`ID ${id}: ${error.message || "Không xóa được"}`);
+      }
+    }
+    await taiDuLieu();
+    $("nhanXoaNhieuDot").textContent = loi.length ? "XÓA CHƯA HOÀN TẤT" : "HOÀN TẤT";
+    $("tieuDeXoaNhieuDot").textContent = loi.length ? "Đã xử lý một phần" : "Xóa đợt tuyển dụng thành công";
+    $("noiDungXoaNhieuDot").textContent = loi.length
+      ? `Đã xóa ${daXoa}/${ids.length} đợt tuyển dụng. Các mục chưa xóa được: ${loi.join("; ")}`
+      : `Đã xóa ${daXoa} đợt tuyển dụng cùng các JD liên quan.`;
+    $("bieuTuongXoaNhieuDot").textContent = loi.length ? "!" : "✓";
+    $("hanhDongXoaNhieuDot").innerHTML = '<button type="button" class="btn-luu" id="btnDongKetQuaXoaNhieuDot">Đóng</button>';
+    $("btnDongKetQuaXoaNhieuDot").addEventListener("click", () => {
+      $("modalXoaNhieuDot").classList.remove("hien");
+      $("modalXoaNhieuDot").setAttribute("aria-hidden", "true");
+    }, { once: true });
+  } catch (error) {
+    console.error("Lỗi khi xóa nhiều đợt tuyển dụng:", error);
+    $("nhanXoaNhieuDot").textContent = "KHÔNG THỂ HOÀN TẤT";
+    $("tieuDeXoaNhieuDot").textContent = "Không thể tải lại danh sách";
+    $("noiDungXoaNhieuDot").textContent = error.message || "Đã xảy ra lỗi khi cập nhật danh sách sau khi xóa.";
+    $("bieuTuongXoaNhieuDot").textContent = "!";
+    $("hanhDongXoaNhieuDot").innerHTML = '<button type="button" class="btn-luu" id="btnDongKetQuaXoaNhieuDot">Đóng</button>';
+    $("btnDongKetQuaXoaNhieuDot").addEventListener("click", () => {
+      $("modalXoaNhieuDot").classList.remove("hien");
+      $("modalXoaNhieuDot").setAttribute("aria-hidden", "true");
+    }, { once: true });
+  } finally {
+    dangXoaHangLoatDot = false;
+    capNhatNutXoaDotDaChon();
+  }
 }
 
 function capNhatPhanTrangDot(tongSo, soTrang, batDau) {
@@ -1384,14 +1485,14 @@ async function hienThiChiTietUngVien(container, candidate, dot) {
   const recommendation = document.createElement("select"); recommendation.name = "de_xuat"; recommendation.innerHTML = '<option value="nen_phong_van">Nên phỏng vấn</option><option value="can_nhac">Cân nhắc</option><option value="chua_phu_hop">Chưa phù hợp</option>';
   const scoreForRecommendation = Number(scoreInput.value);
   recommendation.value = Number.isFinite(scoreForRecommendation)
-    ? (scoreForRecommendation <= 70 ? "chua_phu_hop" : scoreForRecommendation < 85 ? "can_nhac" : "nen_phong_van")
+    ? (scoreForRecommendation < 60 ? "chua_phu_hop" : scoreForRecommendation < 80 ? "can_nhac" : "nen_phong_van")
     : "can_nhac";
   const reasonInput = document.createElement("textarea"); reasonInput.name = "ly_do"; reasonInput.rows = 2; reasonInput.placeholder = "Nhập lý do đánh giá của người phụ trách"; reasonInput.value = storedAnalysis.ly_do_ghi_de || storedAnalysis.ly_do || storedAnalysis.giai_thich || findAnalysisValue(["ghi chu", "ly do", "reason", "explanation", "giai thich"]) || "";
   const createEditField = (label, control) => { const wrap = document.createElement("label"); wrap.className = "cv-dot-edit-ai-field"; const title = document.createElement("span"); title.textContent = `${label}:`; wrap.append(title, control); return wrap; };
   scoreInput.addEventListener("input", () => {
     const value = Number(scoreInput.value);
     if (!Number.isFinite(value)) return;
-    recommendation.value = value <= 70 ? "chua_phu_hop" : value < 85 ? "can_nhac" : "nen_phong_van";
+    recommendation.value = value < 60 ? "chua_phu_hop" : value < 80 ? "can_nhac" : "nen_phong_van";
   });
   const scoreRecommendationRow = document.createElement("div"); scoreRecommendationRow.className = "cv-dot-edit-ai-meta-row";
   scoreRecommendationRow.append(createEditField("Điểm tương thích", scoreInput), createEditField("Đề xuất", recommendation));
@@ -1875,9 +1976,7 @@ function themMucThongTinJD(container, tieuDe, noiDung) {
 function hienThiThongTinJD(item) {
   const container = $("jdThongTinNoiDung");
   container.replaceChildren();
-
-  const jdHienTai = item.jd || item.jds?.[0] || null;
-  const jds = jdHienTai ? [jdHienTai] : [];
+  const jds = Array.isArray(item.jds) ? item.jds : (item.jd ? [item.jd] : []);
   $("jdThongTin").hidden = false;
 
   if (!jds.length) {
@@ -1891,6 +1990,13 @@ function hienThiThongTinJD(item) {
   jds.forEach((jd) => {
     const card = document.createElement("article");
     card.className = "jd-thong-tin-card";
+    if (jd.tieu_de) {
+      const title = document.createElement("strong");
+      title.textContent = jd.tieu_de || `JD #${jd.id}`;
+      title.style.display = "block";
+      title.style.marginBottom = "12px";
+      card.appendChild(title);
+    }
 
     const thongTinViTri = [
       jd.bo_phan && `Bộ phận: ${jd.bo_phan}`,
@@ -1903,8 +2009,6 @@ function hienThiThongTinJD(item) {
     themMucThongTinJD(card, "Giới thiệu & mô tả công việc", jd.mo_ta);
     themMucThongTinJD(card, "Yêu cầu", jd.yeu_cau);
     themMucThongTinJD(card, "Quyền lợi", jd.quyen_loi);
-
-
     container.appendChild(card);
   });
 }
@@ -2825,6 +2929,10 @@ function ganDatePicker(inputId, pickerId, buttonId) {
 
   picker.addEventListener("change", () => {
     input.value = dinhDangNgayInput(picker.value);
+    if (inputId === "ngayBatDau") capNhatNgayKetThucTuNgayBatDau();
+  });
+  input.addEventListener("change", () => {
+    if (inputId === "ngayBatDau") capNhatNgayKetThucTuNgayBatDau();
   });
 
   input.addEventListener("input", () => {
@@ -2850,6 +2958,32 @@ function ganDatePicker(inputId, pickerId, buttonId) {
 
     input.value = value;
   });
+}
+
+function sapXepTinhThanhAZ() {
+  const collator = new Intl.Collator("vi", { sensitivity: "base" });
+  [$("jdDiaDiem"), $("jdSuaDiaDiem")].filter(Boolean).forEach((select) => {
+    const placeholder = Array.from(select.options).find((option) => !option.value);
+    const options = Array.from(select.options).filter((option) => option.value);
+    options.sort((a, b) => collator.compare(a.textContent.trim(), b.textContent.trim()));
+    select.replaceChildren(...(placeholder ? [placeholder] : []), ...options);
+  });
+}
+
+function chuyenNgayISO(iso, soNgay) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ""))) return "";
+  const [year, month, day] = iso.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  date.setUTCDate(date.getUTCDate() + soNgay);
+  return `${String(date.getUTCDate()).padStart(2, "0")}/${String(date.getUTCMonth() + 1).padStart(2, "0")}/${date.getUTCFullYear()}`;
+}
+
+function capNhatNgayKetThucTuNgayBatDau() {
+  const ngayBatDau = ngaySangISO($("ngayBatDau")?.value);
+  if (!ngayBatDau) return;
+  // Tính cả ngày bắt đầu là ngày thứ nhất: 01/10 -> 30/10.
+  const ngayKetThuc = chuyenNgayISO(ngayBatDau, 29);
+  if (ngayKetThuc) $("ngayKetThuc").value = ngayKetThuc;
 }
 
 function ganSuKien() {
@@ -3022,6 +3156,20 @@ function ganSuKien() {
     moWizardJD({ dot });
   });
 
+  $("danhSach").addEventListener("change", (event) => {
+    const checkbox = event.target.closest(".tick-chon-dot[data-action=\"chon-dot\"]");
+    if (!checkbox) return;
+    const id = String(checkbox.dataset.id || "");
+    if (!id) return;
+    if (checkbox.checked) dotTuyenDaChon.add(id);
+    else dotTuyenDaChon.delete(id);
+    const row = checkbox.closest("tr[data-dot-id]");
+    if (row) row.classList.toggle("dot-tuyen-row-selected", checkbox.checked);
+    capNhatNutXoaDotDaChon();
+  });
+
+  $("btnXoaDotDaChon").addEventListener("click", moModalXoaNhieuDot);
+
   $("danhSach").addEventListener(
     "click",
     xuLyClickDanhSach
@@ -3171,6 +3319,10 @@ function ganSuKien() {
     }
   );
 
+  $("modalXoaNhieuDot").addEventListener("click", (event) => {
+    if (event.target === $("modalXoaNhieuDot")) dongModalXoaNhieuDot();
+  });
+
   $("modalXacNhan").addEventListener(
     "click",
     (event) => {
@@ -3212,6 +3364,7 @@ function ganSuKien() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  sapXepTinhThanhAZ();
   ganSuKien();
 
   const modalDanhGiaNhanh = $("modalDanhGiaNhanh");
@@ -3254,8 +3407,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("btnChonDotTaoJD").style.display = "none";
   }
 
+  // Chỉ tải danh sách khi mở trang hoặc sau thao tác thay đổi dữ liệu.
+  // Không tự gọi lại /api/dot-tuyen và /api/jd mỗi phút.
   await taiDuLieu();
-  window.setInterval(taiDuLieu, 60_000);
 
   const thaoTac = new URLSearchParams(window.location.search).get("tao");
   if (thaoTac === "1" && coQuyenQuanLy()) {

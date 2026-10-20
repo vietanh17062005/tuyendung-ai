@@ -1070,8 +1070,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const score = analysis.score || {};
         const extraction = analysis.extraction || {};
-        const [deXuatText, deXuatClass] = layDeXuat(score.de_xuat);
         const tong = Math.max(0, Math.min(100, Number(score.tong) || 0));
+        const deXuatTheoDiem = tong < 60 ? "chua_phu_hop" : tong < 80 ? "can_nhac" : "nen_phong_van";
+        const [deXuatText, deXuatClass] = layDeXuat(deXuatTheoDiem);
         const scoreClass = layMauDiem(tong);
 
         phanTichAI.innerHTML = `

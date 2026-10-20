@@ -1,3 +1,84 @@
+// Loading chung cho thao tác có gọi API: hiển thị ngay trên nút đang bấm.
+(function () {
+  if (window.__loadingNutDaKhoiTao) return;
+  window.__loadingNutDaKhoiTao = true;
+  const style = document.createElement('style');
+  style.textContent = 'button.nut-dang-tai,input.nut-dang-tai{opacity:.82;cursor:wait!important;pointer-events:none}button.nut-dang-tai:before{content:"";display:inline-block;width:11px;height:11px;margin-right:7px;vertical-align:-1px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:nutDangTaiSpin .7s linear infinite}@keyframes nutDangTaiSpin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(style);
+  const fetchGoc = window.fetch.bind(window);
+  let nutDangXuLy = null;
+  let soRequest = 0;
+  let timerKhoiPhuc = null;
+  let timerChoRequest = null;
+
+  function nhanDangXuLy(nut) {
+    if (!nut || nut.dataset.loadingNut === '1') return;
+    if (nutDangXuLy && nutDangXuLy !== nut) khoiPhuc(nutDangXuLy);
+    nutDangXuLy = nut;
+    nut.dataset.loadingNut = '1';
+    nut.dataset.loadingNutText = nut.tagName === 'INPUT' ? nut.value : nut.innerHTML;
+    const text = String(nut.tagName === 'INPUT' ? nut.dataset.loadingNutText : nut.textContent).trim();
+    let loading = 'Đang xử lý...';
+    if (/soạn.*jd|jd.*soạn|soạn bản mô tả/i.test(text)) loading = 'Đang soạn JD...';
+    else if (/ai đặt câu hỏi|đặt câu hỏi|tạo câu hỏi/i.test(text)) loading = 'AI đang tạo câu hỏi...';
+    else if (/sửa.*ai|ai.*chỉnh/i.test(text)) loading = 'AI đang chỉnh sửa...';
+    else if (/gửi.*(duyệt|câu hỏi)|gửi câu hỏi/i.test(text)) loading = 'Đang gửi...';
+    else if (/lưu|cập nhật|tạo mới|thêm mới|xác nhận/i.test(text)) loading = 'Đang lưu...';
+    else if (/xóa|xoá/i.test(text)) loading = 'Đang xóa...';
+    else if (/phân tích|chấm điểm|đánh giá/i.test(text)) loading = 'Đang phân tích...';
+    nut.disabled = true;
+    nut.classList.add('nut-dang-tai');
+    if (nut.tagName === 'INPUT') nut.value = loading;
+    else nut.textContent = loading;
+    clearTimeout(timerKhoiPhuc);
+    clearTimeout(timerChoRequest);
+    timerChoRequest = setTimeout(() => { if (soRequest === 0) khoiPhuc(nut); }, 400);
+  }
+
+  function khoiPhuc(nut) {
+    if (!nut || nut.dataset.loadingNut !== '1') return;
+    if (nut.tagName === 'INPUT') nut.value = nut.dataset.loadingNutText || '';
+    else nut.innerHTML = nut.dataset.loadingNutText || '';
+    nut.disabled = false;
+    nut.classList.remove('nut-dang-tai');
+    delete nut.dataset.loadingNut;
+    delete nut.dataset.loadingNutText;
+    if (nutDangXuLy === nut) nutDangXuLy = null;
+  }
+
+  document.addEventListener('click', event => {
+    const nut = event.target.closest('button, input[type="button"], input[type="submit"]');
+    if (!nut || nut.disabled || nut.type === 'submit') return;
+    const label = String(nut.tagName === 'INPUT' ? nut.value : nut.textContent).trim();
+    if (!/(lưu|cập nhật|xóa|xoá|gửi|duyệt|soạn|sửa.*ai|ai.*sửa|phân tích|chấm điểm|đánh giá|đăng nhập|đổi mật khẩu|làm mới|tải lên|upload|import|xuất|đánh dấu|xác nhận|tiếp tục|đồng bộ|quét|chạy thử|ai đặt câu hỏi|đặt câu hỏi|tạo câu hỏi)/i.test(label)) return;
+    nhanDangXuLy(nut);
+  }, true);
+
+  document.addEventListener('submit', event => {
+    const form = event.target;
+    const nut = event.submitter || form.querySelector('button[type="submit"], button:not([type]), input[type="submit"]');
+    if (nut && !nut.disabled) nhanDangXuLy(nut);
+  }, true);
+
+  window.fetch = function (...args) {
+    const nut = nutDangXuLy;
+    const coNut = nut && nut.dataset.loadingNut === '1';
+    if (coNut) {
+      soRequest++;
+      clearTimeout(timerChoRequest);
+      clearTimeout(timerKhoiPhuc);
+    }
+    return fetchGoc(...args).finally(() => {
+      if (!coNut) return;
+      soRequest = Math.max(0, soRequest - 1);
+      clearTimeout(timerKhoiPhuc);
+      timerKhoiPhuc = setTimeout(() => {
+        if (soRequest === 0) khoiPhuc(nut);
+      }, 350);
+    });
+  };
+})();
+
 (function () {
   const path = window.location.pathname.replace(/\/$/, '');
   document.querySelectorAll('[data-menu-path]').forEach(a => {

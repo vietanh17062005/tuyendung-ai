@@ -4187,3 +4187,80 @@ body.embed-mode #modal .modal-box { box-shadow: none !important; }
   animation: xoay-vong-tai 0.7s linear infinite;
 }
 @keyframes xoay-vong-tai { to { transform: rotate(360deg); } }
+
+
+/* Chọn nhiều đợt tuyển dụng: giữ thanh tìm kiếm, nút xóa chỉ bật khi đã chọn */
+.cot-chon-dot { box-sizing: border-box !important; width: 22px !important; min-width: 22px !important; max-width: 22px !important; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
+.tick-chon-dot { display: block; width: 13px; height: 13px; min-width: 13px; margin: 0 auto; padding: 0; cursor: pointer; accent-color: #2563eb; }
+.dot-tuyen-row-selected { background: #eff6ff !important; }
+.btn-xoa-dot-da-chon { min-height: 42px; margin-left: 0; padding: 0 16px; border: 1px solid #dc2626; border-radius: 9px; background: #dc2626; color: #fff; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-xoa-dot-da-chon:hover:not(:disabled) { background: #b91c1c; border-color: #b91c1c; }
+.btn-xoa-dot-da-chon:disabled { opacity: .45; cursor: not-allowed; background: #94a3b8; border-color: #94a3b8; }
+.btn-xoa-dot-da-chon[hidden] { display: none !important; }
+@media (max-width: 760px) { .btn-xoa-dot-da-chon { margin-left: 0; width: auto; } }
+
+
+/* Thu gọn cột STT và checkbox trong danh sách đợt tuyển dụng. */
+.table-scroll th.cot-chon-dot,
+.table-scroll td.cot-chon-dot { width: 30px !important; min-width: 30px !important; max-width: 30px !important; padding-left: 8px !important; padding-right: 2px !important; text-align: left !important; }
+.table-scroll .tick-chon-dot { width: 13px; height: 13px; margin: 0 0 0 3px; vertical-align: middle; }
+.table-scroll th.cot-stt,
+.table-scroll td.cot-stt { width: 38px !important; min-width: 38px !important; max-width: 38px !important; padding-left: 4px !important; padding-right: 4px !important; text-align: center !important; }
+
+
+/* Cột STT của bảng đợt tuyển dụng phải hẹp, không đẩy các cột khác. */
+.table-scroll table th.cot-stt,
+.table-scroll table td.cot-stt {
+  box-sizing: border-box !important;
+  width: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
+  text-align: center !important;
+}
+
+.btn-xoa-dot-da-chon .vong-tai-nho {
+  width: 13px;
+  height: 13px;
+  margin-right: 7px;
+  vertical-align: -2px;
+}
+
+
+/* Tinh chỉnh riêng bảng đợt tuyển dụng để các cột gọn, đặc biệt là Trạng thái. */
+.table-scroll-dot-tuyen { width: 100%; max-width: 100%; overflow-x: auto; }
+.table-scroll-dot-tuyen table.bang-dot-tuyen {
+  width: 100% !important;
+  min-width: 880px !important;
+  table-layout: fixed !important;
+}
+.table-scroll-dot-tuyen table.bang-dot-tuyen th:nth-child(1),
+.table-scroll-dot-tuyen table.bang-dot-tuyen td:nth-child(1) { width: 30px !important; min-width: 30px !important; max-width: 30px !important; }
+.table-scroll-dot-tuyen table.bang-dot-tuyen th:nth-child(2),
+.table-scroll-dot-tuyen table.bang-dot-tuyen td:nth-child(2) { width: 38px !important; min-width: 38px !important; max-width: 38px !important; }
+.table-scroll-dot-tuyen table.bang-dot-tuyen th:nth-child(3),
+.table-scroll-dot-tuyen table.bang-dot-tuyen td:nth-child(3) { width: 250px !important; }
+.table-scroll-dot-tuyen table.bang-dot-tuyen th:nth-child(4),
+.table-scroll-dot-tuyen table.bang-dot-tuyen td:nth-child(4) { width: 110px !important; }
+.table-scroll-dot-tuyen table.bang-dot-tuyen th:nth-child(5),
+.table-scroll-dot-tuyen table.bang-dot-tuyen td:nth-child(5) { width: 100px !important; }
+.table-scroll-dot-tuyen table.bang-dot-tuyen th:nth-child(6),
+.table-scroll-dot-tuyen table.bang-dot-tuyen td:nth-child(6) { width: 110px !important; }
+.table-scroll-dot-tuyen table.bang-dot-tuyen th:nth-child(7),
+.table-scroll-dot-tuyen table.bang-dot-tuyen td:nth-child(7) { width: 125px !important; }
+.table-scroll-dot-tuyen table.bang-dot-tuyen th:nth-child(8),
+.table-scroll-dot-tuyen table.bang-dot-tuyen td:nth-child(8) { width: 95px !important; }
+.table-scroll-dot-tuyen th.cot-chon-dot,
+.table-scroll-dot-tuyen td.cot-chon-dot { padding-left: 10px !important; padding-right: 1px !important; text-align: left !important; }
+.table-scroll-dot-tuyen .tick-chon-dot { margin-left: 5px !important; margin-right: 0 !important; }
+.table-scroll-dot-tuyen th:nth-child(6),
+.table-scroll-dot-tuyen td:nth-child(6) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+
+/* Biểu mẫu xác nhận/kết quả xóa nhiều đợt tuyển dụng. */
+#modalXoaNhieuDot { z-index: 10050; }
+#modalXoaNhieuDot .modal-xoa-nhieu-dot { width: min(460px, calc(100vw - 32px)); }
+#modalXoaNhieuDot #tieuDeXoaNhieuDot .vong-tai-nho { margin-right: 7px; }
+#modalXoaNhieuDot #noiDungXoaNhieuDot { line-height: 1.65; overflow-wrap: anywhere; }
+#modalXoaNhieuDot .modal-footer button:disabled { cursor: wait; opacity: .7; }

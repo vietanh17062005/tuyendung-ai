@@ -112,3 +112,9 @@ main h2, main h3, .modal h2, .modal-card h2 { font-family: Inter, -apple-system,
 .shared-notification-item{display:grid;gap:6px;padding:12px;border-radius:9px;border-bottom:1px solid #f1f5f9}
 .shared-notification-item:last-child{border-bottom:0}.shared-notification-item strong{font-size:12px;line-height:1.45;color:#334155;font-weight:600}.shared-notification-item span{font-size:10px;color:#94a3b8}
 .shared-notification-empty{margin:0;padding:20px 12px;text-align:center;color:#94a3b8;font-size:12px}
+
+
+/* Trạng thái loading hiển thị ngay trên nút đang thực hiện yêu cầu */
+button.nut-dang-tai, input.nut-dang-tai { opacity: .82; cursor: wait !important; pointer-events: none; }
+button.nut-dang-tai::before { content: ''; display: inline-block; width: 11px; height: 11px; margin-right: 7px; vertical-align: -1px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: nutDangTaiSpin .7s linear infinite; }
+@keyframes nutDangTaiSpin { to { transform: rotate(360deg); } }

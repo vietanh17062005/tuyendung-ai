@@ -90,6 +90,37 @@ function giaiMaXML(text) {
         .replace(/&amp;/g, "&");
 }
 
+async function trichXuatPdfScanBangOCR(buffer) {
+    // PDF scan thường chỉ chứa ảnh, vì vậy cần render từng trang thành ảnh rồi OCR.
+    // Giới hạn 5 trang đầu để tránh xử lý CV quá dài gây tốn tài nguyên.
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const { createCanvas } = require("@napi-rs/canvas");
+    const loadingTask = pdfjs.getDocument({
+        data: new Uint8Array(buffer),
+        useSystemFonts: true,
+        isEvalSupported: false,
+    });
+    const pdf = await loadingTask.promise;
+    const worker = await layOcrWorker();
+    const pages = [];
+    try {
+        const soTrang = Math.min(Number(pdf.numPages) || 0, 5);
+        for (let pageNumber = 1; pageNumber <= soTrang; pageNumber++) {
+            const page = await pdf.getPage(pageNumber);
+            const viewport = page.getViewport({ scale: 1.6 });
+            const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+            const context = canvas.getContext("2d");
+            await page.render({ canvasContext: context, viewport }).promise;
+            const result = await worker.recognize(canvas.toBuffer("image/png"));
+            const text = String(result?.data?.text || "").trim();
+            if (text) pages.push(text);
+        }
+    } finally {
+        await pdf.destroy().catch(() => {});
+    }
+    return pages.join("\n\n");
+}
+
 async function trichXuatNoiDungCV(buffer, tenFile, mimeType) {
     let extension = path.extname(tenFile || "").toLowerCase();
     if (!extension) {
@@ -109,7 +140,14 @@ async function trichXuatNoiDungCV(buffer, tenFile, mimeType) {
             const result = await pdfParse(buffer);
             text = result.text;
         } catch (error) {
-            throw new Error("Không đọc được PDF. File có thể bị hỏng, đặt mật khẩu hoặc dùng cấu trúc PDF không được hỗ trợ.");
+            text = "";
+        }
+        if (String(text || "").trim().length < 30) {
+            try {
+                text = await trichXuatPdfScanBangOCR(buffer);
+            } catch (error) {
+                console.error("Không thể OCR PDF scan:", error.message || error);
+            }
         }
     } else if (extension === ".docx") {
         const xml = await layNoiDungDocx(buffer);
@@ -138,7 +176,7 @@ async function trichXuatNoiDungCV(buffer, tenFile, mimeType) {
 
     if (cleanedText.length < 30) {
         if (extension === ".pdf") {
-            throw new Error("PDF không có đủ văn bản để đọc. Có thể đây là PDF scan từ ảnh; hãy dùng PDF có thể bôi đen/copy chữ hoặc tải CV dưới dạng DOCX.");
+            throw new Error("PDF không có đủ văn bản để đọc. Hệ thống đã thử OCR cho PDF scan nhưng chưa trích xuất được. Hãy chạy npm install để cài thư viện OCR, bảo đảm kết nối Internet ở lần chạy OCR đầu tiên, hoặc tải CV dạng DOCX/PDF có thể bôi đen và sao chép chữ.");
         }
         if ([".doc", ".docx"].includes(extension)) {
             throw new Error("Không trích xuất được nội dung Word. Hãy mở file và lưu lại dưới dạng DOCX mới rồi tải lên.");
