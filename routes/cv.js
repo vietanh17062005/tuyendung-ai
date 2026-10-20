@@ -32,7 +32,21 @@ const MAX_FILE_SIZE = Math.round(MAX_FILE_SIZE_MB * 1024 * 1024);
 // Local và môi trường deploy đều dùng Blob để cùng đọc/ghi một kho CV.
 const storage = multer.memoryStorage();
 
+// Multer/Busboy có thể giải mã tên file UTF-8 thành chuỗi Latin-1 gây lỗi dấu.
+function chuanHoaTenFile(tenFile) {
+    const tenGoc = String(tenFile || "");
+    if (!/[\u0080-\u00FF]/.test(tenGoc)) return tenGoc;
+
+    const tenDaSua = Buffer.from(tenGoc, "latin1").toString("utf8");
+    // Chỉ dùng bản chuyển đổi khi UTF-8 hợp lệ và trông giống tên đã bị mojibake.
+    if (!tenDaSua.includes("\uFFFD") && /[\u0080-\u00FF]/.test(tenGoc) && /[À-ỹ]/.test(tenDaSua)) {
+        return tenDaSua;
+    }
+    return tenGoc;
+}
+
 const fileFilter = function (req, file, cb) {
+    file.originalname = chuanHoaTenFile(file.originalname);
     const duoiFile = path
         .extname(file.originalname)
         .toLowerCase();
@@ -72,6 +86,7 @@ const DUOI_CV_CHO_PHEP = new Set([".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".pn
 const uploadBatch = multer({
     storage: multer.memoryStorage(),
     fileFilter: function (req, file, cb) {
+        file.originalname = chuanHoaTenFile(file.originalname);
         const extension = path.extname(file.originalname).toLowerCase();
         if (extension !== ".zip" && !DUOI_CV_CHO_PHEP.has(extension)) {
             return cb(new Error("Chỉ cho phép file PDF, DOC, DOCX, JPG, JPEG, PNG hoặc ZIP"));
@@ -120,7 +135,7 @@ function docZip(buffer) {
                     return;
                 }
 
-                const tenFile = path.basename(entry.fileName);
+                const tenFile = path.basename(chuanHoaTenFile(entry.fileName));
                 const extension = path.extname(tenFile).toLowerCase();
                 if (!DUOI_CV_CHO_PHEP.has(extension)) {
                     zip.readEntry();
@@ -1673,10 +1688,12 @@ router.post(
                 return res.status(404).json({ message: "Không tìm thấy đợt tuyển dụng." });
             }
             const dot = dotRows[0];
-            const [[todayRow]] = await db.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today");
+            const [[todayRow]] = await db.query("SELECT DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR), '%Y-%m-%d') AS today");
             const endDate = dot.ngay_ket_thuc ? String(dot.ngay_ket_thuc).slice(0, 10) : null;
-            if (["ket_thuc", "da_dong", "dong", "closed"].includes(String(dot.trang_thai || "").toLowerCase()) || (endDate && endDate < todayRow.today)) {
-                if (endDate && endDate < todayRow.today && dot.trang_thai !== "ket_thuc") {
+            const ngayKetThucDaQua = Boolean(endDate && endDate < todayRow.today);
+            const daDongKhongCoNgayKetThuc = !endDate && ["ket_thuc", "da_dong", "dong", "closed"].includes(String(dot.trang_thai || "").toLowerCase());
+            if (ngayKetThucDaQua || daDongKhongCoNgayKetThuc) {
+                if (ngayKetThucDaQua && dot.trang_thai !== "ket_thuc") {
                     await db.query("UPDATE dot_tuyen SET trang_thai = 'ket_thuc' WHERE id = ?", [dotTuyenId]);
                 }
                 return res.status(400).json({ message: "Đợt tuyển dụng đã đóng, không thể thêm hoặc cập nhật CV." });

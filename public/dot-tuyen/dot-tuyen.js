@@ -254,6 +254,11 @@ function parseTieuChi(value) {
 }
 
 async function taiDuLieu() {
+  const tbody = $("danhSach");
+  if (tbody) {
+    tbody.innerHTML = '<tr class="dong-dang-tai"><td colspan="7"><span class="vong-tai-nho" aria-hidden="true"></span>Đang tải danh sách đợt tuyển dụng…</td></tr>';
+    $("khongCoDuLieu").style.display = "none";
+  }
   try {
     const [dotTuyenResponse, jdResponse] = await Promise.all([
       api(`${API}/dot-tuyen`),
@@ -555,17 +560,28 @@ async function guiUploadCVTheoDot(event) {
   } finally { button.disabled = false; button.textContent = "Tải CV lên và phân tích"; }
 }
 
+function layNgayHienTaiVietNam() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit"
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 function ngayKetThucDaQua(dot) {
   const raw = dot?.ngay_ket_thuc;
   if (!raw) return false;
   const dateOnly = String(raw).slice(0, 10);
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  return dateOnly < today;
+  return dateOnly < layNgayHienTaiVietNam();
 }
 
 function laDotDaDong(dot) {
-  return ngayKetThucDaQua(dot) || ["ket_thuc", "da_dong", "dong", "closed"].includes(
+  const raw = dot?.ngay_ket_thuc;
+  if (raw) {
+    // Ngày kết thúc vẫn còn hiệu lực trong toàn bộ ngày đó, kể cả khi DB đang giữ trạng thái cũ.
+    return ngayKetThucDaQua(dot);
+  }
+  return ["ket_thuc", "da_dong", "dong", "closed"].includes(
     String(dot?.trang_thai || "").toLowerCase()
   );
 }
@@ -655,7 +671,7 @@ function hienThiDanhSach() {
         </span>
       </td>
 
-      <td><span class="kenh-nhan-cv">${escapeHTML(kenhNhanCV)}</span></td>
+      <td class="cot-kenh-nhan-cv"><span class="kenh-nhan-cv">${escapeHTML(kenhNhanCV)}</span></td>
       <td><span class="thoi-gian-dot">${escapeHTML(dinhDangNgay(dot?.ngay_tao))}</span></td>
 
 
@@ -754,7 +770,7 @@ function moFormMoi() {
 
   $("tieuDeModal").textContent = "Thêm đợt tuyển dụng";
   $("tieuDeModal").nextElementSibling.textContent =
-    "Nhập mô tả và thời gian tuyển dụng. AI sẽ gợi ý tên trước khi lưu.";
+    "Nhập thông tin và thời gian tuyển dụng. AI sẽ hỗ trợ đề xuất tên phù hợp.";
   $("form").querySelector('[type="submit"]').textContent = "Lưu đợt tuyển dụng";
   $("trangThai").value = "dang_tuyen";
   $("id").value = "";
@@ -775,7 +791,7 @@ function moFormSua(item) {
 
   dangSua = item;
 
-  $("tieuDeModal").textContent = "Sửa đợt tuyển dụng";
+  $("tieuDeModal").textContent = "Chỉnh sửa đợt tuyển dụng";
   $("tieuDeModal").nextElementSibling.textContent =
     "Cập nhật thông tin chiến dịch và bản mô tả công việc.";
   $("form").querySelector('[type="submit"]').textContent = "Lưu đợt tuyển dụng";
@@ -832,7 +848,7 @@ function moFormXem(item) {
 
   $("tieuDeModal").textContent = "Thông tin đợt tuyển dụng";
   $("tieuDeModal").nextElementSibling.textContent =
-    "Thông tin chiến dịch và bản mô tả công việc.";
+    "Đang tải thông tin tuyển dụng…";
   $("nhomTenDot").hidden = false;
   $("nhomMoTaDot").hidden = true;
   $("moTa").required = false;
@@ -848,7 +864,16 @@ function moFormXem(item) {
   hienThiThongTinJD(item);
   khoaFormXem();
   moModal();
-  taiCVTheoDot(item.dot).catch(error => console.error("Không tải được CV của đợt tuyển dụng:", error));
+  taiCVTheoDot(item.dot).then(() => {
+    if (dangXem && window.dotTuyenDangXem === item && $("modal").classList.contains("hien")) {
+      $("tieuDeModal").nextElementSibling.textContent = "Thông tin chiến dịch và bản mô tả công việc.";
+    }
+  }).catch(error => {
+    console.error("Không tải được CV của đợt tuyển dụng:", error);
+    if (dangXem && window.dotTuyenDangXem === item) {
+      $("tieuDeModal").nextElementSibling.textContent = "Không thể tải đầy đủ thông tin. Vui lòng thử lại.";
+    }
+  });
 }
 
 async function taiCVTheoDot(dot) {
@@ -1879,25 +1904,6 @@ function hienThiThongTinJD(item) {
     themMucThongTinJD(card, "Yêu cầu", jd.yeu_cau);
     themMucThongTinJD(card, "Quyền lợi", jd.quyen_loi);
 
-    const criteria = Array.isArray(jd.tieu_chi) ? jd.tieu_chi : parseTieuChi(jd.tieu_chi);
-    if (criteria.length) {
-      const rubric = document.createElement("div");
-      rubric.className = "jd-thong-tin-muc";
-
-      const rubricTitle = document.createElement("strong");
-      rubricTitle.textContent = "Bộ tiêu chí chấm điểm";
-      rubric.appendChild(rubricTitle);
-
-      const list = document.createElement("ul");
-      criteria.forEach((criterion) => {
-        const entry = document.createElement("li");
-        const description = criterion.mo_ta ? ` — ${criterion.mo_ta}` : "";
-        entry.textContent = `${criterion.ten || "Tiêu chí"} (${Number(criterion.trong_so) || 0}%)${description}`;
-        list.appendChild(entry);
-      });
-      rubric.appendChild(list);
-      card.appendChild(rubric);
-    }
 
     container.appendChild(card);
   });
@@ -2864,7 +2870,7 @@ function ganSuKien() {
     dangSua = item;
     dangXem = false;
     moKhoaForm();
-    $("tieuDeModal").textContent = "Sửa đợt tuyển dụng";
+    $("tieuDeModal").textContent = "Chỉnh sửa đợt tuyển dụng";
     $("tieuDeModal").nextElementSibling.textContent = "Chỉnh sửa thông tin ngay trong cửa sổ này.";
     $("form").querySelector('[type="submit"]').textContent = "Lưu đợt tuyển dụng";
     $("hanhDongChiTiet").hidden = true;

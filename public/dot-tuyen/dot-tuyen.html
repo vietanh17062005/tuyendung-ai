@@ -8,7 +8,7 @@
 
   <title>Quản lý đợt tuyển dụng</title>
 
-  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css?v=20261020-embed-frame-clean4" />
+  <link rel="stylesheet" href="/dot-tuyen/dot-tuyen.css?v=20261020-recruitment-date-string-fix2" />
   <link rel="stylesheet" href="/account/account.css" />
 <link rel="stylesheet" href="/menu-dong-bo.css">
 </head>
@@ -18,7 +18,7 @@
   <div class="khung">
     <!-- SIDEBAR -->
 
-    <aside class="menu"><div class="logo"><div class="logo-icon">✦</div><div><div class="logo-title">Tuyển dụng thông minh</div><div class="logo-subtitle">Hệ thống quản lý nhân sự</div></div></div><nav class="menu-list"><a href="/dashboard/dashboard.html" data-menu-path="/dashboard/dashboard.html"><span>▦</span>Tổng quan</a><a href="/dot-tuyen/dot-tuyen.html" data-menu-path="/dot-tuyen/dot-tuyen.html"><span>▤</span>Đợt tuyển dụng</a><a href="/ung-vien/ung-vien.html" data-menu-path="/ung-vien/ung-vien.html"><span>♙</span>Ứng viên</a><a href="/cv/cv.html" data-menu-path="/cv/cv.html"><span>▣</span>Hồ sơ CV</a><a href="/phong-van/phong-van.html" data-menu-path="/phong-van/phong-van.html"><span>◷</span>Phỏng vấn</a><a href="/danh-gia/danh-gia.html" data-menu-path="/danh-gia/danh-gia.html"><span>☷</span>Đánh giá</a><a href="/quyet-dinh/quyet-dinh.html" data-menu-path="/quyet-dinh/quyet-dinh.html"><span>✓</span>Quyết định tuyển dụng</a><a href="/thong-bao/thong-bao.html" data-menu-path="/thong-bao/thong-bao.html"><span>♧</span>Thông báo</a><a href="/nguoi-dung/nguoi-dung.html" data-menu-path="/nguoi-dung/nguoi-dung.html"><span>♙</span>Người dùng</a></nav></aside>
+    <aside class="menu"><div class="logo"><div class="logo-icon">✦</div><div><div class="logo-title">Tuyển dụng thông minh</div><div class="logo-subtitle">Hệ thống quản lý nhân sự</div></div></div><nav class="menu-list"><a href="/dashboard/dashboard.html" data-menu-path="/dashboard/dashboard.html"><span>▦</span>Tổng quan</a><a href="/dot-tuyen/dot-tuyen.html" data-menu-path="/dot-tuyen/dot-tuyen.html"><span>▤</span>Quản lý tuyển dụng</a><a href="/ung-vien/ung-vien.html" data-menu-path="/ung-vien/ung-vien.html"><span>♙</span>Ứng viên</a><a href="/cv/cv.html" data-menu-path="/cv/cv.html"><span>▣</span>Hồ sơ CV</a><a href="/phong-van/phong-van.html" data-menu-path="/phong-van/phong-van.html"><span>◷</span>Phỏng vấn</a><a href="/danh-gia/danh-gia.html" data-menu-path="/danh-gia/danh-gia.html"><span>☷</span>Đánh giá</a><a href="/quyet-dinh/quyet-dinh.html" data-menu-path="/quyet-dinh/quyet-dinh.html"><span>✓</span>Quyết định tuyển dụng</a><a href="/thong-bao/thong-bao.html" data-menu-path="/thong-bao/thong-bao.html"><span>♧</span>Thông báo</a><a href="/nguoi-dung/nguoi-dung.html" data-menu-path="/nguoi-dung/nguoi-dung.html"><span>♙</span>Người dùng</a></nav></aside>
 
     <!-- MAIN -->
 
@@ -28,7 +28,7 @@
       <header class="topbar">
         <div>
           <p class="tieu-de-nho">QUẢN LÝ TUYỂN DỤNG</p>
-          <h1>Đợt tuyển dụng</h1>
+          <h1>Quản lý tuyển dụng</h1>
         </div>
 
         <div class="topbar-actions">
@@ -86,12 +86,12 @@
 
       <section class="loi-chao">
         <div class="loi-chao-noi-dung">
-          <h2>Quản lý chiến dịch tuyển dụng</h2>
+          <h2>Danh sách đợt tuyển dụng</h2>
           <p>Theo dõi các đợt tuyển dụng, bản mô tả công việc và tiến độ tìm kiếm ứng viên tại một nơi.</p>
         </div>
         <div class="hanh-dong-dau-trang">
           <button id="btnChonDotTaoJD" class="btn-tao-jd-nhanh" type="button" hidden>Soạn bản mô tả bằng AI</button>
-          <button id="btnThem" class="btn-them nut-tao-dot">＋ Tạo đợt tuyển dụng</button>
+          <button id="btnThem" class="btn-them nut-tao-dot">＋ Mở đợt tuyển dụng</button>
         </div>
       </section>
 
@@ -102,7 +102,7 @@
           <div class="the-phu"><span class="the-trang-thai">Đang tiếp nhận hồ sơ</span></div>
         </article>
         <article class="the-item the-ket-thuc">
-          <div class="the-dau-the"><span class="the-icon">✓</span><span class="the-label">Đã kết thúc</span></div>
+          <div class="the-dau-the"><span class="the-icon">✓</span><span class="the-label">Đã đóng</span></div>
           <strong id="thongKeKetThuc">0</strong>
           <div class="the-phu"><span class="the-trang-thai">Chiến dịch đã đóng</span></div>
         </article>
@@ -149,8 +149,8 @@
         </div>
         <div class="table-header">
           <div>
-            <h2>Danh sách đợt tuyển dụng</h2>
-            <p>Theo dõi ứng viên, bản mô tả và trạng thái từng chiến dịch.</p>
+            <h2>Các đợt tuyển dụng</h2>
+            <p>Theo dõi các đợt tuyển dụng, hồ sơ ứng viên và trạng thái xử lý.</p>
           </div>
         </div>
 
@@ -163,7 +163,7 @@
                 <th>Ứng viên đã nhận</th>
                 <th>Hợp tiêu chí</th>
                 <th>Trạng thái</th>
-                <th>Kênh nhận CV</th>
+                <th class="cot-kenh-nhan-cv">Kênh nhận CV</th>
                 <th>Ngày tạo</th>
               </tr>
             </thead>
@@ -755,7 +755,7 @@
   </div>
 
   <script src="/account/account.js"></script>
-  <script src="/dot-tuyen/dot-tuyen.js?v=20261020-embed-frame-clean4"></script>
+  <script src="/dot-tuyen/dot-tuyen.js?v=20261020-recruitment-date-string-fix2"></script>
 <script src="/menu-dong-bo.js"></script>
 </body>
 

@@ -68,7 +68,7 @@ if (!["admin", "manager"].includes(nguoiDung.vai_tro)) {
   document.getElementById("btnTaoDotTuyen").style.display = "none";
 }
 
-/* Tạo đợt tuyển dụng ngay trên Dashboard bằng đúng biểu mẫu hiện có */
+/* Mở đợt tuyển dụng ngay trên Dashboard bằng đúng biểu mẫu hiện có */
 const modalTaoDotDashboard = document.getElementById("modalTaoDotDashboard");
 const iframeTaoDotDashboard = document.getElementById("iframeTaoDotDashboard");
 let formDotDashboardDaSanSang = false;

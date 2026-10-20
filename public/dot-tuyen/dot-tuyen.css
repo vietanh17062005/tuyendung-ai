@@ -4159,3 +4159,31 @@ body.embed-mode #modal .modal-header > #btnDong { display: inline-flex !importan
 body.embed-mode #modal .modal-header > #btnDong { align-items:center; justify-content:center; flex:0 0 36px; width:36px; height:36px; }
 body.embed-mode #modal, body.embed-mode #modal .modal-box { outline: 0 !important; border-color: transparent; }
 body.embed-mode #modal .modal-box { box-shadow: none !important; }
+
+
+/* Căn giữa nội dung kênh nhận CV trong bảng danh sách */
+.cot-kenh-nhan-cv {
+  text-align: center !important;
+}
+.cot-kenh-nhan-cv .kenh-nhan-cv {
+  margin-inline: auto;
+  max-width: 100%;
+  text-align: center;
+}
+.dong-dang-tai td {
+  padding: 30px 16px !important;
+  text-align: center;
+  color: #64748b;
+}
+.vong-tai-nho {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-right: 9px;
+  vertical-align: -3px;
+  border: 2px solid #dbe3ef;
+  border-top-color: #5365d8;
+  border-radius: 50%;
+  animation: xoay-vong-tai 0.7s linear infinite;
+}
+@keyframes xoay-vong-tai { to { transform: rotate(360deg); } }

@@ -50,7 +50,7 @@ async function dongDotQuaHan() {
      SET trang_thai = 'ket_thuc'
      WHERE trang_thai <> 'ket_thuc'
        AND ngay_ket_thuc IS NOT NULL
-       AND ngay_ket_thuc < CURDATE()`,
+       AND DATE(ngay_ket_thuc) < DATE(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR))`,
   );
 }
 
@@ -113,8 +113,8 @@ router.get(
           ${cot("trang_thai")},
           ${columns.includes(tenNguoiTaoField) ? `dt.\`${tenNguoiTaoField}\` AS nguoi_tao` : "NULL AS nguoi_tao"},
           ${columns.includes(nguoiTaoField) ? `dt.\`${nguoiTaoField}\` AS nguoi_tao_id` : "NULL AS nguoi_tao_id"},
-          ${cot("ngay_bat_dau")},
-          ${cot("ngay_ket_thuc")},
+          DATE_FORMAT(dt.ngay_bat_dau, '%Y-%m-%d') AS ngay_bat_dau,
+          DATE_FORMAT(dt.ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc,
           ${cot("ngay_tao")},
           ${columns.includes(ngayCapNhatField) ? `dt.\`${ngayCapNhatField}\` AS ngay_cap_nhat` : "NULL AS ngay_cap_nhat"},
           ${cotNguoiTaoTen},
@@ -158,8 +158,8 @@ router.get(
           dt.trang_thai,
           dt.${tenNguoiTaoField} AS nguoi_tao,
           dt.${nguoiTaoField} AS nguoi_tao_id,
-          dt.ngay_bat_dau,
-          dt.ngay_ket_thuc,
+          DATE_FORMAT(dt.ngay_bat_dau, '%Y-%m-%d') AS ngay_bat_dau,
+          DATE_FORMAT(dt.ngay_ket_thuc, '%Y-%m-%d') AS ngay_ket_thuc,
           dt.ngay_tao,
           dt.${ngayCapNhatField} AS ngay_cap_nhat,
           nd.ho_ten AS nguoi_tao_ten
@@ -209,7 +209,7 @@ router.post(
         return res.status(400).json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ" });
       }
       if (ngayKetThuc) {
-        const [[todayRow]] = await db.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today");
+        const [[todayRow]] = await db.query("SELECT DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR), '%Y-%m-%d') AS today");
         trangThai = ngayKetThuc < todayRow.today ? "ket_thuc" : "dang_tuyen";
       }
 
@@ -246,7 +246,7 @@ router.post(
         insertValues,
       );
 
-      res.status(201).json({ success: true, message: "Thêm đợt tuyển dụng thành công", data: { id: result.insertId } });
+      res.status(201).json({ success: true, message: "Tạo đợt tuyển dụng thành công.", data: { id: result.insertId } });
     } catch (error) {
       console.error("POST /api/dot-tuyen:", error);
       res.status(500).json({ message: "Không thêm được đợt tuyển dụng" });
@@ -280,7 +280,7 @@ router.put(
         return res.status(400).json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ" });
       }
       if (req.body?.force_trang_thai !== true && ngayKetThuc) {
-        const [[todayRow]] = await db.query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d') AS today");
+        const [[todayRow]] = await db.query("SELECT DATE_FORMAT(DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR), '%Y-%m-%d') AS today");
         trangThai = ngayKetThuc < todayRow.today ? "ket_thuc" : "dang_tuyen";
       }
 
@@ -307,7 +307,7 @@ router.put(
         ],
       );
 
-      res.json({ success: true, message: "Cập nhật đợt tuyển dụng thành công" });
+      res.json({ success: true, message: "Cập nhật đợt tuyển dụng thành công." });
     } catch (error) {
       console.error("PUT /api/dot-tuyen/:id:", error);
       res.status(500).json({ message: "Không cập nhật được đợt tuyển dụng" });
@@ -328,7 +328,7 @@ router.delete(
 
       await db.query("DELETE FROM jd WHERE dot_tuyen_id = ?", [id]);
       await db.query("DELETE FROM dot_tuyen WHERE id = ?", [id]);
-      res.json({ success: true, message: "Xóa đợt tuyển dụng thành công" });
+      res.json({ success: true, message: "Xóa đợt tuyển dụng thành công." });
     } catch (error) {
       console.error("DELETE /api/dot-tuyen/:id:", error);
       res.status(500).json({ message: "Không xóa được đợt tuyển dụng" });
