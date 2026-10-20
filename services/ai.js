@@ -4,11 +4,9 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
+const duongDanServiceAccountLocal = path.resolve(__dirname, "..", "secrets", "service-account.json");
 const serviceAccountRaw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64
-    ? Buffer.from(
-        process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64,
-        "base64"
-    ).toString("utf8")
+    ? Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64, "base64").toString("utf8")
     : process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
 if (serviceAccountRaw) {
@@ -34,6 +32,23 @@ if (serviceAccountRaw) {
     } catch (error) {
         throw new Error(
             "Không thể đọc Service Account: " + error.message
+        );
+    }
+}
+
+if (!serviceAccountRaw) {
+    const configuredPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    const absoluteConfiguredPath = configuredPath
+        ? path.resolve(process.cwd(), configuredPath)
+        : null;
+
+    if (absoluteConfiguredPath && fs.existsSync(absoluteConfiguredPath)) {
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = absoluteConfiguredPath;
+    } else if (fs.existsSync(duongDanServiceAccountLocal)) {
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = duongDanServiceAccountLocal;
+    } else if (configuredPath) {
+        throw new Error(
+            "Không tìm thấy Service Account. Hãy cập nhật GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 hoặc đặt file tại secrets/service-account.json."
         );
     }
 }

@@ -8,7 +8,7 @@
 
   <title>Tổng quan tuyển dụng</title>
 
-  <link rel="stylesheet" href="/dashboard/dashboard.css" />
+  <link rel="stylesheet" href="/dashboard/dashboard.css?v=20261020-dashboard-instant-form1" />
 <link rel="stylesheet" href="/menu-dong-bo.css">
 </head>
 
@@ -89,7 +89,7 @@
           <h2 id="xinChao">Xin chào!</h2>
           <p id="moTaVaiTro">Chào mừng bạn quay trở lại hệ thống.</p>
         </div>
-        <a href="/dot-tuyen/dot-tuyen.html?tao=1" class="nut-tao" id="btnTaoDotTuyen">＋ Tạo đợt tuyển dụng</a>
+        <button type="button" class="nut-tao" id="btnTaoDotTuyen">＋ Tạo đợt tuyển dụng</button>
       </section>
 
       <section class="the">
@@ -168,6 +168,12 @@
       </section>
 
     </main>
+  </div>
+
+  <div class="modal dashboard-dot-overlay" id="modalTaoDotDashboard" aria-hidden="true">
+    <div class="dashboard-dot-frame-wrap" role="dialog" aria-modal="true" aria-label="Tạo đợt tuyển dụng">
+      <iframe id="iframeTaoDotDashboard" title="Tạo đợt tuyển dụng" src="about:blank" style="visibility:hidden"></iframe>
+    </div>
   </div>
 
   <div class="modal" id="modalHoiAI">
@@ -281,7 +287,7 @@
     </div>
   </div>
 
-  <script src="/dashboard/dashboard.js"></script>
+  <script src="/dashboard/dashboard.js?v=20261020-dashboard-instant-form1"></script>
 <script src="/menu-dong-bo.js"></script>
 </body>
 

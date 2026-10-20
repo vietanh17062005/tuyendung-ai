@@ -1,4 +1,6 @@
 const API = "/api";
+const cheDoEmbed = new URLSearchParams(window.location.search).get("embed") === "1";
+if (cheDoEmbed) document.body.classList.add("embed-mode");
 
 let danhSachDotTuyen = [];
 let danhSachJD = [];
@@ -1444,9 +1446,10 @@ async function hienThiChiTietUngVien(container, candidate, dot) {
       }
       const objectUrl = URL.createObjectURL(blob);
       if (isPdf) {
-        const frame = document.createElement("iframe"); frame.className = "cv-dot-inline-frame"; frame.title = `CV của ${profile.ho_ten || "ứng viên"}`; frame.src = objectUrl;
+        const frame = document.createElement("div"); frame.className = "cv-dot-inline-frame cv-pdf-canvas-pages"; frame.setAttribute("aria-label", `CV PDF của ${profile.ho_ten || "ứng viên"}`);
+        cvContent.appendChild(frame);
+        await dungPDFBangCanvas(frame, blob);
         taoCongCuPhongToCV(cvContent, frame, "pdf");
-        frame.addEventListener("load", () => { frame.dataset.loaded = "true"; });
       } else if (isImage) {
         const image = document.createElement("img"); image.className = "cv-dot-inline-image"; image.alt = `CV của ${profile.ho_ten || "ứng viên"}`; image.src = objectUrl;
         taoCongCuPhongToCV(cvContent, image, "image");
@@ -1486,6 +1489,55 @@ function taoModalCV(title, contentClass = "") {
   return { overlay, modal, dong };
 }
 
+
+let thuVienPDFJS = null;
+async function layThuVienPDFJS() {
+  if (!thuVienPDFJS) {
+    thuVienPDFJS = import("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs").then(pdfjs => {
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+      return pdfjs;
+    });
+  }
+  return thuVienPDFJS;
+}
+async function dungPDFBangCanvas(container, blob) {
+  const pdfjs = await layThuVienPDFJS();
+  const bytes = await blob.arrayBuffer();
+  const pdf = await pdfjs.getDocument({ data: bytes }).promise;
+  container.classList.add("cv-pdf-canvas-pages");
+  container._pdfDocument = pdf;
+  let renderVersion = 0;
+  container._renderPdfAtZoom = async (zoom) => {
+    const thisRender = ++renderVersion;
+    const fragment = document.createDocumentFragment();
+    const width = container._pdfBaseWidth || (container._pdfBaseWidth = Math.max(320, container.parentElement?.clientWidth || 700) - 24);
+    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
+    for (let i = 1; i <= pdf.numPages; i++) {
+      if (thisRender !== renderVersion) return;
+      const page = await pdf.getPage(i);
+      const base = page.getViewport({ scale: 1 });
+      const scale = (width / base.width) * zoom;
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      canvas.className = "cv-pdf-rendered-page";
+      canvas.dataset.renderZoom = String(zoom);
+      canvas.width = Math.ceil(viewport.width * dpr);
+      canvas.height = Math.ceil(viewport.height * dpr);
+      canvas.style.width = `${Math.ceil(viewport.width)}px`;
+      canvas.style.height = `${Math.ceil(viewport.height)}px`;
+      fragment.appendChild(canvas);
+      const ctx = canvas.getContext("2d", { alpha: false });
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+    }
+    if (thisRender === renderVersion) {
+      container.replaceChildren(fragment);
+      container._renderedZoom = zoom;
+    }
+  };
+  await container._renderPdfAtZoom(1);
+}
+
 function taoCongCuPhongToCV(parent, target, kind) {
   const toolbar = document.createElement("div");
   toolbar.className = "cv-zoom-toolbar";
@@ -1510,12 +1562,27 @@ function taoCongCuPhongToCV(parent, target, kind) {
     } else {
       baseHeight = Math.max(450, Math.min(window.innerHeight * 0.68, 760));
     }
-    target.style.width = `${baseWidth}px`; target.style.height = `${baseHeight}px`;
+    if (kind !== "pdf") { target.style.width = `${baseWidth}px`; target.style.height = `${baseHeight}px`; }
     render();
   };
+  let pdfZoomTimer = null;
   const render = () => {
     stage.style.width = `${baseWidth * zoom}px`; stage.style.height = `${baseHeight * zoom}px`;
-    target.style.transform = `scale(${zoom})`;
+    if (kind === "pdf" && typeof target._renderPdfAtZoom === "function") {
+      const renderedZoom = Number(target._renderedZoom || 1);
+      target.style.transformOrigin = "top left";
+      target.style.transform = `scale(${zoom / renderedZoom})`;
+      clearTimeout(pdfZoomTimer);
+      pdfZoomTimer = setTimeout(() => {
+        target._renderPdfAtZoom(zoom).then(() => {
+          if (Math.abs(zoom - Number(target._renderedZoom || 1)) < 0.001) {
+            target.style.transform = "none";
+            stage.style.height = `${Math.max(baseHeight * zoom, target.scrollHeight)}px`;
+            stage.style.width = `${Math.max(baseWidth * zoom, target.scrollWidth)}px`;
+          }
+        }).catch(error => console.error("Không thể dựng PDF:", error));
+      }, 110);
+    } else { target.style.transform = `scale(${zoom})`; }
     percent.textContent = `${Math.round(zoom * 100)}%`;
     minus.disabled = zoom <= 0.5; plus.disabled = zoom >= 3;
   };
@@ -1544,6 +1611,47 @@ function taoCongCuPhongToCV(parent, target, kind) {
   return { viewport, setZoom };
 }
 
+// Menu chuot phai tren tung dong CV: dung lai dung cac thao tac cua nut ba cham.
+let menuChuotPhaiCV = null;
+function dongMenuChuotPhaiCV() {
+  menuChuotPhaiCV?.remove();
+  menuChuotPhaiCV = null;
+}
+document.addEventListener("contextmenu", (event) => {
+  const row = event.target.closest(".cv-dot-table tbody tr");
+  const sourceMenu = row?.querySelector(".cv-more-menu");
+  if (!row || !sourceMenu) return;
+  event.preventDefault();
+  dongMenuChuotPhaiCV();
+  const sourceButtons = [...sourceMenu.querySelectorAll("button")];
+  if (!sourceButtons.length) return;
+  const portal = sourceMenu.cloneNode(false);
+  portal.classList.add("cv-context-menu-portal");
+  portal.style.cssText = "display:block!important;visibility:visible!important;opacity:1!important;position:fixed!important;left:8px;top:8px;right:auto;bottom:auto;z-index:30000;min-width:180px;max-width:min(260px,calc(100vw - 16px));max-height:calc(100vh - 16px);overflow:auto;pointer-events:auto;";
+  sourceButtons.forEach((sourceButton) => {
+    const button = sourceButton.cloneNode(true);
+    button.style.display = "block";
+    button.style.width = "100%";
+    button.addEventListener("click", (clickEvent) => {
+      clickEvent.preventDefault();
+      clickEvent.stopPropagation();
+      dongMenuChuotPhaiCV();
+      sourceButton.click();
+    });
+    portal.appendChild(button);
+  });
+  document.body.appendChild(portal);
+  menuChuotPhaiCV = portal;
+  const rect = portal.getBoundingClientRect();
+  portal.style.left = `${Math.max(8, Math.min(event.clientX, window.innerWidth - rect.width - 8))}px`;
+  portal.style.top = `${Math.max(8, Math.min(event.clientY, window.innerHeight - rect.height - 8))}px`;
+});
+document.addEventListener("click", (event) => {
+  if (menuChuotPhaiCV && !event.target.closest(".cv-context-menu-portal")) dongMenuChuotPhaiCV();
+});
+window.addEventListener("scroll", dongMenuChuotPhaiCV, true);
+window.addEventListener("resize", dongMenuChuotPhaiCV);
+
 async function moCVCoXacThuc(url) {
   const { modal } = taoModalCV("Xem CV", "cv-dot-modal-preview");
   const status = document.createElement("p"); status.className = "cv-preview-status"; status.textContent = "Đang tải CV...";
@@ -1570,8 +1678,12 @@ async function moCVCoXacThuc(url) {
       const image = document.createElement("img"); image.className = "cv-preview-image"; image.alt = "Ảnh CV"; image.src = objectUrl;
       taoCongCuPhongToCV(modal, image, "image");
     } else if (pdfByName) {
-      frame.src = objectUrl; frame.hidden = false; frame.dataset.objectUrl = objectUrl;
-      taoCongCuPhongToCV(modal, frame, "pdf");
+      frame.remove();
+      const pdfCanvas = document.createElement("div"); pdfCanvas.className = "cv-pdf-canvas-pages";
+      modal.appendChild(pdfCanvas);
+      await dungPDFBangCanvas(pdfCanvas, blob);
+      taoCongCuPhongToCV(modal, pdfCanvas, "pdf");
+      pdfCanvas.dataset.objectUrl = objectUrl;
     } else {
       frame.remove();
     }
@@ -2740,7 +2852,12 @@ function ganSuKien() {
     moFormMoi
   );
 
-  $("btnDong").addEventListener("click", dongModal);
+  $("btnDong").addEventListener("click", () => {
+    dongModal();
+    if (cheDoEmbed && window.parent !== window) {
+      window.parent.postMessage({ type: "tuyendung-ai-close-create-campaign" }, window.location.origin);
+    }
+  });
   $("btnSuaTrongXem").addEventListener("click", () => {
     const item = window.dotTuyenDangXem;
     if (!item) return;
@@ -3041,6 +3158,9 @@ function ganSuKien() {
     (event) => {
       if (event.target === $("modal")) {
         dongModal();
+        if (cheDoEmbed && window.parent !== window) {
+          window.parent.postMessage({ type: "tuyendung-ai-close-create-campaign" }, window.location.origin);
+        }
       }
     }
   );
@@ -3135,5 +3255,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (thaoTac === "1" && coQuyenQuanLy()) {
     moFormMoi();
     window.history.replaceState(null, "", window.location.pathname);
+    if (cheDoEmbed && window.parent !== window) {
+      requestAnimationFrame(() => window.parent.postMessage({ type: "tuyendung-ai-campaign-form-ready" }, window.location.origin));
+    }
   }
+});
+
+window.addEventListener("message", (event) => {
+  if (event.origin !== window.location.origin || !cheDoEmbed) return;
+  if (event.data?.type === "tuyendung-ai-open-create-campaign") moFormMoi();
 });

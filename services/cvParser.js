@@ -90,13 +90,27 @@ function giaiMaXML(text) {
         .replace(/&amp;/g, "&");
 }
 
-async function trichXuatNoiDungCV(buffer, tenFile) {
-    const extension = path.extname(tenFile || "").toLowerCase();
+async function trichXuatNoiDungCV(buffer, tenFile, mimeType) {
+    let extension = path.extname(tenFile || "").toLowerCase();
+    if (!extension) {
+        const extensionByMime = {
+            "application/pdf": ".pdf",
+            "application/msword": ".doc",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+            "image/jpeg": ".jpg",
+            "image/png": ".png",
+        };
+        extension = extensionByMime[String(mimeType || "").split(";")[0].trim().toLowerCase()] || "";
+    }
     let text;
 
     if (extension === ".pdf") {
-        const result = await pdfParse(buffer);
-        text = result.text;
+        try {
+            const result = await pdfParse(buffer);
+            text = result.text;
+        } catch (error) {
+            throw new Error("Không đọc được PDF. File có thể bị hỏng, đặt mật khẩu hoặc dùng cấu trúc PDF không được hỗ trợ.");
+        }
     } else if (extension === ".docx") {
         const xml = await layNoiDungDocx(buffer);
         text = giaiMaXML(xml
@@ -123,9 +137,13 @@ async function trichXuatNoiDungCV(buffer, tenFile) {
         .trim();
 
     if (cleanedText.length < 30) {
-        throw new Error(
-            "Không trích xuất được đủ nội dung từ CV. Hãy kiểm tra file hoặc bổ sung thông tin bằng tay.",
-        );
+        if (extension === ".pdf") {
+            throw new Error("PDF không có đủ văn bản để đọc. Có thể đây là PDF scan từ ảnh; hãy dùng PDF có thể bôi đen/copy chữ hoặc tải CV dưới dạng DOCX.");
+        }
+        if ([".doc", ".docx"].includes(extension)) {
+            throw new Error("Không trích xuất được nội dung Word. Hãy mở file và lưu lại dưới dạng DOCX mới rồi tải lên.");
+        }
+        throw new Error("Không trích xuất được đủ nội dung từ CV. Hãy kiểm tra file hoặc bổ sung thông tin bằng tay.");
     }
 
     return cleanedText.slice(0, 30000);

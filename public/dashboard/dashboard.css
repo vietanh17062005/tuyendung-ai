@@ -1662,3 +1662,27 @@ body {
     align-self: flex-end;
   }
 }
+
+/* Tạo đợt tuyển dụng ngay trên Dashboard, dùng nguyên biểu mẫu của trang Đợt tuyển dụng */
+.dashboard-dot-overlay { z-index: 10000; padding: 24px; background: rgba(15, 23, 42, .30); }
+.dashboard-dot-frame-wrap { position: relative; width: min(1120px, calc(100vw - 48px)); height: min(860px, calc(100vh - 48px)); overflow: hidden; border-radius: 16px; background: transparent; box-shadow: 0 24px 80px rgba(15,23,42,.3); }
+.dashboard-dot-frame-wrap iframe { display: block; width: 100%; height: 100%; border: 0; background: transparent; }
+.dashboard-dot-close { display: none !important; }
+.dashboard-dot-close:hover { background: #f1f5f9; }
+@media (max-width: 600px) { .dashboard-dot-overlay { padding: 8px; } .dashboard-dot-frame-wrap { width: calc(100vw - 16px); height: calc(100vh - 16px); border-radius: 12px; } }
+#btnTaoDotTuyen { border: 0; cursor: pointer; font: inherit; }
+
+/* Dashboard campaign form overlay: keep the dashboard visible behind the embedded form. */
+.dashboard-dot-overlay { position:fixed!important; inset:0!important; display:none; align-items:center; justify-content:center; background:rgba(15,23,42,.52)!important; }
+.dashboard-dot-overlay.hien { display:flex!important; }
+.dashboard-dot-frame-wrap { background:transparent!important; }
+.dashboard-dot-frame-wrap iframe { background:transparent!important; }
+
+/* Keep the Dashboard create-campaign button typography consistent with the page. */
+#btnTaoDotTuyen { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif !important; font-size: 14px !important; font-weight: 700 !important; letter-spacing: normal !important; line-height: 1.2; }
+
+
+/* Fix Dashboard: remove dark frame/shadow behind the embedded create-campaign form. */
+.dashboard-dot-frame-wrap { border: 0 !important; outline: 0 !important; box-shadow: none !important; background: transparent !important; }
+.dashboard-dot-frame-wrap::before, .dashboard-dot-frame-wrap::after { content: none !important; display: none !important; }
+.dashboard-dot-frame-wrap iframe { border: 0 !important; outline: 0 !important; box-shadow: none !important; }

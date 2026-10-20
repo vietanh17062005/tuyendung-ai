@@ -4123,3 +4123,39 @@ tbody tr:hover {
 #modal .cv-dot-table tbody td:nth-child(6) .cv-more-wrap{width:100%!important;display:flex!important;justify-content:center!important}
 #modal .cv-dot-table tbody td:nth-child(6) .cv-more-toggle{font-weight:400!important}
 #modal .cv-more-menu button,#modal .cv-more-menu button.btn-danh-gia-cv,#modal .cv-more-menu button.btn-xoa-cv{font-weight:400!important;font-weight:normal!important}
+
+
+/* Chế độ nhúng biểu mẫu trong Dashboard */
+html:has(body.embed-mode), body.embed-mode { min-height: 100vh; overflow: hidden; background: transparent !important; }
+body.embed-mode .khung { display: none !important; }
+body.embed-mode #modal { position: fixed; inset: 0; z-index: 1000; display: flex; padding: 24px; background: transparent !important; }
+body.embed-mode #modal .modal-box { width: min(100%, 1000px); max-width: 1000px; max-height: calc(100vh - 48px); box-shadow: 0 18px 60px rgba(15,23,42,.22); }
+body.embed-mode #modalJD, body.embed-mode #modalChonJD, body.embed-mode #modalHoiAIDot, body.embed-mode #modalUploadDot { z-index: 1100; }
+@media(max-width:700px) { body.embed-mode #modal { padding: 8px; } body.embed-mode #modal .modal-box { max-height: calc(100vh - 16px); } }
+
+/* Embedded campaign form must not paint an opaque page behind its dialog. */
+html:has(body.embed-mode), body.embed-mode { background:transparent!important; }
+body.embed-mode #modal { background:transparent!important; }
+
+/* Render PDF files using PDF.js canvas rather than Edge's built-in viewer. */
+.cv-pdf-canvas-pages { display:flex; flex-direction:column; align-items:center; gap:14px; width:100%; min-width:0; background:#e9edf3; padding:12px; box-sizing:border-box; }
+.cv-pdf-rendered-page { display:block; flex:0 0 auto; max-width:none!important; border:0!important; outline:0!important; background:#fff; box-shadow:0 2px 8px rgba(15,23,42,.14); }
+.cv-zoom-stage:has(.cv-pdf-canvas-pages) { align-items:flex-start; justify-content:flex-start; }
+.cv-zoom-viewport:has(.cv-pdf-canvas-pages) { overflow:auto; }
+.cv-pdf-canvas-pages .cv-pdf-rendered-page { margin:0 auto; }
+
+/* Right-click menu for a CV row, portaled outside the scrollable table. */
+.cv-more-menu.cv-context-menu-portal{display:block!important;visibility:visible!important;opacity:1!important;position:fixed!important;background:#fff!important;border:1px solid #dbe2ea!important;border-radius:10px!important;box-shadow:0 12px 32px rgba(15,23,42,.2)!important;padding:6px!important;}
+.cv-more-menu.cv-context-menu-portal button{display:block!important;width:100%!important;text-align:left!important;white-space:normal!important;margin:0!important;border:0!important;border-radius:6px!important;background:transparent!important;padding:10px 12px!important;color:#1e293b!important;font:inherit!important;cursor:pointer!important;}
+.cv-more-menu.cv-context-menu-portal button:hover{background:#f1f5f9!important;}
+
+/* Dashboard embed: do not draw a second dark backdrop behind the campaign form. */
+html:has(body.embed-mode), body.embed-mode, body.embed-mode #modal { background: transparent !important; }
+body.embed-mode #modal .modal-box { background: #fff !important; }
+
+
+/* Dashboard uses the same close X in the campaign form header as the campaign page. */
+body.embed-mode #modal .modal-header > #btnDong { display: inline-flex !important; }
+body.embed-mode #modal .modal-header > #btnDong { align-items:center; justify-content:center; flex:0 0 36px; width:36px; height:36px; }
+body.embed-mode #modal, body.embed-mode #modal .modal-box { outline: 0 !important; border-color: transparent; }
+body.embed-mode #modal .modal-box { box-shadow: none !important; }

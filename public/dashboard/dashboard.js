@@ -68,6 +68,40 @@ if (!["admin", "manager"].includes(nguoiDung.vai_tro)) {
   document.getElementById("btnTaoDotTuyen").style.display = "none";
 }
 
+/* Tạo đợt tuyển dụng ngay trên Dashboard bằng đúng biểu mẫu hiện có */
+const modalTaoDotDashboard = document.getElementById("modalTaoDotDashboard");
+const iframeTaoDotDashboard = document.getElementById("iframeTaoDotDashboard");
+let formDotDashboardDaSanSang = false;
+// Nạp sẵn biểu mẫu khi Dashboard mở để tránh hiện nền tối trong lúc iframe tải.
+iframeTaoDotDashboard.src = "/dot-tuyen/dot-tuyen.html?tao=1&embed=1";
+iframeTaoDotDashboard.style.visibility = "visible";
+function moTaoDotDashboard() {
+  modalTaoDotDashboard.classList.add("hien");
+  modalTaoDotDashboard.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  if (formDotDashboardDaSanSang) {
+    iframeTaoDotDashboard.contentWindow.postMessage({ type: "tuyendung-ai-open-create-campaign" }, window.location.origin);
+  }
+}
+function dongTaoDotDashboard() {
+  modalTaoDotDashboard.classList.remove("hien");
+  modalTaoDotDashboard.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+}
+document.getElementById("btnTaoDotTuyen")?.addEventListener("click", moTaoDotDashboard);
+modalTaoDotDashboard?.addEventListener("click", (event) => {
+  if (event.target === modalTaoDotDashboard) dongTaoDotDashboard();
+});
+window.addEventListener("message", (event) => {
+  if (event.origin === window.location.origin && event.data?.type === "tuyendung-ai-campaign-form-ready") {
+    formDotDashboardDaSanSang = true;
+  }
+  if (event.origin === window.location.origin && event.data?.type === "tuyendung-ai-close-create-campaign") {
+    dongTaoDotDashboard();
+    layDuLieuDashboard();
+  }
+});
+
 /* Dropdown tài khoản */
 
 document.getElementById("tenMenuTaiKhoan").textContent = nguoiDung.ho_ten;
