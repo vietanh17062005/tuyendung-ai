@@ -1,5 +1,5 @@
 // Loading chung cho thao tác có gọi API: hiển thị ngay trên nút đang bấm.
-(function () {
+(function() {
   if (window.__loadingNutDaKhoiTao) return;
   window.__loadingNutDaKhoiTao = true;
   const style = document.createElement('style');
@@ -60,7 +60,7 @@
     if (nut && !nut.disabled) nhanDangXuLy(nut);
   }, true);
 
-  window.fetch = function (...args) {
+  window.fetch = function(...args) {
     const nut = nutDangXuLy;
     const coNut = nut && nut.dataset.loadingNut === '1';
     if (coNut) {
@@ -79,7 +79,7 @@
   };
 })();
 
-(function () {
+(function() {
   const path = window.location.pathname.replace(/\/$/, '');
   document.querySelectorAll('[data-menu-path]').forEach(a => {
     const target = a.getAttribute('data-menu-path');
@@ -136,7 +136,7 @@
 
   const account = (() => { try { return JSON.parse(localStorage.getItem('nguoi_dung') || 'null') || {}; } catch { return {}; } })();
   const accountName = account.ho_ten || account.ten || account.username || account.email || 'Tài khoản';
-  const accountRole = ({admin:'Quản trị viên', manager:'Quản lý', hr:'Nhân sự', interviewer:'Người phỏng vấn', viewer:'Người xem'})[String(account.vai_tro || account.role || '').toLowerCase()] || 'Tài khoản';
+  const accountRole = ({ admin: 'Quản trị viên', manager: 'Quản lý', hr: 'Nhân sự', interviewer: 'Người phỏng vấn', viewer: 'Người xem' })[String(account.vai_tro || account.role || '').toLowerCase()] || 'Tài khoản';
 
   const bellWrap = document.createElement('div');
   bellWrap.className = 'shared-bell-wrap';
@@ -157,7 +157,7 @@
         const seen = new Set(JSON.parse(localStorage.getItem(notificationStorageKey) || '[]'));
         notifications.forEach(item => seen.add(notificationKey(item)));
         localStorage.setItem(notificationStorageKey, JSON.stringify([...seen].slice(-100)));
-      } catch {}
+      } catch { }
       updateNotificationBadge();
     }
   });
@@ -184,7 +184,6 @@
   if (!document.getElementById('sharedAccountModal')) createAccountModals();
   if (!document.getElementById('sharedAiOverlay')) createSharedAIModal();
 
-
   async function loadNotifications() {
     const list = bellWrap.querySelector('.shared-notification-list');
     try {
@@ -203,7 +202,7 @@
           title.textContent = item.loai === 'updated' ? `${item.ho_ten || 'Ứng viên'} có hồ sơ vừa được cập nhật` : `${item.ho_ten || 'Ứng viên'} vừa được thêm`;
           const time = document.createElement('span');
           const date = new Date(String(item.thoi_gian || '').replace(' ', 'T'));
-          time.textContent = Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN', {dateStyle:'short', timeStyle:'short'});
+          time.textContent = Number.isNaN(date.getTime()) ? '' : date.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
           row.append(title, time); list.appendChild(row);
         });
       }
@@ -216,7 +215,7 @@
   function updateNotificationBadge() {
     const badge = bellWrap.querySelector('.shared-bell-count');
     let seen = [];
-    try { seen = JSON.parse(localStorage.getItem(notificationStorageKey) || '[]'); } catch {}
+    try { seen = JSON.parse(localStorage.getItem(notificationStorageKey) || '[]'); } catch { }
     const unseen = notifications.filter(item => !seen.includes(notificationKey(item))).length;
     badge.textContent = unseen > 9 ? '9+' : String(unseen);
     badge.hidden = unseen === 0;
@@ -241,15 +240,15 @@
     modal.querySelector('#sharedInfoForm').addEventListener('submit', saveAccountInfo);
     modal.querySelector('#sharedPasswordForm').addEventListener('submit', saveAccountPassword);
   }
-  function setAccountMessage(kind, message, success=false) {
+  function setAccountMessage(kind, message, success = false) {
     const el = document.getElementById(kind === 'info' ? 'sharedInfoMessage' : 'sharedPasswordMessage');
     if (el) { el.textContent = message; el.classList.toggle('success', success); }
   }
-  async function accountRequest(url, options={}) {
+  async function accountRequest(url, options = {}) {
     const token = localStorage.getItem('token');
-    const response = await fetch(url, { ...options, headers: { ...(options.body ? {'Content-Type':'application/json'} : {}), ...(token ? {Authorization:'Bearer ' + token} : {}), ...(options.headers || {}) } });
+    const response = await fetch(url, { ...options, headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(options.headers || {}) } });
     const data = await response.json().catch(() => ({}));
-    if (response.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('nguoi_dung'); window.location.href='/login/login.html'; throw new Error('Phiên đăng nhập đã hết hạn.'); }
+    if (response.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('nguoi_dung'); window.location.href = '/login/login.html'; throw new Error('Phiên đăng nhập đã hết hạn.'); }
     if (!response.ok) throw new Error(data.message || 'Không thể thực hiện yêu cầu.');
     return data;
   }
@@ -259,15 +258,15 @@
       const data = await accountRequest('/api/tai-khoan');
       document.getElementById('sharedInfoName').value = data.ho_ten || '';
       document.getElementById('sharedInfoEmail').value = data.email || '';
-      document.getElementById('sharedInfoRole').value = ({admin:'Quản trị viên',manager:'Quản lý',hr:'Nhân sự',interviewer:'Người phỏng vấn',viewer:'Người xem'})[data.vai_tro] || data.vai_tro || '';
+      document.getElementById('sharedInfoRole').value = ({ admin: 'Quản trị viên', manager: 'Quản lý', hr: 'Nhân sự', interviewer: 'Người phỏng vấn', viewer: 'Người xem' })[data.vai_tro] || data.vai_tro || '';
       setAccountMessage('info', '');
     } catch (error) { setAccountMessage('info', error.message); }
   }
   async function saveAccountInfo(event) {
     event.preventDefault(); setAccountMessage('info', 'Đang lưu...');
     try {
-      const data = await accountRequest('/api/tai-khoan', {method:'PUT', body:JSON.stringify({ho_ten:document.getElementById('sharedInfoName').value.trim(), email:document.getElementById('sharedInfoEmail').value.trim()})});
-      const updated = {...account, ho_ten:document.getElementById('sharedInfoName').value.trim(), email:document.getElementById('sharedInfoEmail').value.trim()};
+      const data = await accountRequest('/api/tai-khoan', { method: 'PUT', body: JSON.stringify({ ho_ten: document.getElementById('sharedInfoName').value.trim(), email: document.getElementById('sharedInfoEmail').value.trim() }) });
+      const updated = { ...account, ho_ten: document.getElementById('sharedInfoName').value.trim(), email: document.getElementById('sharedInfoEmail').value.trim() };
       localStorage.setItem('nguoi_dung', JSON.stringify(updated));
       wrap.querySelector('.shared-account-label strong').textContent = updated.ho_ten;
       wrap.querySelector('.shared-account-avatar').textContent = updated.ho_ten.charAt(0).toUpperCase();
@@ -285,13 +284,13 @@
     if (newPassword.length < 6) return setAccountMessage('password', 'Mật khẩu mới phải có ít nhất 6 ký tự.');
     setAccountMessage('password', 'Đang cập nhật...');
     try {
-      const data = await accountRequest('/api/tai-khoan/mat-khau', {method:'PUT', body:JSON.stringify({mat_khau_cu:oldPassword, mat_khau_moi:newPassword})});
+      const data = await accountRequest('/api/tai-khoan/mat-khau', { method: 'PUT', body: JSON.stringify({ mat_khau_cu: oldPassword, mat_khau_moi: newPassword }) });
       setAccountMessage('password', data.message || 'Đổi mật khẩu thành công.', true);
       document.getElementById('sharedPasswordForm').reset();
     } catch (error) { setAccountMessage('password', error.message); }
   }
 
-  function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+  function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 
   // Những trang chưa có chatbot riêng dùng chung API Hỏi AI của Dashboard.
   if (!document.getElementById('sharedAiOverlay')) createSharedAIModal();

@@ -39,7 +39,7 @@ function tatLoading() {
 
 /* Hiện / ẩn mật khẩu */
 
-btnHienMatKhau.addEventListener("click", function () {
+btnHienMatKhau.addEventListener("click", function() {
   if (matKhau.type === "password") {
     matKhau.type = "text";
 
@@ -65,17 +65,17 @@ btnHienMatKhau.addEventListener("click", function () {
 
 /* Xóa thông báo lỗi khi nhập */
 
-email.addEventListener("input", function () {
+email.addEventListener("input", function() {
   xoaLoi();
 });
 
-matKhau.addEventListener("input", function () {
+matKhau.addEventListener("input", function() {
   xoaLoi();
 });
 
 /* Đăng nhập */
 
-formDangNhap.addEventListener("submit", async function (event) {
+formDangNhap.addEventListener("submit", async function(event) {
   event.preventDefault();
 
   xoaLoi();

@@ -33,14 +33,14 @@ function layNgayCapNhatJD(columns) {
 
 async function damBaoCotMetadataJD() {
   if (!metadataReady) {
-    metadataReady = (async function () {
+    metadataReady = (async function() {
       const columns = new Set(await layCotBang("jd"));
       for (const [name, definition] of Object.entries(JD_METADATA_COLUMNS)) {
         if (!columns.has(name)) {
           await db.query(`ALTER TABLE jd ADD COLUMN ${name} ${definition}`);
         }
       }
-    })().catch(function (error) {
+    })().catch(function(error) {
       metadataReady = null;
       throw error;
     });
@@ -93,7 +93,7 @@ function layNguoiDungId(req) {
 router.get(
   "/templates",
   kiemTraDangNhap,
-  async function (req, res) {
+  async function(req, res) {
     res.json({ success: true, data: JD_TEMPLATES });
   },
 );
@@ -101,7 +101,7 @@ router.get(
 router.get(
   "/",
   kiemTraDangNhap,
-  async function (req, res) {
+  async function(req, res) {
     try {
       await damBaoCotMetadataJD();
       const columns = await layCotBang("jd");
@@ -149,7 +149,7 @@ router.get(
 router.get(
   "/:id",
   kiemTraDangNhap,
-  async function (req, res) {
+  async function(req, res) {
     try {
       await damBaoCotMetadataJD();
       const id = Number(req.params.id);
@@ -210,7 +210,7 @@ router.get(
 router.get(
   "/:id/lich-su-ai",
   kiemTraDangNhap,
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = Number(req.params.id);
       if (!Number.isInteger(id) || id <= 0) {
@@ -237,7 +237,7 @@ router.post(
   "/",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager", "hr"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       await damBaoCotMetadataJD();
       const dotTuyenId = Number(req.body?.dot_tuyen_id);
@@ -288,7 +288,7 @@ router.post(
   "/ai/cau-hoi",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager", "hr"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const yTuong = String(req.body?.y_tuong || "").trim();
       if (!yTuong) {
@@ -321,7 +321,7 @@ router.post(
   "/ai/soan",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager", "hr"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const yTuong = String(req.body?.y_tuong || "").trim();
       const hoiDap = Array.isArray(req.body?.hoi_dap) ? req.body.hoi_dap : [];
@@ -344,7 +344,7 @@ router.post(
   "/ai/luu",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager", "hr"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const jdId = Number(req.body?.jd_id);
       const yTuong = String(req.body?.y_tuong || "").trim();
@@ -376,7 +376,7 @@ router.put(
   "/:id",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager", "hr"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       await damBaoCotMetadataJD();
       const id = Number(req.params.id);
@@ -433,7 +433,7 @@ router.put(
   "/:id/gui-duyet",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager", "hr"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = Number(req.params.id);
       const [jd] = await db.query("SELECT id, trang_thai FROM jd WHERE id = ? LIMIT 1", [id]);
@@ -457,7 +457,7 @@ router.put(
   "/:id/duyet",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = Number(req.params.id);
       const nguoiDungId = layNguoiDungId(req);
@@ -482,7 +482,7 @@ router.put(
   "/:id/tu-choi",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = Number(req.params.id);
       const [jd] = await db.query("SELECT id, trang_thai FROM jd WHERE id = ? LIMIT 1", [id]);
@@ -506,7 +506,7 @@ router.put(
   "/:id/huy",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = Number(req.params.id);
       const [jd] = await db.query("SELECT id, trang_thai FROM jd WHERE id = ? LIMIT 1", [id]);
@@ -530,7 +530,7 @@ router.delete(
   "/:id",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = Number(req.params.id);
       if (!Number.isInteger(id) || id <= 0) {

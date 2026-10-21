@@ -57,7 +57,7 @@ async function dongDotQuaHan() {
 router.get(
   "/",
   kiemTraDangNhap,
-  async function (req, res) {
+  async function(req, res) {
     try {
       try { await dongDotQuaHan(); } catch (closeError) { console.warn("Không cập nhật được trạng thái đợt quá hạn:", closeError.message); }
       // Danh sách không phụ thuộc vào việc cập nhật trạng thái quá hạn.
@@ -73,7 +73,7 @@ router.get(
         columns.includes(name) ? `${table}.\`${name}\` AS \`${alias}\`` : `NULL AS \`${alias}\``;
 
       let cotNguoiDung = [];
-      try { cotNguoiDung = await layCotBang("nguoi_dung"); } catch (_) {}
+      try { cotNguoiDung = await layCotBang("nguoi_dung"); } catch (_) { }
       const cotNguoiTaoTen = cotNguoiDung.includes("ho_ten")
         ? `nd.ho_ten AS nguoi_tao_ten`
         : "NULL AS nguoi_tao_ten";
@@ -82,9 +82,9 @@ router.get(
         : "";
 
       let cotPhanTichAI = [];
-      try { cotPhanTichAI = await layCotBang("phan_tich_ai"); } catch (_) {}
+      try { cotPhanTichAI = await layCotBang("phan_tich_ai"); } catch (_) { }
       let cotJD = [];
-      try { cotJD = await layCotBang("jd"); } catch (_) {}
+      try { cotJD = await layCotBang("jd"); } catch (_) { }
       const cotDiemPhanTich = ["diem_phu_hop", "diem"].find((column) => cotPhanTichAI.includes(column));
       const cotUngVienPhanTich = cotPhanTichAI.includes("ung_vien_id") ? "ung_vien_id" : null;
       const coBangUngVien = await layCotBang("ung_vien");
@@ -136,7 +136,7 @@ router.get(
 router.get(
   "/:id",
   kiemTraDangNhap,
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = Number(req.params.id);
       if (!Number.isInteger(id) || id <= 0) {
@@ -187,7 +187,7 @@ router.post(
   "/",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const moTaNhap = String(req.body?.mo_ta || "").trim();
       let ten = String(req.body?.ten ?? req.body?.ten_dot ?? "").trim();
@@ -205,7 +205,7 @@ router.post(
         return res.status(400).json({ message: "Trạng thái đợt tuyển dụng không hợp lệ" });
       }
       if (!laNgayHopLe(ngayBatDau) || !laNgayHopLe(ngayKetThuc) ||
-          (ngayBatDau && ngayKetThuc && ngayKetThuc < ngayBatDau)) {
+        (ngayBatDau && ngayKetThuc && ngayKetThuc < ngayBatDau)) {
         return res.status(400).json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ" });
       }
       if (ngayKetThuc) {
@@ -258,7 +258,7 @@ router.put(
   "/:id",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager", "hr"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = Number(req.params.id);
       if (!Number.isInteger(id) || id <= 0) {
@@ -276,7 +276,7 @@ router.put(
         return res.status(400).json({ message: "Trạng thái đợt tuyển dụng không hợp lệ" });
       }
       if (!laNgayHopLe(ngayBatDau) || !laNgayHopLe(ngayKetThuc) ||
-          (ngayBatDau && ngayKetThuc && ngayKetThuc < ngayBatDau)) {
+        (ngayBatDau && ngayKetThuc && ngayKetThuc < ngayBatDau)) {
         return res.status(400).json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ" });
       }
       if (req.body?.force_trang_thai !== true && ngayKetThuc) {
@@ -319,7 +319,7 @@ router.delete(
   "/:id",
   kiemTraDangNhap,
   kiemTraVaiTro("admin", "manager"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = Number(req.params.id);
       if (!Number.isInteger(id) || id <= 0) {

@@ -44,7 +44,6 @@ Script upload file lên Blob và cập nhật URL vào bản ghi CV tương ứn
 - Blob URL là đường dẫn công khai để xem/tải CV. Vì CV có thể chứa thông tin cá nhân, chỉ cấp quyền truy cập hệ thống cho người được phép; nếu cần lưu trữ riêng tư, cần thiết kế cơ chế Blob private và route tải file có xác thực.
 - Thay đổi này đồng bộ kho file CV và metadata khi cả hai môi trường dùng cùng database. Nó không tự hợp nhất hai database khác nhau.
 
-
 ## Lưu trữ CV riêng tư
 
 Blob Store dùng chế độ private. Các route backend dùng `get(url, { access: "private" })` và chỉ stream nội dung sau khi kiểm tra đăng nhập/quyền truy cập; không redirect trình duyệt tới URL Blob. Upload mới và script migration đều dùng `access: "private"`.

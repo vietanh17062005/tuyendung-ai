@@ -545,7 +545,7 @@ async function huyUploadCVTheoDot(form) {
   state.submitButton.disabled = true;
   state.controller.abort();
   state.cancelPromise = (async () => {
-    if (state.runPromise) await state.runPromise.catch(() => {});
+    if (state.runPromise) await state.runPromise.catch(() => { });
     const created = state.candidates || [];
     for (const candidate of created) {
       if (!candidate?.id || !candidate?.cv_id) continue;
@@ -558,9 +558,9 @@ async function huyUploadCVTheoDot(form) {
     state.active = false;
     if (form.closest("#modalUploadDot")) $("modalUploadDot").classList.remove("hien");
     else form.closest(".upload-dot-inline")?.remove();
-    await taiDuLieu().catch(() => {});
+    await taiDuLieu().catch(() => { });
     const activeItem = danhSachGop.find((item) => Number(item.dot?.id) === Number(state.dotTuyenId));
-    if (activeItem) await taiCVTheoDot(activeItem.dot).catch(() => {});
+    if (activeItem) await taiCVTheoDot(activeItem.dot).catch(() => { });
   })();
   return state.cancelPromise;
 }
@@ -629,7 +629,7 @@ async function guiUploadCVTheoDot(event) {
           if (state.cancelRequested) break;
           if (!analysisResponse.ok) {
             failures.push(`${candidate.ten_file || "CV"}: ${analysisResult.message || "Lỗi phân tích"}`);
-            try { await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" }); state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id)); } catch {}
+            try { await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" }); state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id)); } catch { }
           } else {
             const duplicateByEmail = (analysisResult.ung_vien_trung_tiem_nang || []).find(item => item.exact && item.ly_do === "Trùng email");
             if (duplicateByEmail) {
@@ -654,11 +654,11 @@ async function guiUploadCVTheoDot(event) {
               if (state.cancelRequested) break;
               if (saveResponse.ok) successCount += 1;
               else {
-                try { await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" }); state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id)); } catch {}
+                try { await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" }); state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id)); } catch { }
                 failures.push(`${candidate.ten_file || "CV"}: ${saveResult.message || "Không lưu được kết quả AI"}; CV không được giữ lại.`);
               }
             } else {
-              try { await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" }); state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id)); } catch {}
+              try { await api(`${API}/ung-vien/${candidate.id}/cv/${candidate.cv_id}`, { method: "DELETE" }); state.candidates = state.candidates.filter(item => Number(item.id) !== Number(candidate.id)); } catch { }
               failures.push(`${candidate.ten_file || "CV"}: AI chưa trả đủ dữ liệu; CV không được giữ lại.`);
             }
           }
@@ -850,7 +850,6 @@ function hienThiDanhSach() {
 
       <td class="cot-kenh-nhan-cv"><span class="kenh-nhan-cv">${escapeHTML(kenhNhanCV)}</span></td>
       <td><span class="thoi-gian-dot">${escapeHTML(dinhDangNgay(dot?.ngay_tao))}</span></td>
-
 
     `;
 
@@ -1290,60 +1289,60 @@ async function taiCVTheoDot(dot) {
       if (!daTuChoi && statusLabel !== "Đã tuyển") {
         if (["Đã hẹn", "Đã phỏng vấn"].includes(statusLabel)) {
           if (!laNguoiPhongVan) {
-          const reschedule = document.createElement("button"); reschedule.type = "button"; reschedule.textContent = "Đổi ngày hẹn";
-          reschedule.addEventListener("click", async () => {
-            let resolvedId = interviewId;
-            if (!resolvedId) {
-              try { const schedules = await api(`${API}/phong-van`); const rows = Array.isArray(schedules) ? schedules : (schedules.data || []); const found = rows.find(item => Number(item.ung_vien_id) === Number(candidate.id) && String(item.trang_thai || "").toLowerCase() !== "huy"); resolvedId = found?.id || null; } catch (_) {}
-            }
-            if (resolvedId) moFormHenPhongVan(candidate, dot, resolvedId);
-            else alert("Không tìm thấy lịch phỏng vấn đang hoạt động. Hãy tải lại danh sách CV.");
-          });
-          actions.appendChild(reschedule);
-          const cancelAppointment = document.createElement("button"); cancelAppointment.type = "button"; cancelAppointment.className = "btn-xoa-cv"; cancelAppointment.textContent = "Hủy lịch";
-          cancelAppointment.addEventListener("click", async () => {
-            let resolvedId = interviewId;
-            if (!resolvedId) {
-              try { const schedules = await api(`${API}/phong-van`); const rows = Array.isArray(schedules) ? schedules : (schedules.data || []); const found = rows.find(item => Number(item.ung_vien_id) === Number(candidate.id) && String(item.trang_thai || "").toLowerCase() !== "huy"); resolvedId = found?.id || null; } catch (_) {}
-            }
-            if (!resolvedId) { alert("Không tìm thấy lịch phỏng vấn đang hoạt động. Hãy tải lại danh sách."); return; }
-            if (!confirm(`Hủy lịch phỏng vấn của ${candidate.ho_ten || "ứng viên này"}?`)) return;
-            cancelAppointment.disabled = true; cancelAppointment.textContent = "Đang hủy…";
-            try {
-              await api(`${API}/phong-van/${resolvedId}/trang-thai`, { method: "PATCH", body: JSON.stringify({ trang_thai: "huy" }) });
-              hienThongBaoCVDot("Đã hủy lịch phỏng vấn.", true);
-              await taiCVTheoDot(dot);
-            } catch (error) {
-              cancelAppointment.disabled = false; cancelAppointment.textContent = "Hủy lịch";
-              alert(error.message || "Không thể hủy lịch phỏng vấn.");
-            }
-          });
-          actions.appendChild(cancelAppointment);
+            const reschedule = document.createElement("button"); reschedule.type = "button"; reschedule.textContent = "Đổi ngày hẹn";
+            reschedule.addEventListener("click", async () => {
+              let resolvedId = interviewId;
+              if (!resolvedId) {
+                try { const schedules = await api(`${API}/phong-van`); const rows = Array.isArray(schedules) ? schedules : (schedules.data || []); const found = rows.find(item => Number(item.ung_vien_id) === Number(candidate.id) && String(item.trang_thai || "").toLowerCase() !== "huy"); resolvedId = found?.id || null; } catch (_) { }
+              }
+              if (resolvedId) moFormHenPhongVan(candidate, dot, resolvedId);
+              else alert("Không tìm thấy lịch phỏng vấn đang hoạt động. Hãy tải lại danh sách CV.");
+            });
+            actions.appendChild(reschedule);
+            const cancelAppointment = document.createElement("button"); cancelAppointment.type = "button"; cancelAppointment.className = "btn-xoa-cv"; cancelAppointment.textContent = "Hủy lịch";
+            cancelAppointment.addEventListener("click", async () => {
+              let resolvedId = interviewId;
+              if (!resolvedId) {
+                try { const schedules = await api(`${API}/phong-van`); const rows = Array.isArray(schedules) ? schedules : (schedules.data || []); const found = rows.find(item => Number(item.ung_vien_id) === Number(candidate.id) && String(item.trang_thai || "").toLowerCase() !== "huy"); resolvedId = found?.id || null; } catch (_) { }
+              }
+              if (!resolvedId) { alert("Không tìm thấy lịch phỏng vấn đang hoạt động. Hãy tải lại danh sách."); return; }
+              if (!confirm(`Hủy lịch phỏng vấn của ${candidate.ho_ten || "ứng viên này"}?`)) return;
+              cancelAppointment.disabled = true; cancelAppointment.textContent = "Đang hủy…";
+              try {
+                await api(`${API}/phong-van/${resolvedId}/trang-thai`, { method: "PATCH", body: JSON.stringify({ trang_thai: "huy" }) });
+                hienThongBaoCVDot("Đã hủy lịch phỏng vấn.", true);
+                await taiCVTheoDot(dot);
+              } catch (error) {
+                cancelAppointment.disabled = false; cancelAppointment.textContent = "Hủy lịch";
+                alert(error.message || "Không thể hủy lịch phỏng vấn.");
+              }
+            });
+            actions.appendChild(cancelAppointment);
           }
           if (!laNguoiPhongVan || duocPhanCong) {
-          const evaluate = document.createElement("button");
-          evaluate.type = "button";
-          evaluate.className = "btn-danh-gia-cv";
-          evaluate.textContent = "Đánh giá";
-          evaluate.addEventListener("click", async () => {
-            let resolvedId = interviewId;
-            if (!resolvedId) {
-              try {
-                const schedules = await api(`${API}/phong-van`);
-                const rows = Array.isArray(schedules) ? schedules : (schedules.data || []);
-                const found = rows.find(item => Number(item.ung_vien_id) === Number(candidate.id) && String(item.trang_thai || "").toLowerCase() !== "huy");
-                resolvedId = found?.id || null;
-              } catch (_) {}
-            }
-            if (!resolvedId) { alert("Không tìm thấy lịch phỏng vấn đang hoạt động. Hãy tải lại danh sách CV."); return; }
-            const dialog = document.getElementById("modalDanhGiaNhanh");
-            const frame = document.getElementById("iframeDanhGiaNhanh");
-            if (!dialog || !frame) { alert("Không mở được biểu mẫu đánh giá. Hãy tải lại trang."); return; }
-            frame.src = `/danh-gia/danh-gia.html?phong_van_id=${encodeURIComponent(resolvedId)}&embed=1`;
-            dialog.classList.add("show");
-            dialog.setAttribute("aria-hidden", "false");
-          });
-          actions.appendChild(evaluate);
+            const evaluate = document.createElement("button");
+            evaluate.type = "button";
+            evaluate.className = "btn-danh-gia-cv";
+            evaluate.textContent = "Đánh giá";
+            evaluate.addEventListener("click", async () => {
+              let resolvedId = interviewId;
+              if (!resolvedId) {
+                try {
+                  const schedules = await api(`${API}/phong-van`);
+                  const rows = Array.isArray(schedules) ? schedules : (schedules.data || []);
+                  const found = rows.find(item => Number(item.ung_vien_id) === Number(candidate.id) && String(item.trang_thai || "").toLowerCase() !== "huy");
+                  resolvedId = found?.id || null;
+                } catch (_) { }
+              }
+              if (!resolvedId) { alert("Không tìm thấy lịch phỏng vấn đang hoạt động. Hãy tải lại danh sách CV."); return; }
+              const dialog = document.getElementById("modalDanhGiaNhanh");
+              const frame = document.getElementById("iframeDanhGiaNhanh");
+              if (!dialog || !frame) { alert("Không mở được biểu mẫu đánh giá. Hãy tải lại trang."); return; }
+              frame.src = `/danh-gia/danh-gia.html?phong_van_id=${encodeURIComponent(resolvedId)}&embed=1`;
+              dialog.classList.add("show");
+              dialog.setAttribute("aria-hidden", "false");
+            });
+            actions.appendChild(evaluate);
           }
         } else if (!laNguoiPhongVan) {
           const schedule = document.createElement("button"); schedule.type = "button"; schedule.textContent = "Hẹn phỏng vấn";
@@ -1575,7 +1574,7 @@ async function hienThiChiTietUngVien(container, candidate, dot) {
         const text = document.createElement("div"); text.className = "cv-dot-ai-review-text";
         text.textContent = rows.map(row => `- ${row.label}: ${row.value === undefined || row.value === null || row.value === "" ? "—" : `${displayText(row.value)}${String(row.value).includes("/") ? "" : "/100"}`}`).join("\n"); item.appendChild(text); analysisContent.appendChild(item); continue;
       }
-      if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0) || (typeof value === "object" && !Array.isArray(value) && (Object.keys(value).length === 0 || !Object.values(value).some(item => item !== null && item !== undefined && item !== "" && (!Array.isArray(item) || item.length)))) ) continue;
+      if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0) || (typeof value === "object" && !Array.isArray(value) && (Object.keys(value).length === 0 || !Object.values(value).some(item => item !== null && item !== undefined && item !== "" && (!Array.isArray(item) || item.length))))) continue;
       if (spec.label === "Học vấn") {
         const flattenedEducation = displayText(value).split("\n").map(line => line.replace(/^[-•]\s*/, "").trim()).filter(line => line && line !== "[object Object]").join(" · ").trim();
         if (!flattenedEducation) continue;
@@ -1844,7 +1843,6 @@ function taoModalCV(title, contentClass = "") {
   return { overlay, modal, dong };
 }
 
-
 let thuVienPDFJS = null;
 async function layThuVienPDFJS() {
   if (!thuVienPDFJS) {
@@ -2106,8 +2104,8 @@ async function moFormHenPhongVan(candidate, dot, interviewId = null) {
     dateInput.disabled = true;
     timeInput.disabled = true;
   } else {
-    dateInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-    timeInput.value = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+    dateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    timeInput.value = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   }
   const interviewerSelect = form.elements.nguoi_phong_van_ids;
   try {
@@ -2123,7 +2121,7 @@ async function moFormHenPhongVan(candidate, dot, interviewId = null) {
       option.textContent = `${person.ho_ten || person.ten || person.email || `Tài khoản #${person.id}`} — ${person.vai_tro || person.role || "Người phỏng vấn"}`;
       interviewerSelect.appendChild(option);
     });
-    interviewerSelect.onchange = async function () {
+    interviewerSelect.onchange = async function() {
       if (![...this.selectedOptions].some(option => option.value === "__them_moi__")) return;
       [...this.options].forEach(option => { if (option.value === "__them_moi__") option.selected = false; });
       await moDialogThemNguoiPhongVanDot(interviewerSelect);
@@ -2603,7 +2601,6 @@ async function luuTuyenDung(event) {
     return;
   }
 
-
   const button = $("form").querySelector('[type="submit"]');
   const nhanNutLuu = button.textContent;
   button.disabled = true;
@@ -2658,6 +2655,8 @@ async function luuTuyenDung(event) {
     if (!wasEditingExisting) {
       dotTuyenJDId = dotId;
       const dotMoi = danhSachGop.find((item) => Number(item.dot?.id) === Number(dotId));
+      // Dù tạo từ Dashboard hay trang quản lý, luôn đi qua bước làm rõ thông tin
+      // và soạn/duyệt nội dung JD trước; chỉ mở thông tin đợt tuyển sau khi lưu JD.
       dongModal();
       moWizardJD(dotMoi || { dot: { id: dotId, ten_dot: $("ten").value.trim(), mo_ta: $("moTa").value } });
     } else {
@@ -2674,8 +2673,6 @@ async function luuTuyenDung(event) {
     button.textContent = nhanNutLuu;
   }
 }
-
-
 
 function chuyenBuocJD(buoc) {
   [1, 2, 3].forEach((numero) => {
@@ -2989,7 +2986,15 @@ async function luuJDWizard() {
     });
     await taiDuLieu();
     dongWizardJD();
-    alert("Đã lưu nội dung JD thành công.");
+    const dotDaLuu = danhSachGop.find((item) => Number(item.dot?.id) === Number(dotTuyenJDId));
+    if (dotDaLuu) {
+      moFormXem(dotDaLuu);
+    } else {
+      dongModal();
+      if (cheDoEmbed && window.parent !== window) {
+        window.parent.postMessage({ type: "tuyendung-ai-close-create-campaign" }, window.location.origin);
+      }
+    }
   } catch (error) {
     $("thongBaoJD").className = "thong-bao hien";
     $("thongBaoJD").textContent = error.message || "Không lưu được bản mô tả.";
@@ -3320,6 +3325,10 @@ function ganSuKien() {
       return;
     }
     dongModal();
+    // Khi form được mở từ Dashboard, Hủy phải đóng cả lớp phủ bên ngoài.
+    if (cheDoEmbed && window.parent !== window) {
+      window.parent.postMessage({ type: "tuyendung-ai-close-create-campaign" }, window.location.origin);
+    }
   });
 
   $("form").addEventListener(

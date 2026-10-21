@@ -1,7 +1,5 @@
 require("dotenv").config();
 
-
-
 const express = require("express");
 
 const cors = require("cors");
@@ -12,11 +10,7 @@ const { Type } = require("@google/genai");
 
 const { goiAI } = require("./services/ai");
 
-
-
 const db = require("./database/db");
-
-
 
 const authRoutes = require("./routes/auth");
 
@@ -38,8 +32,6 @@ const quyetDinhRoutes = require("./routes/quyetDinh");
 
 const thongBaoRoutes = require("./routes/thongBao");
 
-
-
 const {
 
   kiemTraDangNhap,
@@ -48,11 +40,7 @@ const {
 
 } = require("./middleware/auth");
 
-
-
 const app = express();
-
-
 
 async function khoiTaoBangLichSuJD() {
 
@@ -88,15 +76,11 @@ async function khoiTaoBangLichSuJD() {
 
 }
 
-
-
-khoiTaoBangLichSuJD().catch(function (error) {
+khoiTaoBangLichSuJD().catch(function(error) {
 
   console.error("Khởi tạo bảng lịch sử JD AI thất bại:", error);
 
 });
-
-
 
 app.use(cors());
 
@@ -112,8 +96,6 @@ app.use("/api/quyet-dinh", quyetDinhRoutes);
 
 app.use("/api/thong-bao", thongBaoRoutes);
 
-
-
 function layThongBaoLoi(error) {
 
   return (
@@ -127,8 +109,6 @@ function layThongBaoLoi(error) {
   );
 
 }
-
-
 
 async function goiConfiguredAI(options) {
 
@@ -154,8 +134,6 @@ async function goiConfiguredAI(options) {
 
 }
 
-
-
 function lamSachTieuChi(danhSach) {
 
   if (!Array.isArray(danhSach)) {
@@ -164,11 +142,9 @@ function lamSachTieuChi(danhSach) {
 
   }
 
-
-
   return danhSach
 
-    .map(function (item) {
+    .map(function(item) {
 
       return {
 
@@ -206,15 +182,13 @@ function lamSachTieuChi(danhSach) {
 
     })
 
-    .filter(function (item) {
+    .filter(function(item) {
 
       return item.ten;
 
     });
 
 }
-
-
 
 function chuanHoaTongTrongSo(danhSach) {
 
@@ -224,15 +198,11 @@ function chuanHoaTongTrongSo(danhSach) {
 
   }
 
-
-
-  let tong = danhSach.reduce(function (sum, item) {
+  let tong = danhSach.reduce(function(sum, item) {
 
     return sum + item.trong_so;
 
   }, 0);
-
-
 
   if (tong === 100) {
 
@@ -240,17 +210,13 @@ function chuanHoaTongTrongSo(danhSach) {
 
   }
 
-
-
   if (tong <= 0) {
 
     const moi = Math.floor(100 / danhSach.length);
 
     const conLai = 100 - moi * danhSach.length;
 
-
-
-    return danhSach.map(function (item, index) {
+    return danhSach.map(function(item, index) {
 
       return {
 
@@ -264,9 +230,7 @@ function chuanHoaTongTrongSo(danhSach) {
 
   }
 
-
-
-  const ketQua = danhSach.map(function (item) {
+  const ketQua = danhSach.map(function(item) {
 
     return {
 
@@ -282,19 +246,13 @@ function chuanHoaTongTrongSo(danhSach) {
 
   });
 
-
-
-  let tongMoi = ketQua.reduce(function (sum, item) {
+  let tongMoi = ketQua.reduce(function(sum, item) {
 
     return sum + item.trong_so;
 
   }, 0);
 
-
-
   let index = 0;
-
-
 
   while (tongMoi < 100) {
 
@@ -306,17 +264,11 @@ function chuanHoaTongTrongSo(danhSach) {
 
   }
 
-
-
   index = 0;
-
-
 
   while (tongMoi > 100) {
 
     const viTri = index % ketQua.length;
-
-
 
     if (ketQua[viTri].trong_so > 0) {
 
@@ -326,21 +278,15 @@ function chuanHoaTongTrongSo(danhSach) {
 
     }
 
-
-
     index += 1;
 
   }
-
-
 
   return ketQua;
 
 }
 
-
-
-app.get("/", function (req, res) {
+app.get("/", function(req, res) {
 
   res.sendFile(
 
@@ -350,9 +296,7 @@ app.get("/", function (req, res) {
 
 });
 
-
-
-app.get("/api/test-db", async function (req, res) {
+app.get("/api/test-db", async function(req, res) {
 
   try {
 
@@ -361,8 +305,6 @@ app.get("/api/test-db", async function (req, res) {
       "SELECT 1 AS ket_noi",
 
     );
-
-
 
     res.json({
 
@@ -376,8 +318,6 @@ app.get("/api/test-db", async function (req, res) {
 
     console.error(error);
 
-
-
     res.status(500).json({
 
       message: "Ket noi MySQL that bai",
@@ -387,8 +327,6 @@ app.get("/api/test-db", async function (req, res) {
   }
 
 });
-
-
 
 app.use("/api/auth", authRoutes);
 
@@ -402,8 +340,6 @@ app.use("/api/tai-khoan", taiKhoanRoutes);
 
 app.use("/api/cv", cvRoutes);
 
-
-
 app.post(
 
   "/api/ai/generate-jd",
@@ -412,7 +348,7 @@ app.post(
 
   kiemTraVaiTro("admin", "manager", "hr"),
 
-  async function (req, res) {
+  async function(req, res) {
 
     try {
 
@@ -434,8 +370,6 @@ app.post(
 
       } = req.body || {};
 
-
-
       const thongTin = `
 
 THÔNG TIN ĐỢT TUYỂN DỤNG:
@@ -443,8 +377,6 @@ THÔNG TIN ĐỢT TUYỂN DỤNG:
 - Tên đợt tuyển dụng: ${ten_dot || "Chưa cung cấp"}
 
 - Mô tả đợt tuyển dụng: ${mo_ta_dot || "Chưa cung cấp"}
-
-
 
 THÔNG TIN JD HIỆN TẠI:
 
@@ -456,29 +388,19 @@ THÔNG TIN JD HIỆN TẠI:
 
 - Quyền lợi: ${quyen_loi || "Chưa cung cấp"}
 
-
-
 GHI CHÚ:
 
 ${ghi_chu || "Không có"}
 
 `;
 
-
-
       const prompt = `
 
 Bạn là chuyên gia tuyển dụng và xây dựng Job Description tại Việt Nam.
 
-
-
 Hãy xây dựng hoặc cải thiện JD dựa trên thông tin người dùng cung cấp.
 
-
-
 ${thongTin}
-
-
 
 YÊU CẦU:
 
@@ -504,8 +426,6 @@ YÊU CẦU:
 
 11. Người dùng sẽ được phép sửa toàn bộ kết quả AI.
 
-
-
 Mỗi tiêu chí gồm:
 
 - ten
@@ -514,13 +434,9 @@ Mỗi tiêu chí gồm:
 
 - trong_so
 
-
-
 Chỉ trả về JSON theo schema được cung cấp.
 
 `;
-
-
 
       const response = await goiConfiguredAI({
 
@@ -626,11 +542,7 @@ Chỉ trả về JSON theo schema được cung cấp.
 
       });
 
-
-
       let ketQua;
-
-
 
       try {
 
@@ -641,8 +553,6 @@ Chỉ trả về JSON theo schema được cung cấp.
             ? response.text
 
             : "";
-
-
 
         ketQua = JSON.parse(text);
 
@@ -656,8 +566,6 @@ Chỉ trả về JSON theo schema được cung cấp.
 
         );
 
-
-
         return res.status(500).json({
 
           message:
@@ -668,8 +576,6 @@ Chỉ trả về JSON theo schema được cung cấp.
 
       }
 
-
-
       ketQua.tieu_de =
 
         typeof ketQua.tieu_de === "string"
@@ -677,8 +583,6 @@ Chỉ trả về JSON theo schema được cung cấp.
           ? ketQua.tieu_de.trim()
 
           : String(tieu_de || "").trim();
-
-
 
       ketQua.mo_ta =
 
@@ -688,8 +592,6 @@ Chỉ trả về JSON theo schema được cung cấp.
 
           : "";
 
-
-
       ketQua.yeu_cau =
 
         typeof ketQua.yeu_cau === "string"
@@ -697,8 +599,6 @@ Chỉ trả về JSON theo schema được cung cấp.
           ? ketQua.yeu_cau.trim()
 
           : "";
-
-
 
       ketQua.quyen_loi =
 
@@ -708,19 +608,15 @@ Chỉ trả về JSON theo schema được cung cấp.
 
           : "";
 
-
-
       ketQua.tieu_chi = chuanHoaTongTrongSo(
 
         lamSachTieuChi(ketQua.tieu_chi),
 
       );
 
-
-
       const tong = ketQua.tieu_chi.reduce(
 
-        function (sum, item) {
+        function(sum, item) {
 
           return sum + item.trong_so;
 
@@ -729,8 +625,6 @@ Chỉ trả về JSON theo schema được cung cấp.
         0,
 
       );
-
-
 
       if (
 
@@ -750,8 +644,6 @@ Chỉ trả về JSON theo schema được cung cấp.
 
       }
 
-
-
       res.json({
 
         success: true,
@@ -770,8 +662,6 @@ Chỉ trả về JSON theo schema được cung cấp.
 
       );
 
-
-
       res.status(500).json({
 
         message:
@@ -786,8 +676,6 @@ Chỉ trả về JSON theo schema được cung cấp.
 
 );
 
-
-
 app.post(
 
   "/api/ai/screen-cv",
@@ -796,7 +684,7 @@ app.post(
 
   kiemTraVaiTro("admin", "manager", "hr"),
 
-  async function (req, res) {
+  async function(req, res) {
 
     try {
 
@@ -807,8 +695,6 @@ app.post(
         jobDescription,
 
       } = req.body || {};
-
-
 
       if (!cvText || !jobDescription) {
 
@@ -822,29 +708,19 @@ app.post(
 
       }
 
-
-
       const prompt = `
 
 Bạn là một Chuyên viên Tuyển dụng AI.
 
-
-
 Hãy phân tích CV của ứng viên và JD sau đây.
-
-
 
 --- JD ---
 
 ${jobDescription}
 
-
-
 --- CV ---
 
 ${cvText}
-
-
 
 YÊU CẦU:
 
@@ -866,13 +742,9 @@ YÊU CẦU:
 
    - "Không phù hợp"
 
-
-
 Trả về đúng JSON theo schema được cung cấp.
 
 `;
-
-
 
       const response = await goiConfiguredAI({
 
@@ -952,11 +824,7 @@ Trả về đúng JSON theo schema được cung cấp.
 
       });
 
-
-
       let result;
-
-
 
       try {
 
@@ -967,8 +835,6 @@ Trả về đúng JSON theo schema được cung cấp.
             ? response.text
 
             : "";
-
-
 
         result = JSON.parse(text);
 
@@ -982,8 +848,6 @@ Trả về đúng JSON theo schema được cung cấp.
 
         );
 
-
-
         return res.status(500).json({
 
           message:
@@ -993,8 +857,6 @@ Trả về đúng JSON theo schema được cung cấp.
         });
 
       }
-
-
 
       result.matchPercentage = Math.min(
 
@@ -1010,15 +872,11 @@ Trả về đúng JSON theo schema được cung cấp.
 
       );
 
-
-
       if (!Array.isArray(result.strengths)) {
 
         result.strengths = [];
 
       }
-
-
 
       if (!Array.isArray(result.weaknesses)) {
 
@@ -1026,15 +884,11 @@ Trả về đúng JSON theo schema được cung cấp.
 
       }
 
-
-
       if (typeof result.summary !== "string") {
 
         result.summary = "";
 
       }
-
-
 
       if (
 
@@ -1047,8 +901,6 @@ Trả về đúng JSON theo schema được cung cấp.
           "Cần xem xét thêm";
 
       }
-
-
 
       res.json({
 
@@ -1068,8 +920,6 @@ Trả về đúng JSON theo schema được cung cấp.
 
       );
 
-
-
       res.status(500).json({
 
         message:
@@ -1084,15 +934,13 @@ Trả về đúng JSON theo schema được cung cấp.
 
 );
 
-
-
 app.post(
 
   "/api/ai/chat",
 
   kiemTraDangNhap,
 
-  async function (req, res) {
+  async function(req, res) {
 
     try {
 
@@ -1118,8 +966,6 @@ app.post(
 
       }
 
-
-
       const vaiTro = req.nguoiDung?.vai_tro;
 
       const nguoiDungId = Number(req.nguoiDung?.id);
@@ -1134,8 +980,6 @@ app.post(
 
       }
 
-
-
       const chiXemUngVienDuocPhanCong = vaiTro === "interviewer";
 
       if (chiXemUngVienDuocPhanCong && (!Number.isInteger(nguoiDungId) || nguoiDungId <= 0)) {
@@ -1147,8 +991,6 @@ app.post(
         });
 
       }
-
-
 
       let cotNguoiPhongVan = null;
 
@@ -1169,8 +1011,6 @@ app.post(
         }
 
       }
-
-
 
       const dieuKienUngVien = chiXemUngVienDuocPhanCong
 
@@ -1209,8 +1049,6 @@ app.post(
         thamSoUngVien,
 
       );
-
-
 
       const cotDotTuyen = await db.query("SHOW COLUMNS FROM dot_tuyen");
 
@@ -1259,8 +1097,6 @@ app.post(
         : "";
 
       const thamSoViTri = chiXemUngVienDuocPhanCong ? [nguoiDungId] : [];
-
-
 
       const [viTriDangTuyen] = await db.query(
 
@@ -1362,8 +1198,6 @@ app.post(
 
       };
 
-
-
       const hopThoai = [];
 
       for (const message of messages) {
@@ -1385,8 +1219,6 @@ app.post(
         hopThoai.push(`${role === "user" ? "Người dùng" : "Trợ lý"}: ${text}`);
 
       }
-
-
 
       const cauHoiCuoi = messages[messages.length - 1].text.trim();
 
@@ -1469,8 +1301,6 @@ app.post(
 
         }
 
-
-
         const trangThaiDem = [
 
           { tuKhoa: ["da tuyen", "trung tuyen"], giaTri: "da_tuyen", nhan: "đã tuyển" },
@@ -1495,8 +1325,6 @@ app.post(
 
         );
 
-
-
         if (trangThaiDem) {
 
           dieuKienDem.push("uv.trang_thai = ?");
@@ -1504,8 +1332,6 @@ app.post(
           thamSoDem.push(trangThaiDem.giaTri);
 
         }
-
-
 
         const [ketQuaDem] = await db.query(
 
@@ -1539,8 +1365,6 @@ app.post(
 
           : "trong hệ thống";
 
-
-
         return res.json({
 
           reply: `Theo dữ liệu hệ thống, có ${Number(ketQuaDem[0]?.so_luong) || 0} ứng viên${nhanTrangThai} ${phamVi} ${khoangThoiGian}.`,
@@ -1548,8 +1372,6 @@ app.post(
         });
 
       }
-
-
 
       const response = await goiConfiguredAI({
 
@@ -1571,19 +1393,13 @@ Khi được hỏi tiêu chí tuyển dụng, dùng tiêu chí/yêu cầu đã l
 
 Nếu câu hỏi mơ hồ, hỏi lại một câu ngắn thay vì suy diễn. Không tiết lộ dữ liệu nhận dạng cá nhân ứng viên. Với Interviewer, chỉ dùng phạm vi đã được giới hạn ở ngữ cảnh.
 
-
-
 NGỮ CẢNH HỆ THỐNG (dữ liệu hiện tại từ cơ sở dữ liệu):
 
 ${JSON.stringify(duLieuHeThong)}
 
-
-
 HỘI THOẠI:
 
 ${hopThoai.join("\n")}
-
-
 
 Trợ lý:
 
@@ -1609,8 +1425,6 @@ Trợ lý:
 
       }
 
-
-
       res.json({ reply, provider: response.provider });
 
     } catch (error) {
@@ -1631,15 +1445,13 @@ Trợ lý:
 
 );
 
-
-
 app.get(
 
   "/api/dashboard",
 
   kiemTraDangNhap,
 
-  async function (req, res) {
+  async function(req, res) {
 
     try {
 
@@ -1667,15 +1479,11 @@ app.get(
 
       const dieuKienNgayTao = khoangThoiGianUngVien[kyHieuThoiGian];
 
-
-
       const [dotTuyen] = await db.query(
 
         "SELECT COUNT(*) AS so_luong FROM dot_tuyen",
 
       );
-
-
 
       const [ungVien] = await db.query(
 
@@ -1683,15 +1491,11 @@ app.get(
 
       );
 
-
-
       const [dotDangTuyen] = await db.query(
 
         "SELECT COUNT(*) AS so_luong FROM dot_tuyen WHERE trang_thai = 'dang_tuyen'",
 
       );
-
-
 
       const [cotPhongVan] = await db.query("SHOW COLUMNS FROM phong_van");
 
@@ -1709,8 +1513,6 @@ app.get(
 
         : "nguoi_phong_van_id";
 
-
-
       const [phongVan] = await db.query(
 
         `SELECT COUNT(*) AS so_luong
@@ -1723,8 +1525,6 @@ app.get(
 
       );
 
-
-
       const [daTuyen] = await db.query(`
 
         SELECT COUNT(*) AS so_luong
@@ -1734,8 +1534,6 @@ app.get(
         WHERE trang_thai = 'da_tuyen'${dieuKienNgayTao}
 
       `);
-
-
 
       const [trangThaiUngVien] = await db.query(`
 
@@ -1748,8 +1546,6 @@ app.get(
         GROUP BY trang_thai
 
       `);
-
-
 
       const [phongVanSapToi] = await db.query(`
 
@@ -1773,8 +1569,6 @@ app.get(
 
       `);
 
-
-
       const [ungVienMoi] = await db.query(`
 
         SELECT id, ho_ten, trang_thai, ngay_tao
@@ -1788,8 +1582,6 @@ app.get(
         LIMIT 4
 
       `);
-
-
 
       const [cotUngVien] = await db.query("SHOW COLUMNS FROM ung_vien");
 
@@ -1810,8 +1602,6 @@ app.get(
         ? ` OR ${cotNgaySua} >= DATE_SUB(NOW(), INTERVAL 7 DAY)`
 
         : "";
-
-
 
       const [thongBao] = await db.query(`
 
@@ -1836,8 +1626,6 @@ app.get(
         LIMIT 8
 
       `);
-
-
 
       res.json({
 
@@ -1865,8 +1653,6 @@ app.get(
 
       console.error(error);
 
-
-
       res.status(500).json({
 
         message: "Không thể lấy dữ liệu tổng quan.",
@@ -1879,15 +1665,13 @@ app.get(
 
 );
 
-
-
 app.get(
 
   "/api/test-login",
 
   kiemTraDangNhap,
 
-  function (req, res) {
+  function(req, res) {
 
     res.json({
 
@@ -1901,8 +1685,6 @@ app.get(
 
 );
 
-
-
 app.get(
 
   "/api/test-manager",
@@ -1911,7 +1693,7 @@ app.get(
 
   kiemTraVaiTro("manager"),
 
-  function (req, res) {
+  function(req, res) {
 
     res.json({
 
@@ -1923,9 +1705,7 @@ app.get(
 
 );
 
-
-
-app.use("/api", function (req, res) {
+app.use("/api", function(req, res) {
 
   res.status(404).json({
 
@@ -1935,13 +1715,9 @@ app.use("/api", function (req, res) {
 
 });
 
-
-
-app.use(function (error, req, res, next) {
+app.use(function(error, req, res, next) {
 
   console.error(error);
-
-
 
   res.status(500).json({
 
@@ -1951,15 +1727,13 @@ app.use(function (error, req, res, next) {
 
 });
 
-
-
 if (process.env.NODE_ENV !== "production") {
 
   app.listen(
 
     process.env.PORT || 3000,
 
-    function () {
+    function() {
 
       console.log(
 
@@ -1972,7 +1746,5 @@ if (process.env.NODE_ENV !== "production") {
   );
 
 }
-
-
 
 module.exports = app;

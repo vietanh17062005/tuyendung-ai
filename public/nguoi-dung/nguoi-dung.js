@@ -110,7 +110,7 @@ async function layDanhSachNguoiDung() {
 function hienThiDanhSach() {
   const tuKhoa = timKiem.value.trim().toLowerCase();
 
-  const ketQua = danhSach.filter(function (nguoi) {
+  const ketQua = danhSach.filter(function(nguoi) {
     return (
       nguoi.ho_ten.toLowerCase().includes(tuKhoa) ||
       nguoi.email.toLowerCase().includes(tuKhoa)
@@ -127,7 +127,7 @@ function hienThiDanhSach() {
 
   khongCoDuLieu.style.display = "none";
 
-  ketQua.forEach(function (nguoi, index) {
+  ketQua.forEach(function(nguoi, index) {
     const tr = document.createElement("tr");
 
     const tenVaiTro = layTenVaiTro(nguoi.vai_tro);
@@ -164,9 +164,8 @@ function hienThiDanhSach() {
 
             <td style="text-align:center;">
 
-                <span class="badge ${
-                  dangHoatDong ? "badge-active" : "badge-locked"
-                }">
+                <span class="badge ${dangHoatDong ? "badge-active" : "badge-locked"
+      }">
 
                     ${dangHoatDong ? "Hoạt động" : "Bị khóa"}
 
@@ -228,7 +227,7 @@ function layClassVaiTro(vaiTro) {
 
 /* Mở modal thêm */
 
-document.getElementById("btnThem").addEventListener("click", function () {
+document.getElementById("btnThem").addEventListener("click", function() {
   tieuDeModal.textContent = "Thêm người dùng";
 
   formNguoiDung.reset();
@@ -258,8 +257,8 @@ function dongModal() {
 
 /* Sửa */
 
-window.suaNguoiDung = function (id) {
-  const nguoi = danhSach.find(function (item) {
+window.suaNguoiDung = function(id) {
+  const nguoi = danhSach.find(function(item) {
     return item.id === id;
   });
 
@@ -288,7 +287,7 @@ window.suaNguoiDung = function (id) {
 
 /* Lưu */
 
-formNguoiDung.addEventListener("submit", async function (event) {
+formNguoiDung.addEventListener("submit", async function(event) {
   event.preventDefault();
 
   xoaThongBao();
@@ -368,7 +367,7 @@ formNguoiDung.addEventListener("submit", async function (event) {
 
 /* Đổi trạng thái */
 
-window.doiTrangThai = async function (id, trangThaiHienTai) {
+window.doiTrangThai = async function(id, trangThaiHienTai) {
   const trangThaiMoi =
     trangThaiHienTai === "hoat_dong" ? "bi_khoa" : "hoat_dong";
 
@@ -409,7 +408,7 @@ timKiem.addEventListener("input", hienThiDanhSach);
 
 /* Đăng xuất */
 
-document.getElementById("btnDangXuat").addEventListener("click", function () {
+document.getElementById("btnDangXuat").addEventListener("click", function() {
   localStorage.removeItem("token");
   localStorage.removeItem("nguoi_dung");
 

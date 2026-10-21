@@ -4,7 +4,7 @@ const db = require("../database/db");
 
 const router = express.Router();
 
-router.post("/login", async function (req, res) {
+router.post("/login", async function(req, res) {
   try {
     const { email, mat_khau } = req.body;
 

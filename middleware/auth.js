@@ -24,7 +24,7 @@ function kiemTraDangNhap(req, res, next) {
 }
 
 function kiemTraVaiTro(...vaiTroChoPhep) {
-  return function (req, res, next) {
+  return function(req, res, next) {
     if (!vaiTroChoPhep.includes(req.nguoiDung.vai_tro)) {
       return res.status(403).json({
         message: "Ban khong co quyen",

@@ -17,18 +17,14 @@
 
 body {
   min-height: 100vh;
-
-  font-family:
-    Inter,
+  font-family: Inter,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
     Roboto,
     Arial,
     sans-serif;
-
-  background:
-    radial-gradient(
+  background: radial-gradient(
       circle at 10% 10%,
       rgba(37, 99, 235, 0.08),
       transparent 30%
@@ -39,7 +35,6 @@ body {
       transparent 30%
     ),
     #f8fafc;
-
   color: var(--text);
 }
 
@@ -49,11 +44,9 @@ body {
 
 .login-page {
   min-height: 100vh;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   padding: 40px 20px;
 }
 
@@ -64,15 +57,10 @@ body {
 .login-card {
   width: 100%;
   max-width: 430px;
-
   padding: 42px 40px;
-
   background: white;
-
   border: 1px solid #e2e8f0;
-
   border-radius: 16px;
-
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
 }
 
@@ -83,49 +71,36 @@ body {
 .brand {
   display: flex;
   align-items: center;
-
   justify-content: center;
-
   gap: 12px;
-
   margin-bottom: 42px;
 }
 
 .brand-icon {
   width: 45px;
   height: 45px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 11px;
-
   background: #2563eb;
-
   color: white;
-
   font-size: 14px;
   font-weight: 800;
-
   box-shadow: 0 6px 14px rgba(37, 99, 235, 0.2);
 }
 
 .brand-name {
   color: #0f172a;
-
   font-size: 18px;
   font-weight: 700;
 }
 
 .brand-subtitle {
   margin-top: 2px;
-
   color: #94a3b8;
-
   font-size: 10px;
   font-weight: 500;
-
   letter-spacing: 0.7px;
 }
 
@@ -139,32 +114,23 @@ body {
 
 .welcome {
   display: block;
-
   margin-bottom: 10px;
-
   color: var(--primary);
-
   font-size: 10px;
   font-weight: 750;
-
   letter-spacing: 1.3px;
 }
 
 .form-header h1 {
   font-size: 32px;
-
   line-height: 1.15;
-
   letter-spacing: -1px;
 }
 
 .form-header p {
   margin-top: 10px;
-
   color: var(--text-light);
-
   font-size: 13px;
-
   line-height: 1.6;
 }
 
@@ -178,11 +144,8 @@ body {
 
 .form-group label {
   display: block;
-
   margin-bottom: 8px;
-
   color: #334155;
-
   font-size: 12px;
   font-weight: 650;
 }
@@ -198,23 +161,14 @@ body {
 .input-wrapper input {
   width: 100%;
   height: 50px;
-
   padding: 0 45px;
-
   border: 1px solid var(--border);
-
   border-radius: 9px;
-
   outline: none;
-
   background: white;
-
   color: var(--text);
-
   font-size: 13px;
-
-  transition:
-    border-color 0.2s,
+  transition: border-color 0.2s,
     box-shadow 0.2s,
     background 0.2s;
 }
@@ -229,9 +183,7 @@ body {
 
 .input-wrapper input:focus {
   border-color: var(--primary);
-
   background: white;
-
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
@@ -241,30 +193,21 @@ body {
 
 .input-icon {
   position: absolute;
-
   left: 15px;
   top: 50%;
-
   transform: translateY(-50%);
-
   width: 17px;
   height: 17px;
-
   color: #94a3b8;
-
   pointer-events: none;
 }
 
 .input-icon svg {
   width: 100%;
   height: 100%;
-
   fill: none;
-
   stroke: currentColor;
-
   stroke-width: 1.7;
-
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -275,25 +218,17 @@ body {
 
 .password-toggle {
   position: absolute;
-
   right: 12px;
   top: 50%;
-
   transform: translateY(-50%);
-
   width: 28px;
   height: 28px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border: none;
-
   background: transparent;
-
   color: #94a3b8;
-
   cursor: pointer;
 }
 
@@ -304,13 +239,9 @@ body {
 .password-toggle svg {
   width: 18px;
   height: 18px;
-
   fill: none;
-
   stroke: currentColor;
-
   stroke-width: 1.7;
-
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -321,22 +252,14 @@ body {
 
 .thong-bao {
   display: none;
-
   margin-top: -3px;
   margin-bottom: 16px;
-
   padding: 11px 13px;
-
   border: 1px solid #fecaca;
-
   border-radius: 8px;
-
   background: #fef2f2;
-
   color: var(--danger);
-
   font-size: 12px;
-
   line-height: 1.5;
 }
 
@@ -351,37 +274,25 @@ body {
 .btn-dang-nhap {
   width: 100%;
   height: 50px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border: none;
-
   border-radius: 9px;
-
   background: var(--primary);
-
   color: white;
-
   font-size: 13px;
   font-weight: 650;
-
   cursor: pointer;
-
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.2);
-
-  transition:
-    background 0.2s,
+  transition: background 0.2s,
     transform 0.2s,
     box-shadow 0.2s;
 }
 
 .btn-dang-nhap:hover {
   background: var(--primary-dark);
-
   transform: translateY(-1px);
-
   box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
 }
 
@@ -391,9 +302,7 @@ body {
 
 .btn-dang-nhap:disabled {
   opacity: 0.7;
-
   cursor: not-allowed;
-
   transform: none;
 }
 
@@ -403,16 +312,11 @@ body {
 
 .loading {
   display: none;
-
   width: 18px;
   height: 18px;
-
   border: 2px solid rgba(255, 255, 255, 0.35);
-
   border-top-color: white;
-
   border-radius: 50%;
-
   animation: xoay 0.7s linear infinite;
 }
 
@@ -428,15 +332,10 @@ body {
 
 .login-footer {
   margin-top: 28px;
-
   padding-top: 20px;
-
   border-top: 1px solid #e2e8f0;
-
   text-align: center;
-
   color: #94a3b8;
-
   font-size: 10px;
 }
 
@@ -451,7 +350,6 @@ body {
 
   .login-card {
     padding: 35px 25px;
-
     border-radius: 13px;
   }
 

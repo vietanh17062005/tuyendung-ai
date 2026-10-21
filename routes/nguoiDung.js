@@ -10,7 +10,7 @@ router.get(
   "/",
   kiemTraDangNhap,
   kiemTraVaiTro("admin"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const [rows] = await db.query(`
                 SELECT
@@ -41,7 +41,7 @@ router.post(
   "/",
   kiemTraDangNhap,
   kiemTraVaiTro("admin"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const { ho_ten, email, mat_khau, vai_tro, trang_thai } = req.body;
 
@@ -103,7 +103,7 @@ router.put(
   "/:id",
   kiemTraDangNhap,
   kiemTraVaiTro("admin"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = req.params.id;
 
@@ -188,7 +188,7 @@ router.put(
   "/:id/trang-thai",
   kiemTraDangNhap,
   kiemTraVaiTro("admin"),
-  async function (req, res) {
+  async function(req, res) {
     try {
       const id = req.params.id;
       const { trang_thai } = req.body;

@@ -18,7 +18,7 @@ const db = mysql.createPool({
   keepAliveInitialDelay: 10000,
 });
 
-db.on("connection", function () {
+db.on("connection", function() {
   console.log("Đã kết nối tới TiDB Cloud.");
 });
 

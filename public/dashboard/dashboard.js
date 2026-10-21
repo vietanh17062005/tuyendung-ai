@@ -108,17 +108,17 @@ document.getElementById("tenMenuTaiKhoan").textContent = nguoiDung.ho_ten;
 
 document.getElementById("emailMenuTaiKhoan").textContent = nguoiDung.email;
 
-taiKhoan.addEventListener("click", function (event) {
+taiKhoan.addEventListener("click", function(event) {
   event.stopPropagation();
 
   menuTaiKhoan.classList.toggle("hien");
 });
 
-document.addEventListener("click", function () {
+document.addEventListener("click", function() {
   menuTaiKhoan.classList.remove("hien");
 });
 
-menuTaiKhoan.addEventListener("click", function (event) {
+menuTaiKhoan.addEventListener("click", function(event) {
   event.stopPropagation();
 });
 
@@ -192,9 +192,8 @@ async function layDuLieuDashboard() {
 
     const tongUngVien = Number(data.so_ung_vien) || 0;
     const tongDaTuyen = Number(data.so_da_tuyen) || 0;
-    document.getElementById("tyLeTuyen").textContent = `${
-      tongUngVien ? Math.round((tongDaTuyen / tongUngVien) * 100) : 0
-    }%`;
+    document.getElementById("tyLeTuyen").textContent = `${tongUngVien ? Math.round((tongDaTuyen / tongUngVien) * 100) : 0
+      }%`;
 
     hienThiPheuTuyenDung(data);
     hienThiPhongVanSapToi(data.phong_van_sap_toi || []);
@@ -456,7 +455,7 @@ function layThongBaoDaXem() {
 
 const btnThongBao = document.getElementById("btnThongBao");
 const bangThongBao = document.getElementById("bangThongBao");
-btnThongBao.addEventListener("click", function (event) {
+btnThongBao.addEventListener("click", function(event) {
   event.stopPropagation();
   const dangMo = bangThongBao.hidden;
   bangThongBao.hidden = !dangMo;
@@ -609,7 +608,7 @@ function hienThiTinNhanHoiAI(noiDung, loai) {
 
 document
   .getElementById("btnThongTin")
-  .addEventListener("click", async function () {
+  .addEventListener("click", async function() {
     menuTaiKhoan.classList.remove("hien");
 
     await moModalThongTin();
@@ -657,13 +656,13 @@ async function moModalThongTin() {
 
 document
   .getElementById("btnDongThongTin")
-  .addEventListener("click", function () {
+  .addEventListener("click", function() {
     document.getElementById("modalThongTin").classList.remove("hien");
   });
 
 document
   .getElementById("btnHuyThongTin")
-  .addEventListener("click", function () {
+  .addEventListener("click", function() {
     document.getElementById("modalThongTin").classList.remove("hien");
   });
 
@@ -671,7 +670,7 @@ document
 
 document
   .getElementById("formThongTin")
-  .addEventListener("submit", async function (event) {
+  .addEventListener("submit", async function(event) {
     event.preventDefault();
 
     const hoTen = document.getElementById("taiKhoanHoTen").value.trim();
@@ -735,7 +734,7 @@ document
 
       thongBao.classList.add("hien", "thanh-cong");
 
-      setTimeout(function () {
+      setTimeout(function() {
         document.getElementById("modalThongTin").classList.remove("hien");
       }, 700);
     } catch (error) {
@@ -749,7 +748,7 @@ document
 
 /* Đổi mật khẩu */
 
-document.getElementById("btnDoiMatKhau").addEventListener("click", function () {
+document.getElementById("btnDoiMatKhau").addEventListener("click", function() {
   menuTaiKhoan.classList.remove("hien");
 
   document.getElementById("formMatKhau").reset();
@@ -763,11 +762,11 @@ document.getElementById("btnDoiMatKhau").addEventListener("click", function () {
 
 document
   .getElementById("btnDongMatKhau")
-  .addEventListener("click", function () {
+  .addEventListener("click", function() {
     document.getElementById("modalMatKhau").classList.remove("hien");
   });
 
-document.getElementById("btnHuyMatKhau").addEventListener("click", function () {
+document.getElementById("btnHuyMatKhau").addEventListener("click", function() {
   document.getElementById("modalMatKhau").classList.remove("hien");
 });
 
@@ -775,7 +774,7 @@ document.getElementById("btnHuyMatKhau").addEventListener("click", function () {
 
 document
   .getElementById("formMatKhau")
-  .addEventListener("submit", async function (event) {
+  .addEventListener("submit", async function(event) {
     event.preventDefault();
 
     const matKhauCu = document.getElementById("matKhauCu").value;
@@ -843,7 +842,7 @@ document
 
       thongBao.classList.add("hien", "thanh-cong");
 
-      setTimeout(function () {
+      setTimeout(function() {
         document.getElementById("modalMatKhau").classList.remove("hien");
       }, 700);
     } catch (error) {
@@ -857,7 +856,7 @@ document
 
 /* Đăng xuất */
 
-document.getElementById("btnDangXuat").addEventListener("click", function () {
+document.getElementById("btnDangXuat").addEventListener("click", function() {
   dangXuat();
 });
 

@@ -23,7 +23,7 @@ if (!nguoiDung) {
   window.location.href = "/login/login.html";
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function() {
   khoiTaoTaiKhoan();
 });
 
@@ -91,17 +91,17 @@ function khoiTaoTaiKhoan() {
 
   /* Dropdown tài khoản */
 
-  taiKhoan.addEventListener("click", function (event) {
+  taiKhoan.addEventListener("click", function(event) {
     event.stopPropagation();
 
     menuTaiKhoan.classList.toggle("hien");
   });
 
-  menuTaiKhoan.addEventListener("click", function (event) {
+  menuTaiKhoan.addEventListener("click", function(event) {
     event.stopPropagation();
   });
 
-  document.addEventListener("click", function () {
+  document.addEventListener("click", function() {
     menuTaiKhoan.classList.remove("hien");
   });
 
@@ -110,7 +110,7 @@ function khoiTaoTaiKhoan() {
   if (btnThongTin) {
     btnThongTin.addEventListener(
       "click",
-      async function () {
+      async function() {
         menuTaiKhoan.classList.remove("hien");
 
         await moModalThongTin();
@@ -123,7 +123,7 @@ function khoiTaoTaiKhoan() {
   if (btnDoiMatKhau) {
     btnDoiMatKhau.addEventListener(
       "click",
-      function () {
+      function() {
         menuTaiKhoan.classList.remove("hien");
 
         moModalMatKhau();
@@ -136,7 +136,7 @@ function khoiTaoTaiKhoan() {
   if (btnDangXuat) {
     btnDangXuat.addEventListener(
       "click",
-      function () {
+      function() {
         dangXuat();
       },
     );
@@ -177,7 +177,7 @@ function khoiTaoModalThongTin() {
   if (btnDong) {
     btnDong.addEventListener(
       "click",
-      function () {
+      function() {
         dongModalThongTin();
       },
     );
@@ -186,7 +186,7 @@ function khoiTaoModalThongTin() {
   if (btnHuy) {
     btnHuy.addEventListener(
       "click",
-      function () {
+      function() {
         dongModalThongTin();
       },
     );
@@ -360,7 +360,7 @@ async function luuThongTinTaiKhoan(event) {
       );
     }
 
-    setTimeout(function () {
+    setTimeout(function() {
       dongModalThongTin();
     }, 700);
   } catch (error) {
@@ -443,7 +443,7 @@ function khoiTaoModalMatKhau() {
   if (btnDong) {
     btnDong.addEventListener(
       "click",
-      function () {
+      function() {
         dongModalMatKhau();
       },
     );
@@ -452,7 +452,7 @@ function khoiTaoModalMatKhau() {
   if (btnHuy) {
     btnHuy.addEventListener(
       "click",
-      function () {
+      function() {
         dongModalMatKhau();
       },
     );
@@ -607,7 +607,7 @@ async function doiMatKhau(event) {
       );
     }
 
-    setTimeout(function () {
+    setTimeout(function() {
       dongModalMatKhau();
     }, 700);
   } catch (error) {

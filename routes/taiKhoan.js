@@ -6,7 +6,7 @@ const { kiemTraDangNhap } = require("../middleware/auth");
 const router = express.Router();
 
 // Lấy thông tin tài khoản
-router.get("/", kiemTraDangNhap, async function (req, res) {
+router.get("/", kiemTraDangNhap, async function(req, res) {
   try {
     const [rows] = await db.query(
       `
@@ -41,7 +41,7 @@ router.get("/", kiemTraDangNhap, async function (req, res) {
 });
 
 // Cập nhật thông tin tài khoản
-router.put("/", kiemTraDangNhap, async function (req, res) {
+router.put("/", kiemTraDangNhap, async function(req, res) {
   try {
     const { ho_ten, email } = req.body;
 
@@ -96,7 +96,7 @@ router.put("/", kiemTraDangNhap, async function (req, res) {
 });
 
 // Đổi mật khẩu
-router.put("/mat-khau", kiemTraDangNhap, async function (req, res) {
+router.put("/mat-khau", kiemTraDangNhap, async function(req, res) {
   try {
     const { mat_khau_cu, mat_khau_moi } = req.body;
 
@@ -162,7 +162,7 @@ router.put("/mat-khau", kiemTraDangNhap, async function (req, res) {
 router.get(
   "/nguoi-phong-van",
   kiemTraDangNhap,
-  async function (req, res) {
+  async function(req, res) {
     try {
       const [rows] = await db.query(`
                 SELECT
