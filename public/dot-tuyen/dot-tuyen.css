@@ -6313,3 +6313,35 @@ body.embed-mode #modal.hien {
   visibility: visible !important;
   pointer-events: auto !important;
 }
+
+
+/* Báo cáo chiến dịch: nút xuất file và giao diện gọn trong thông tin đợt tuyển */
+.bao-cao-hanh-dong {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin: 4px 0 22px; padding: 16px 18px; border: 1px solid #dbe5f2;
+  border-radius: 14px; background: linear-gradient(135deg, #f7faff, #eef5ff);
+}
+.bao-cao-hanh-dong > div:first-child { display: grid; gap: 5px; }
+.bao-cao-hanh-dong strong { color: #172b4d; font-size: 15px; }
+.bao-cao-hanh-dong span { color: #64748b; font-size: 12px; line-height: 1.5; }
+.bao-cao-nut-nhom { display: flex; flex-wrap: wrap; gap: 9px; }
+.bao-cao-nut-nhom button { border: 0; border-radius: 9px; padding: 10px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: transform .15s, opacity .15s; }
+.bao-cao-nut-nhom button:hover { transform: translateY(-1px); opacity: .92; }
+.bao-cao-nut-nhom button:disabled { opacity: .6; cursor: wait; transform: none; }
+.btn-xuat-excel { background: #16804a; color: #fff; }
+.btn-xuat-pdf { background: #245bd6; color: #fff; }
+@media (max-width: 640px) { .bao-cao-hanh-dong { align-items: stretch; flex-direction: column; } .bao-cao-nut-nhom button { flex: 1; } }
+
+/* Menu chọn định dạng xuất báo cáo */
+.bao-cao-dropdown { position: relative; }
+.btn-mo-xuat { border: 0; border-radius: 9px; padding: 10px 14px; background: #245bd6; color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.bao-cao-menu-xuat { position: absolute; z-index: 100; top: calc(100% + 6px); right: 0; min-width: 150px; padding: 5px; background: #fff; border: 1px solid #dbe5f2; border-radius: 9px; box-shadow: 0 8px 24px rgba(15,23,42,.16); }
+.bao-cao-menu-xuat[hidden] { display: none !important; }
+.bao-cao-menu-xuat button { display: block; width: 100%; text-align: left; background: transparent; color: #172b4d; padding: 10px 12px; border-radius: 6px; border: 0; font: inherit; cursor: pointer; }
+.bao-cao-menu-xuat button:hover { background: #eef5ff; }
+
+/* Nút xuất báo cáo nằm cùng hàng với trạng thái và Sửa trong phần đầu modal */
+.chi-tiet-actions { align-items: center; }
+.bao-cao-dropdown-header { position: relative; display: inline-flex; align-items: center; }
+.bao-cao-dropdown-header .btn-mo-xuat { padding: 9px 10px; font-size: 12px; }
+.bao-cao-dropdown-header .bao-cao-menu-xuat { top: calc(100% + 5px); right: 0; }

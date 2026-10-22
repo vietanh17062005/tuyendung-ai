@@ -428,6 +428,12 @@ function hienThiThongBao(danhSach) {
     const thoiGian = document.createElement("span");
     const ngay = new Date(String(thongBao.thoi_gian || "").replace(" ", "T"));
     hang.className = "thong-bao-item";
+    hang.tabIndex = 0;
+    hang.setAttribute("role", "link");
+    hang.style.cursor = "pointer";
+    const denHoSoUngVien = () => { window.location.href = `/ung-vien/ung-vien.html?ung_vien_id=${encodeURIComponent(thongBao.id)}`; };
+    hang.addEventListener("click", denHoSoUngVien);
+    hang.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); denHoSoUngVien(); } });
     tieuDe.textContent = thongBao.loai === "updated"
       ? `${thongBao.ho_ten || "Ứng viên"} có hồ sơ vừa được cập nhật`
       : `${thongBao.ho_ten || "Ứng viên"} vừa được thêm`;

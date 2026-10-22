@@ -337,6 +337,13 @@
 
         <div class="chi-tiet-actions" id="hanhDongChiTiet" hidden>
           <button type="button" class="btn-trang-thai-dot" id="btnDoiTrangThaiDot">Đang tuyển</button>
+          <div class="bao-cao-dropdown bao-cao-dropdown-header">
+            <button type="button" class="btn-mo-xuat" id="btnMoMenuXuat" aria-expanded="false">⇩ Xuất file ▾</button>
+            <div class="bao-cao-menu-xuat" id="menuXuatBaoCao" hidden>
+              <button type="button" class="btn-xuat-excel" id="btnXuatBaoCaoExcel">Xuất Excel</button>
+              <button type="button" class="btn-xuat-pdf" id="btnXuatBaoCaoPDF">Xuất PDF</button>
+            </div>
+          </div>
           <button type="button" class="btn-huy" id="btnSuaTrongXem">Sửa</button>
           <button type="button" class="btn-xoa-chi-tiet" id="btnXoaTrongXem">Xóa</button>
         </div>
@@ -580,10 +587,7 @@
         <!-- BƯỚC 2 -->
 
         <div class="jd-buoc" id="jdBuoc2">
-          <div class="jd-ten-dot-khu-vuc">
-            <label class="jd-ten-dot-label" for="jdTenDot">Tên đợt tuyển dụng</label>
-            <input type="text" id="jdTenDot" class="jd-ten-dot-input" maxlength="200" aria-label="Tên đợt tuyển dụng" />
-          </div>
+          <input type="hidden" id="jdTenDot" />
           <p class="jd-ai-huong-dan">
             Chọn nhanh các đáp án phù hợp hoặc tự nhập ở ô bên dưới mỗi câu. Câu nào chưa cần có thể để trống.
           </p>
@@ -784,6 +788,7 @@
   </div>
 
   <script src="/account/account.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <script src="/dot-tuyen/dot-tuyen.js?v=20261020-education-email-interviewer6"></script>
 <script src="/menu-dong-bo.js?v=20261020-loading-buttons"></script>
 </body>

@@ -451,6 +451,26 @@ function hienThiThongBaoDot() {
       ? parsed.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })
       : "";
     item.className = "thong-bao-item";
+    item.tabIndex = 0;
+    item.setAttribute("role", "link");
+    item.style.cursor = "pointer";
+    const moThongBaoDot = () => {
+      const panel = $("bangThongBaoDot");
+      if (panel) panel.hidden = true;
+      $("btnThongBaoDot")?.setAttribute("aria-expanded", "false");
+      const dotId = notice.dot_id || notice.id;
+      const target = [...document.querySelectorAll("[data-dot-id], tr")].find((row) => String(row.dataset.dotId || row.dataset.id || "") === String(dotId));
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        target.click();
+      } else {
+        const row = [...document.querySelectorAll("tr")].find((r) => r.textContent.includes(String(notice.noiDung || "")));
+        if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
+        else window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    };
+    item.addEventListener("click", moThongBaoDot);
+    item.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); moThongBaoDot(); } });
     item.append(title, date);
     list.appendChild(item);
   });
@@ -914,7 +934,7 @@ function moModalXoaNhieuDot() {
   if (dotTuyenDaChon.size === 0) {
     $("nhanXoaNhieuDot").textContent = "CHƯA CHỌN ĐỢT TUYỂN DỤNG";
     $("tieuDeXoaNhieuDot").textContent = "Vui lòng chọn đợt tuyển dụng để xóa";
-    $("noiDungXoaNhieuDot").textContent = "Tick vào ô ở cột đầu tiên của một hoặc nhiều đợt tuyển dụng, sau đó nhấn nút Xóa đợt tuyển dụng.";
+    $("noiDungXoaNhieuDot").textContent = "";
     $("bieuTuongXoaNhieuDot").textContent = "!";
     $("hanhDongXoaNhieuDot").innerHTML = '<button type="button" class="btn-luu" id="btnDongKetQuaXoaNhieuDot">Đã hiểu</button>';
     $("btnDongKetQuaXoaNhieuDot").addEventListener("click", () => {
@@ -2209,6 +2229,365 @@ function themMucThongTinJD(container, tieuDe, noiDung) {
   container.appendChild(muc);
 }
 
+function baoCaoEscapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[char]);
+}
+
+function baoCaoNgay(value) {
+  if (!value) return "Chưa cập nhật";
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : String(value);
+}
+
+function baoCaoTrangThai(candidate) {
+  const status = String(candidate.trang_thai || "moi").toLowerCase();
+  const coLich = [true, 1, "1", "true"].includes(candidate.co_lich_phong_van);
+  if (["tu_choi", "tu-choi", "rejected", "da_tu_choi"].includes(status)) return "Đã từ chối";
+  if (["da_tuyen", "hired", "trung_tuyen"].includes(status)) return "Đã tuyển";
+  if (["da_phong_van", "da_phong_van_xong", "interviewed"].includes(status)) return "Đã phỏng vấn";
+  if (coLich || ["scheduled", "da_hen"].includes(status)) return "Đã hẹn phỏng vấn";
+  if (["dang_xu_ly", "processing"].includes(status)) return "Đang xử lý";
+  return "Mới tiếp nhận";
+}
+
+function baoCaoDiem(candidate) {
+  const values = [candidate.diem_ai, candidate.diem_ghi_de, candidate.phan_tich?.score?.tong,
+    candidate.phan_tich?.score?.total, candidate.phan_tich?.diem_phu_hop, candidate.phan_tich?.diem];
+  const raw = values.find((value) => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)));
+  return raw === undefined ? "Chưa phân tích" : `${Math.round(Number(raw) * 10) / 10}/100`;
+}
+
+function baoCaoSoDienThoai(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "Chưa có SĐT";
+  const digits = raw.replace(/\D/g, "");
+  // Định dạng số di động Việt Nam 10 chữ số: 0xxx.xxx.xxx.
+  if (digits.length === 10 && digits.startsWith("0")) return `${digits.slice(0, 4)}.${digits.slice(4, 7)}.${digits.slice(7)}`;
+  return raw;
+}
+
+async function layDuLieuBaoCao(item) {
+  const dot = item?.dot || item;
+  if (!dot?.id) throw new Error("Không xác định được đợt tuyển dụng cần xuất báo cáo.");
+  let result;
+  try {
+    result = await api(`${API}/cv/review/candidates?dot_tuyen_id=${encodeURIComponent(dot.id)}`);
+  } catch (_) {
+    result = await api(`${API}/ung-vien?dot_tuyen_id=${encodeURIComponent(dot.id)}`);
+  }
+  const candidates = (Array.isArray(result) ? result : (result?.data || [])).slice();
+  // Lấy lịch phỏng vấn để báo cáo phân biệt lịch đã hẹn và lịch đã hủy.
+  try {
+    const scheduleResult = await api(`${API}/phong-van`);
+    const schedules = Array.isArray(scheduleResult) ? scheduleResult : (scheduleResult?.data || []);
+    candidates.forEach((candidate) => {
+      const candidateSchedules = schedules.filter((schedule) =>
+        Number(schedule.ung_vien_id) === Number(candidate.id) &&
+        (!schedule.dot_tuyen_id || Number(schedule.dot_tuyen_id) === Number(dot.id))
+      ).sort((a, b) => String(b.thoi_gian || b.thoi_gian_phong_van || b.created_at || b.ngay_tao || "")
+        .localeCompare(String(a.thoi_gian || a.thoi_gian_phong_van || a.created_at || a.ngay_tao || "")));
+      const active = candidateSchedules.find((schedule) => !["huy", "da_huy", "cancelled", "canceled"].includes(String(schedule.trang_thai || "").toLowerCase()));
+      const latest = active || candidateSchedules[0] || null;
+      candidate.bao_cao_lich_pv = latest ? {
+        trang_thai: ["huy", "da_huy", "cancelled", "canceled"].includes(String(latest.trang_thai || "").toLowerCase()) ? "Đã hủy" : "Đã hẹn",
+        thoi_gian: latest.thoi_gian || latest.thoi_gian_phong_van || latest.bat_dau || latest.ngay_phong_van || candidate.thoi_gian_phong_van || ""
+      } : null;
+    });
+  } catch (_) {
+    candidates.forEach((candidate) => {
+      candidate.bao_cao_lich_pv = candidate.thoi_gian_phong_van
+        ? { trang_thai: [true, 1, "1", "true"].includes(candidate.co_lich_phong_van) ? "Đã hẹn" : "Chưa hẹn", thoi_gian: candidate.thoi_gian_phong_van }
+        : null;
+    });
+  }
+  const score = (candidate) => {
+    const value = [candidate.diem_ai, candidate.diem_ghi_de, candidate.phan_tich?.score?.tong,
+      candidate.phan_tich?.score?.total, candidate.phan_tich?.diem_phu_hop, candidate.phan_tich?.diem]
+      .find((entry) => entry !== null && entry !== undefined && entry !== "" && Number.isFinite(Number(entry)));
+    return value === undefined ? -1 : Number(value);
+  };
+  candidates.sort((a, b) => score(b) - score(a));
+  const jds = Array.isArray(item?.jds) ? item.jds : (item?.jd ? [item.jd] : (Array.isArray(dot.jds) ? dot.jds : (dot.jd ? [dot.jd] : [])));
+  return { dot, candidates, jds };
+}
+
+function taoNoiDungBaoCaoHTML(data, choExcel = false) {
+  const { dot, candidates, jds } = data;
+  const tenDot = dot.ten_dot || dot.ten || `Đợt tuyển dụng #${dot.id}`;
+  const jdRows = jds.length ? jds.map((jd, index) => `
+    <section class="jd-card">
+      <table class="thong-tin"><tbody>
+        <tr><th>Bộ phận</th><td>${baoCaoEscapeHTML(jd.bo_phan || "Chưa cập nhật")}</td><th>Địa điểm</th><td>${baoCaoEscapeHTML(jd.dia_diem || "Chưa cập nhật")}</td></tr>
+        <tr><th>Hình thức</th><td>${baoCaoEscapeHTML(jd.loai_hinh || "Chưa cập nhật")}</td><th>Mức lương</th><td>${baoCaoEscapeHTML(jd.muc_luong || "Chưa cập nhật")}</td></tr>
+        <tr><th>Kỹ năng</th><td colspan="3">${baoCaoEscapeHTML(jd.ky_nang || "Chưa cập nhật")}</td></tr>
+        <tr class="mo-ta-row"><th class="label-mo-ta">Mô tả công việc</th><td colspan="3">${baoCaoEscapeHTML(jd.mo_ta || "Chưa cập nhật").replace(/\n/g, "<br>")}</td></tr>
+        <tr class="mo-ta-row"><th class="label-mo-ta">Yêu cầu</th><td colspan="3">${baoCaoEscapeHTML(jd.yeu_cau || "Chưa cập nhật").replace(/\n/g, "<br>")}</td></tr>
+        <tr class="mo-ta-row"><th class="label-mo-ta">Quyền lợi</th><td colspan="3">${baoCaoEscapeHTML(jd.quyen_loi || "Chưa cập nhật").replace(/\n/g, "<br>")}</td></tr>
+      </tbody></table>
+    </section>`).join("") : `<p class="empty">Đợt tuyển dụng chưa có bản mô tả công việc.</p>`;
+  const baoCaoNgayGioPV = (value) => {
+    if (!value) return "—";
+    const raw = String(value).trim();
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+    if (!match) return baoCaoEscapeHTML(raw);
+    if (/Z$/i.test(raw)) {
+      const date = new Date(raw);
+      if (!Number.isNaN(date.getTime())) { const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date).reduce((a, p) => (a[p.type] = p.value, a), {}); return `<span class="pv-gio">${parts.hour}:${parts.minute}</span><br><span class="pv-ngay">${parts.day}/${parts.month}/${parts.year}</span>`; }
+    }
+    return match[4] ? `<span class="pv-gio">${match[4]}:${match[5]}</span><br><span class="pv-ngay">${match[3]}/${match[2]}/${match[1]}</span>` : `<span class="pv-ngay">${match[3]}/${match[2]}/${match[1]}</span>`;
+  };
+  const candidateRows = candidates.length ? candidates.map((candidate, index) => {
+    const interview = candidate.bao_cao_lich_pv;
+    const interviewStatus = interview?.trang_thai || ([true, 1, "1", "true"].includes(candidate.co_lich_phong_van) ? "Đã hẹn" : "Chưa hẹn");
+    return `<tr><td class="center">${index + 1}</td><td>${baoCaoEscapeHTML(candidate.ho_ten || "Chưa có tên")}</td>
+    <td class="center">${baoCaoEscapeHTML(baoCaoSoDienThoai(candidate.so_dien_thoai || candidate.sdt))}</td>
+    <td>${baoCaoEscapeHTML(candidate.email || "Chưa có email")}</td>
+    <td class="center">${baoCaoEscapeHTML(baoCaoDiem(candidate))}</td>
+    <td class="center">${baoCaoEscapeHTML(interviewStatus)}</td>
+    <td class="center">${baoCaoNgayGioPV(interview?.thoi_gian || candidate.thoi_gian_phong_van)}</td></tr>`;
+  }).join("") : `<tr><td colspan="7" class="empty center">Chưa có ứng viên trong đợt tuyển dụng này.</td></tr>`;
+  const styles = `
+    @page { size: A4 portrait; margin: 12mm 11mm; }
+    * { box-sizing: border-box; }
+    body { font-family: "Times New Roman", Times, serif; color: #000; font-size: 11pt; line-height: 1.35; }
+    h1 { margin: 0 0 5px; color: #000; font-size: 16pt; }
+    .subtitle { display: none !important; }
+    .banner { background: #fff; color: #000; padding: 0 0 8px; border: 0; border-bottom: 1px solid #000; border-radius: 0; margin-bottom: 10px; text-align: center; }
+    .banner h1 { color: #000; text-align: center; font-size: 16pt; }
+    .meta { width: 100%; border-collapse: collapse; margin: 8px 0 15px; }
+    .meta td { width: 33.33%; border: 1px solid #000; padding: 8px 9px; background: #fff; color: #000; }
+    .meta strong { display: block; color: #000; font-size: 9pt; margin-bottom: 4px; text-transform: uppercase; }
+    .meta-list { display: block; margin: 10px 0 18px; padding: 0; border: 0; }
+    .meta-item { display: flex; align-items: baseline; gap: 5px; padding: 2px 0; border: 0; break-inside: avoid; min-width: 0; }
+    .meta-number { flex: 0 0 18px; }
+    .meta-label { flex: 0 0 auto; font-size: 11pt; font-weight: 400; text-transform: none; white-space: normal; }
+    .meta-value { min-width: 0; overflow-wrap: anywhere; }
+    h2 { color: #000; font-size: 12pt; margin: 14px 0 7px; }
+    .thong-tin, .candidate-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .thong-tin th, .thong-tin td, .candidate-table th, .candidate-table td { border: 1px solid #000; padding: 6px 7px; vertical-align: top; overflow-wrap: anywhere; color: #000; }
+    .thong-tin th { background: #fff; text-align: left; font-weight: 700; width: 18%; }
+    .thong-tin td { width: 32%; }
+    .thong-tin th.label-mo-ta { width: 22%; white-space: nowrap; }
+    .thong-tin tr.mo-ta-row td { width: 78%; }
+    .candidate-table { font-size: 8.6pt; }
+    .candidate-table th, .candidate-table td { padding: 4px 3px; white-space: normal; overflow-wrap: anywhere; }
+    /* Giữ STT, họ tên, số điện thoại và email trên một dòng; PDF vẫn là văn bản có thể chọn/copy. */
+    .candidate-table th:nth-child(1), .candidate-table td:nth-child(1),
+    .candidate-table th:nth-child(2), .candidate-table td:nth-child(2),
+    .candidate-table th:nth-child(3), .candidate-table td:nth-child(3),
+    .candidate-table th:nth-child(4), .candidate-table td:nth-child(4) { white-space: nowrap; overflow-wrap: normal; }
+    .candidate-table td:nth-child(2) { font-size: 7.8pt; }
+    .candidate-table td:nth-child(3) { font-size: 7.6pt; }
+    .candidate-table td:nth-child(4) { font-size: 8.2pt; letter-spacing: 0; }
+    .candidate-table td:nth-child(7) { font-size: 8pt; white-space: nowrap; }
+    .pv-gio, .pv-ngay { display: inline-block; white-space: nowrap; }
+    .candidate-table thead th { background: #fff; color: #000; text-align: center !important; font-weight: 700; vertical-align: middle; }
+    .candidate-table tbody tr:nth-child(even), .candidate-table tbody tr:nth-child(odd) { background: #fff; }
+    .candidate-table th:nth-child(1), .candidate-table td:nth-child(1) { width: 5%; text-align: center; }
+    .candidate-table th:nth-child(2), .candidate-table td:nth-child(2) { width: 16%; text-align: left; }
+    .candidate-table th:nth-child(3), .candidate-table td:nth-child(3) { width: 13%; text-align: center; }
+    .candidate-table th:nth-child(4), .candidate-table td:nth-child(4) { width: 28%; text-align: left; }
+    .candidate-table th:nth-child(5), .candidate-table td:nth-child(5) { width: 11%; text-align: center; }
+    .candidate-table th:nth-child(6), .candidate-table td:nth-child(6) { width: 15%; text-align: center; }
+    .candidate-table th:nth-child(7), .candidate-table td:nth-child(7) { width: 12%; text-align: center; }
+    .candidate-table tbody tr { height: 30px; }
+    .candidate-table tbody td { vertical-align: middle; }
+    .candidate-table td.center, .candidate-table th.center { text-align: center; }
+    .jd-card { page-break-inside: avoid; break-inside: avoid; margin-bottom: 14px; }
+    .empty { color: #000; padding: 12px; }
+    .section-title { margin-top: 0; page-break-before: always; break-before: page; }
+    .candidate-table { page-break-before: avoid; break-before: avoid; }
+    @media print { .no-print { display: none !important; } }
+  `;
+  return `<!doctype html><html lang="vi"><head><meta charset="UTF-8"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Báo cáo ${baoCaoEscapeHTML(tenDot)}</title><style>${styles}</style></head><body>
+    <div class="banner"><h1>BÁO CÁO ĐỢT TUYỂN DỤNG</h1></div>
+    ${choExcel ? `<table class="meta"><tbody><tr><td><strong>Tên đợt tuyển dụng</strong>${baoCaoEscapeHTML(tenDot)}</td><td><strong>Ngày bắt đầu</strong>${baoCaoEscapeHTML(baoCaoNgay(dot.ngay_bat_dau))}</td><td><strong>Ngày kết thúc</strong>${baoCaoEscapeHTML(baoCaoNgay(dot.ngay_ket_thuc))}</td></tr><tr><td><strong>Trạng thái</strong>${baoCaoEscapeHTML(laDotDaDong(dot) ? "Đã đóng" : "Đang tuyển")}</td><td><strong>Tổng số ứng viên</strong>${candidates.length}</td><td><strong>Ngày xuất báo cáo</strong>${baoCaoEscapeHTML(new Intl.DateTimeFormat("vi-VN").format(new Date()))}</td></tr></tbody></table>` : `<div class="meta-list"><div class="meta-item"><span class="meta-number">1.</span><span class="meta-label">Tên đợt tuyển dụng:</span><span class="meta-value">${baoCaoEscapeHTML(tenDot)}</span></div><div class="meta-item"><span class="meta-number">2.</span><span class="meta-label">Ngày bắt đầu:</span><span class="meta-value">${baoCaoEscapeHTML(baoCaoNgay(dot.ngay_bat_dau))}</span></div><div class="meta-item"><span class="meta-number">3.</span><span class="meta-label">Ngày kết thúc:</span><span class="meta-value">${baoCaoEscapeHTML(baoCaoNgay(dot.ngay_ket_thuc))}</span></div><div class="meta-item"><span class="meta-number">4.</span><span class="meta-label">Trạng thái:</span><span class="meta-value">${baoCaoEscapeHTML(laDotDaDong(dot) ? "Đã đóng" : "Đang tuyển")}</span></div><div class="meta-item"><span class="meta-number">5.</span><span class="meta-label">Tổng số ứng viên:</span><span class="meta-value">${candidates.length}</span></div><div class="meta-item"><span class="meta-number">6.</span><span class="meta-label">Ngày xuất báo cáo:</span><span class="meta-value">${baoCaoEscapeHTML(new Intl.DateTimeFormat("vi-VN").format(new Date()))}</span></div></div>`}
+    <h2>1. Thông tin bản mô tả công việc (JD)</h2>${jdRows}
+    <h2 class="section-title">2. Danh sách hồ sơ ứng viên</h2>
+    <table class="candidate-table"><colgroup><col style="width:5%"><col style="width:16%"><col style="width:13%"><col style="width:28%"><col style="width:11%"><col style="width:15%"><col style="width:12%"></colgroup><thead><tr><th class="center">STT</th><th class="center">Họ và tên</th><th class="center">Số điện thoại</th><th class="center">Email</th><th class="center">Điểm tương thích</th><th class="center">Lịch phỏng vấn</th><th class="center">Ngày hẹn phỏng vấn</th></tr></thead><tbody>${candidateRows}</tbody></table>
+    ${choExcel ? "" : "<div class='no-print' style='margin-top:20px'><button onclick='window.print()' style='padding:10px 18px;background:#245bd6;color:white;border:0;border-radius:8px;font-weight:bold;cursor:pointer'>In / Lưu thành PDF</button></div>"}
+    </body></html>`;
+}
+
+function taoNoiDungBaoCaoExcelXML(data) {
+  const { dot, candidates, jds } = data;
+  const tenDot = dot.ten_dot || dot.ten || `Đợt tuyển dụng #${dot.id}`;
+  const xml = (value) => String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+  const cell = (value, style = "Normal", mergeAcross = 0) => `<Cell ss:StyleID="${style}"${mergeAcross ? ` ss:MergeAcross="${mergeAcross}"` : ""}><Data ss:Type="String">${xml(value)}</Data></Cell>`;
+  const row = (cells) => `<Row>${cells.join("")}</Row>`;
+  const sheet1 = [];
+  sheet1.push(row([cell("BÁO CÁO ĐỢT TUYỂN DỤNG", "Title", 3)]));
+  sheet1.push(row([cell("Tên đợt tuyển dụng", "Header"), cell(tenDot, "Normal", 2)]));
+  sheet1.push(row([cell("Ngày bắt đầu", "Header"), cell(baoCaoNgay(dot.ngay_bat_dau)), cell("Ngày kết thúc", "Header"), cell(baoCaoNgay(dot.ngay_ket_thuc))]));
+  sheet1.push(row([cell("Trạng thái", "Header"), cell(laDotDaDong(dot) ? "Đã đóng" : "Đang tuyển"), cell("Tổng số ứng viên", "Header"), cell(String(candidates.length))]));
+  sheet1.push(row([cell("Ngày xuất báo cáo", "Header"), cell(new Intl.DateTimeFormat("vi-VN").format(new Date()), "Normal", 2)]));
+  sheet1.push(row([cell("THÔNG TIN BẢN MÔ TẢ CÔNG VIỆC (JD)", "Section", 3)]));
+  if (!jds.length) sheet1.push(row([cell("Đợt tuyển dụng chưa có bản mô tả công việc.", "Normal", 3)]));
+  jds.forEach((jd, index) => {
+    if (index) sheet1.push(row([cell("", "Normal", 3)]));
+    const jdFields = [
+      ["Bộ phận", jd.bo_phan], ["Địa điểm", jd.dia_diem], ["Hình thức", jd.loai_hinh], ["Mức lương", jd.muc_luong],
+      ["Kỹ năng", jd.ky_nang], ["Mô tả công việc", jd.mo_ta], ["Yêu cầu", jd.yeu_cau], ["Quyền lợi", jd.quyen_loi]
+    ];
+    sheet1.push(row([cell(`JD ${index + 1}`, "Section", 3)]));
+    jdFields.forEach(([label, value]) => sheet1.push(row([cell(label, "Header"), cell(value || "Chưa cập nhật", "Normal", 2)])));
+  });
+  const sheet2 = [row([cell("DANH SÁCH HỒ SƠ ỨNG VIÊN", "Title", 6)]), row(["STT", "Họ và tên", "Số điện thoại", "Email", "Điểm tương thích", "Lịch phỏng vấn", "Ngày hẹn phỏng vấn"].map(v => cell(v, "Header")))];
+  if (!candidates.length) sheet2.push(row([cell("", "Normal"), cell("Chưa có ứng viên trong đợt tuyển dụng này.", "Normal", 5)]));
+  candidates.forEach((candidate, index) => sheet2.push(row([
+    cell(String(index + 1), "Center"), cell(candidate.ho_ten || "Chưa có tên"), cell(candidate.so_dien_thoai || candidate.sdt || "Chưa có SĐT", "Center"),
+    cell(candidate.email || "Chưa có email"), cell(baoCaoDiem(candidate), "Center"), cell(candidate.bao_cao_lich_pv?.trang_thai || ([true, 1, "1", "true"].includes(candidate.co_lich_phong_van) ? "Đã hẹn" : "Chưa hẹn")),
+    cell(candidate.bao_cao_lich_pv?.thoi_gian || candidate.thoi_gian_phong_van || "—", "Center")
+  ])));
+  const worksheet = (name, rows, widths) => `<Worksheet ss:Name="${name}"><Table>${widths.map(w => `<Column ss:Width="${w}"/>`).join("")}${rows.join("")}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><PageSetup><Layout x:Orientation="Portrait"/></PageSetup><FitToPage/><Print><FitWidth>1</FitWidth><FitHeight>0</FitHeight></Print><Selected/></WorksheetOptions></Worksheet>`;
+  return `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40"><Styles><Style ss:ID="Normal"><Font ss:FontName="Times New Roman" ss:Size="11" ss:Color="#000000"/><Alignment ss:Vertical="Top" ss:WrapText="1"/></Style><Style ss:ID="Title"><Font ss:FontName="Times New Roman" ss:Size="16" ss:Bold="1" ss:Color="#000000"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/></Style><Style ss:ID="Header"><Font ss:FontName="Times New Roman" ss:Size="11" ss:Bold="1" ss:Color="#000000"/><Alignment ss:Vertical="Center" ss:WrapText="1"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style><Style ss:ID="Section"><Font ss:FontName="Times New Roman" ss:Size="12" ss:Bold="1" ss:Color="#000000"/><Alignment ss:Vertical="Center" ss:WrapText="1"/></Style><Style ss:ID="Center"><Font ss:FontName="Times New Roman" ss:Size="11" ss:Color="#000000"/><Alignment ss:Horizontal="Center" ss:Vertical="Top" ss:WrapText="1"/></Style></Styles>${worksheet("Thông tin và JD", sheet1, [145, 180, 145, 180])}${worksheet("Danh sách ứng viên", sheet2, [40, 135, 100, 180, 95, 100, 125])}</Workbook>`;
+}
+
+function tenFileBaoCao(dot, extension) {
+  const base = String(dot?.ten_dot || dot?.ten || `dot-tuyen-${dot?.id || "bao-cao"}`)
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D")
+    .replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 70) || "bao-cao-dot-tuyen";
+  return `${base}.${extension}`;
+}
+
+async function xuatBaoCaoDot(loai) {
+  const itemDangXem = window.dotTuyenDangXem;
+  const dotDangXem = itemDangXem?.dot || itemDangXem;
+  if (!dotDangXem?.id) {
+    alert("Vui lòng mở thông tin một đợt tuyển dụng trước khi xuất báo cáo.");
+    return;
+  }
+  const button = loai === "excel" ? $("btnXuatBaoCaoExcel") : $("btnXuatBaoCaoPDF");
+  const buttonText = button.textContent;
+  // Mở cửa sổ ngay trong thao tác click để trình duyệt không chặn popup khi tải dữ liệu.
+  const printWindow = loai === "pdf" ? window.open("about:blank", "_blank") : null;
+  if (loai === "pdf" && !printWindow) {
+    alert("Trình duyệt đã chặn cửa sổ báo cáo. Hãy cho phép popup rồi thử lại.");
+    return;
+  }
+  button.disabled = true;
+  button.textContent = "Đang tạo...";
+  try {
+    const data = await layDuLieuBaoCao(itemDangXem);
+    const html = taoNoiDungBaoCaoHTML(data, loai === "excel");
+    if (loai === "excel") {
+      if (!window.XLSX) throw new Error("Không tải được thư viện xuất Excel. Hãy kiểm tra kết nối mạng rồi thử lại.");
+      const { dot, candidates, jds } = data;
+      const tenDot = dot.ten_dot || dot.ten || `Đợt tuyển dụng #${dot.id}`;
+      const ngayXuat = new Intl.DateTimeFormat("vi-VN").format(new Date());
+      // Sheet 1: tiêu đề nối tiếp ngay với thông tin đợt tuyển, không có dòng trống thứ 2.
+      const sheet1 = [
+        ["BÁO CÁO ĐỢT TUYỂN DỤNG", ""],
+        ["Tên đợt tuyển dụng", tenDot],
+        ["Ngày bắt đầu", baoCaoNgay(dot.ngay_bat_dau)],
+        ["Ngày kết thúc", baoCaoNgay(dot.ngay_ket_thuc)],
+        ["Trạng thái", laDotDaDong(dot) ? "Đã đóng" : "Đang tuyển"],
+        ["Tổng số ứng viên", candidates.length],
+        ["Ngày xuất báo cáo", ngayXuat],
+        ["THÔNG TIN BẢN MÔ TẢ CÔNG VIỆC", ""],
+      ];
+      jds.forEach((jd) => {
+        [["Tiêu đề", jd.tieu_de || jd.ten_jd || jd.vi_tri || "Bản mô tả công việc"], ["Bộ phận", jd.bo_phan], ["Địa điểm", jd.dia_diem], ["Hình thức", jd.loai_hinh], ["Mức lương", jd.muc_luong], ["Kỹ năng", jd.ky_nang], ["Mô tả công việc", jd.mo_ta], ["Yêu cầu", jd.yeu_cau], ["Quyền lợi", jd.quyen_loi]].forEach(([label, value]) => sheet1.push([label, value || "Chưa cập nhật"]));
+        // Tách các JD bằng một dòng trống, không thêm nhãn dư kiểu "JD1".
+        sheet1.push([]);
+      });
+      if (sheet1[sheet1.length - 1]?.length === 0) sheet1.pop();
+      if (!jds.length) sheet1.push(["Thông tin", "Đợt tuyển dụng chưa có bản mô tả công việc."]);
+
+      // Sheet 2: tiêu đề nối tiếp ngay với tiêu đề cột, không có dòng trống thứ 2.
+      const sheet2 = [["DANH SÁCH ỨNG VIÊN"], ["STT", "Họ và tên", "Số điện thoại", "Email", "Điểm tương thích", "Lịch phỏng vấn", "Ngày hẹn phỏng vấn"]];
+      const ngayHenExcel = (value) => {
+        if (!value || value === "—") return "—";
+        const raw = String(value).trim();
+        const date = new Date(raw);
+        if (!Number.isNaN(date.getTime()) && /T|Z|[+-]\d{2}:?\d{2}$/.test(raw)) {
+          const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date).reduce((out, part) => (out[part.type] = part.value, out), {});
+          return `${parts.hour}:${parts.minute}\n${parts.day}/${parts.month}/${parts.year}`;
+        }
+        const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+        if (match) return match[4] ? `${match[4]}:${match[5]}\n${match[3]}/${match[2]}/${match[1]}` : `${match[3]}/${match[2]}/${match[1]}`;
+        return raw;
+      };
+      candidates.forEach((c, i) => sheet2.push([i + 1, c.ho_ten || "Chưa có tên", c.so_dien_thoai || c.sdt || "Chưa có SĐT", c.email || "Chưa có email", c.diem_tuong_thich ?? c.diem_phu_hop ?? "Chưa phân tích", baoCaoTrangThai(c), ngayHenExcel(c.bao_cao_lich_pv?.thoi_gian || c.ngay_hen_phong_van || c.thoi_gian || "—")]));
+      if (!candidates.length) sheet2.push(["", "Chưa có ứng viên trong đợt tuyển dụng này."]);
+      const workbook = window.XLSX.utils.book_new();
+      const borderThin = { top: { style: "thin", color: { rgb: "000000" } }, bottom: { style: "thin", color: { rgb: "000000" } }, left: { style: "thin", color: { rgb: "000000" } }, right: { style: "thin", color: { rgb: "000000" } } };
+      const fontBase = { name: "Times New Roman", sz: 11, color: { rgb: "000000" } };
+      const styleBase = { font: fontBase, alignment: { vertical: "center", wrapText: true } };
+      const styleBorder = { ...styleBase, border: borderThin };
+      const styleLabel = { font: { ...fontBase, bold: true }, alignment: { horizontal: "left", vertical: "center", wrapText: true }, border: borderThin };
+      const styleTitle = { font: { ...fontBase, bold: true, sz: 14 }, alignment: { horizontal: "center", vertical: "center" } };
+      const styleSection = { font: { ...fontBase, bold: true, sz: 12 }, alignment: { horizontal: "center", vertical: "center", wrapText: true }, border: borderThin };
+      const styleCandidateTitle = { font: { ...fontBase, bold: true, sz: 14 }, alignment: { horizontal: "center", vertical: "center" } };
+      const styleHeader = { font: { ...fontBase, bold: true }, alignment: { vertical: "center", horizontal: "center", wrapText: true }, border: borderThin };
+      const ws1 = window.XLSX.utils.aoa_to_sheet(sheet1);
+      const ws2 = window.XLSX.utils.aoa_to_sheet(sheet2);
+      const range1 = window.XLSX.utils.decode_range(ws1["!ref"] || "A1:B1");
+      for (let R = range1.s.r; R <= range1.e.r; R++) {
+        for (let C = 0; C < 2; C++) {
+          const addr = window.XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws1[addr]) continue;
+          ws1[addr].s = { ...styleBase };
+          // Metadata từ dòng 3 đến 8: cả nhãn cột A và nội dung cột B đều có viền.
+          if (R >= 1 && R <= 6) ws1[addr].s = C === 0 ? styleLabel : { ...styleBorder, alignment: { horizontal: "left", vertical: "center", wrapText: true } };
+          // Tiêu đề JD căn giữa, in đậm; không có dòng JD1/JD2 dư.
+          if (R === 7) ws1[addr].s = styleSection;
+          // Các trường JD: tên trường in đậm, cả hai cột đều có viền.
+          if (R >= 8) ws1[addr].s = C === 0 ? styleLabel : { ...styleBorder, alignment: { horizontal: "left", vertical: "center", wrapText: true } };
+        }
+      }
+      ws1["A1"].s = styleTitle;
+      ws2["A1"].s = styleCandidateTitle;
+      const range2 = window.XLSX.utils.decode_range(ws2["!ref"] || "A1:G3");
+      for (let R = 1; R <= range2.e.r; R++) {
+        for (let C = 0; C < 7; C++) {
+          const addr = window.XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws2[addr]) continue;
+          ws2[addr].s = R === 1 ? styleHeader : { ...styleBorder, alignment: { vertical: "center", horizontal: (C === 1 || C === 3) ? "left" : "center", wrapText: true } };
+        }
+      }
+      ws1["!cols"] = [{ wch: 20 }, { wch: 80 }];
+      ws2["!cols"] = [{ wch: 7 }, { wch: 22 }, { wch: 17 }, { wch: 34 }, { wch: 18 }, { wch: 18 }, { wch: 22 }];
+      // Tự tính chiều cao dòng theo lượng chữ để nội dung dài không bị che.
+      const dongTheoNoiDung = (rows, widths, minHeight = 22, fontSize = 11) => rows.map((row, i) => {
+        if (i === 0) return { hpt: minHeight };
+        let maxLines = 1;
+        row.forEach((value, col) => {
+          const text = String(value ?? "");
+          const width = widths[col] || 15;
+          const explicitLines = text.split(/\r?\n/).reduce((sum, part) => sum + Math.max(1, Math.ceil(part.length / Math.max(8, width * 1.05))), 0);
+          maxLines = Math.max(maxLines, explicitLines);
+        });
+        return { hpt: Math.max(minHeight, Math.ceil(maxLines * (fontSize + 4) + 6)) };
+      });
+      ws1["!rows"] = dongTheoNoiDung(sheet1, [20, 80], 22, 11).map((row, i) => i === 0 ? { hpt: 25 } : i === 7 ? { hpt: 24 } : row);
+      ws2["!rows"] = dongTheoNoiDung(sheet2, [7, 22, 17, 34, 18, 18, 22], 24, 11).map((row, i) => i === 0 ? { hpt: 26 } : i === 1 ? { hpt: 32 } : row);
+      ws1["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }, { s: { r: 7, c: 0 }, e: { r: 7, c: 1 } }];
+      ws2["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
+      window.XLSX.utils.book_append_sheet(workbook, ws1, "Thông tin và JD");
+      window.XLSX.utils.book_append_sheet(workbook, ws2, "Danh sách ứng viên");
+      window.XLSX.writeFile(workbook, tenFileBaoCao(dotDangXem, "xlsx"));
+    } else {
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.document.title = tenFileBaoCao(dotDangXem, "pdf");
+      printWindow.focus();
+      // Chờ trình duyệt dựng font và bảng tiếng Việt rồi mở hộp thoại in/lưu PDF.
+      setTimeout(() => { try { printWindow.print(); } catch (_) {} }, 500);
+    }
+  } catch (error) {
+    if (printWindow && !printWindow.closed) printWindow.close();
+    console.error("Xuất báo cáo thất bại:", error);
+    alert(error.message || "Không thể tạo báo cáo. Vui lòng thử lại.");
+  } finally {
+    button.disabled = false;
+    button.textContent = buttonText;
+  }
+}
+
 function hienThiThongTinJD(item) {
   const container = $("jdThongTinNoiDung");
   container.replaceChildren();
@@ -2226,14 +2605,6 @@ function hienThiThongTinJD(item) {
   jds.forEach((jd) => {
     const card = document.createElement("article");
     card.className = "jd-thong-tin-card";
-    if (jd.tieu_de) {
-      const title = document.createElement("strong");
-      title.textContent = jd.tieu_de || `JD #${jd.id}`;
-      title.style.display = "block";
-      title.style.marginBottom = "12px";
-      card.appendChild(title);
-    }
-
     const thongTinViTri = [
       jd.bo_phan && `Bộ phận: ${jd.bo_phan}`,
       jd.dia_diem && `Địa điểm: ${jd.dia_diem}`,
@@ -3618,6 +3989,22 @@ function ganSuKien() {
 document.addEventListener("DOMContentLoaded", async () => {
   sapXepTinhThanhAZ();
   ganSuKien();
+  $("btnMoMenuXuat")?.addEventListener("click", () => {
+    const menu = $("menuXuatBaoCao");
+    if (!menu) return;
+    menu.hidden = !menu.hidden;
+    $("btnMoMenuXuat").setAttribute("aria-expanded", String(!menu.hidden));
+  });
+  document.addEventListener("click", (event) => {
+    const menu = $("menuXuatBaoCao");
+    const trigger = $("btnMoMenuXuat");
+    if (menu && trigger && !menu.contains(event.target) && !trigger.contains(event.target)) {
+      menu.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+    }
+  });
+  $("btnXuatBaoCaoExcel")?.addEventListener("click", () => { $("menuXuatBaoCao").hidden = true; xuatBaoCaoDot("excel"); });
+  $("btnXuatBaoCaoPDF")?.addEventListener("click", () => { $("menuXuatBaoCao").hidden = true; xuatBaoCaoDot("pdf"); });
 
   const modalDanhGiaNhanh = $("modalDanhGiaNhanh");
   const iframeDanhGiaNhanh = $("iframeDanhGiaNhanh");
